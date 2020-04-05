@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: metosin/jsonista:0.2.5">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/metosin/jsonista/0.2.5/jsonista-0.2.5.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

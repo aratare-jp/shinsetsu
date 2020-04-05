@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: funcool/struct:1.4.0">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/funcool/struct/1.4.0/struct-1.4.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

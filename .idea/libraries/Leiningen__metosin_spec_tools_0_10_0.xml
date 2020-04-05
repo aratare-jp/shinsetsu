@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: metosin/spec-tools:0.10.0">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/metosin/spec-tools/0.10.0/spec-tools-0.10.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

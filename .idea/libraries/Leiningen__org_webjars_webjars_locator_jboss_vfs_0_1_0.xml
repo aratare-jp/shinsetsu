@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: org.webjars/webjars-locator-jboss-vfs:0.1.0">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/webjars/webjars-locator-jboss-vfs/0.1.0/webjars-locator-jboss-vfs-0.1.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

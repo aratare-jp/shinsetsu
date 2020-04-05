@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: metosin/muuntaja:0.6.6">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/metosin/muuntaja/0.6.6/muuntaja-0.6.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

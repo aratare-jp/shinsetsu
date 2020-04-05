@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: json-html:0.4.7">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/json-html/json-html/0.4.7/json-html-0.4.7.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

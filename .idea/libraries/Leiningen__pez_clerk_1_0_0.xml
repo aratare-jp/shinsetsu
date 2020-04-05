@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: pez/clerk:1.0.0">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/pez/clerk/1.0.0/clerk-1.0.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
