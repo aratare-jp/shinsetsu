@@ -1,4 +1,4 @@
-(ns ^:figwheel-always harpocrates.core
+(ns ^:figwheel-hooks harpocrates.core
   (:require
     [reagent.core :as reagent :refer [atom]]
     [reagent.dom :as rdom]
@@ -80,7 +80,7 @@
     (let [page (:current-page (session/get :route))]
       [:div
        [:header
-        [:p [:a {:href (path-for :index)} "Hoeeeme"] " | "
+        [:p [:a {:href (path-for :index)} "Home"] " | "
          [:a {:href (path-for :about)} "About reagent-noobies"]]]
        [page]
        [:footer
@@ -92,6 +92,9 @@
 
 (defn mount-root []
   (rdom/render [#'current-page] (.getElementById js/document "app")))
+
+(defn ^:after-load re-render []
+  (mount-root))
 
 (defn init! []
   (clerk/initialize!)
