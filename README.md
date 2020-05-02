@@ -5,6 +5,11 @@
 
 Harpocrates is a browser plugin that enhances bookmarks. For more details, head to [this section](#features).
 
+| Branch | Status |
+| ---- | ---- |
+| master | [![CircleCI](https://circleci.com/gh/aratare-tech/harpocrates/tree/master.svg?style=svg)](https://circleci.com/gh/aratare-tech/harpocrates/tree/master) |
+| develop | [![CircleCI](https://circleci.com/gh/aratare-tech/harpocrates/tree/develop.svg?style=svg)](https://circleci.com/gh/aratare-tech/harpocrates/tree/develop) |
+
 <!-- omit in toc -->
 ## Table of Contents
 - [Installation](#installation)
