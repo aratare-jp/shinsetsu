@@ -1,21 +1,21 @@
-# harpocrates
+<!-- omit in toc -->
+# Harpocrates
 
-generated using Luminus version "3.65"
+> She saw before her bed, or seemed to see as in a dream, great Isis with her train of holy deities. Upon her brow there stood the crescent moon-horns, garlanded with glittering heads of golden grain, and grace of royal dignity; and at her side... the god who holds his finger to his lips for silence's sake."
 
-FIXME
+Harpocrates is a browser plugin that enhances bookmarks. For more details, head to [this section](#features).
 
-## Prerequisites
+<!-- omit in toc -->
+## Table of Contents
+- [Installation](#installation)
+- [Features](#features)
 
-You will need [Leiningen][1] 2.0 or above installed.
+## Installation
+TBC
 
-[1]: https://github.com/technomancy/leiningen
-
-## Running
-
-To start a web server for the application, run:
-
-    lein run 
-
-## License
-
-Copyright © 2020 FIXME
+## Features
+- Bookmarks
+- Folders
+- Tags
+- Passwords for folders
+- Search/Filter
