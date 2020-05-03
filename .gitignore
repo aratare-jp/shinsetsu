@@ -14,3 +14,7 @@ profiles.clj
 
 /node_modules
 /log
+.vscode
+.idea
+*.iml
+.rebel_readline_history
