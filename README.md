@@ -14,6 +14,9 @@ Harpocrates is a browser plugin that enhances bookmarks. For more details, head 
 ## Table of Contents
 - [Installation](#installation)
 - [Features](#features)
+- [Development](#development)
+  - [Client](#client)
+  - [Server](#server)
 
 ## Installation
 TBC
@@ -24,3 +27,19 @@ TBC
 - Tags
 - Passwords for folders
 - Search/Filter
+
+## Development
+### Client
+`lein fig -- -b dev -r`
+
+### Server
+1. Need `dev-config.edn`
+
+```clojure
+{:dev true
+ :port 3000
+ ;; when :nrepl-port is set the application starts the nREPL server on load
+ :nrepl-port 7000
+ :database-url "jdbc:postgresql://localhost:5432/harpocrates?user=postgres&password=123456789"}
+ ```
+ 2. `lein run`
