@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Leiningen: org.yaml/snakeyaml:1.24">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/org/yaml/snakeyaml/1.24/snakeyaml-1.24.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

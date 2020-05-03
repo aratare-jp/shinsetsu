@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Leiningen: seancorfield/next.jdbc:1.0.409">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/seancorfield/next.jdbc/1.0.409/next.jdbc-1.0.409.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Leiningen: org.clojure/java.data:1.0.64">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/org/clojure/java.data/1.0.64/java.data-1.0.64.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

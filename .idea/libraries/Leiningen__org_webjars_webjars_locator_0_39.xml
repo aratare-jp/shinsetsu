@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Leiningen: org.webjars/webjars-locator:0.39">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/org/webjars/webjars-locator/0.39/webjars-locator-0.39.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
