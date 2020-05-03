@@ -1,9 +1,11 @@
-CREATE TABLE users
-(id VARCHAR(20) PRIMARY KEY,
- first_name VARCHAR(30),
- last_name VARCHAR(30),
- email VARCHAR(30),
- admin BOOLEAN,
- last_login TIMESTAMP,
- is_active BOOLEAN,
- pass VARCHAR(300));
+CREATE TABLE users (
+    id uuid DEFAULT uuid_generate_v4 (),
+    first_name text,
+    last_name text,
+    email text,
+    last_login timestamp,
+    is_active boolean,
+    password text,
+    PRIMARY KEY (id)
+);
+
