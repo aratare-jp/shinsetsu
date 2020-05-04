@@ -10,7 +10,7 @@
    [muuntaja.middleware :refer [wrap-format wrap-params]]
    [harpocrates.config :refer [env]]
    [ring.middleware.flash :refer [wrap-flash]]
-   [immutant.web.middleware :refer [wrap-session]]
+   [ring.middleware.session.cookie :refer [cookie-store]]
    [ring.middleware.defaults :refer [site-defaults wrap-defaults]]))
 
 (defn wrap-internal-error [handler]
@@ -42,9 +42,9 @@
 (defn wrap-base [handler]
   (-> ((:middleware defaults) handler)
       wrap-flash
-      (wrap-session {:cookie-attrs {:http-only true}})
       (wrap-defaults
        (-> site-defaults
            (assoc-in [:security :anti-forgery] false)
-           (dissoc :session)))
+           (assoc-in [:session :store] (cookie-store))
+           (assoc-in [:session :cookie-name] "example-app-sessions")))
       wrap-internal-error))

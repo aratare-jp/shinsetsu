@@ -13,7 +13,7 @@
                  [day8.re-frame/http-fx "0.1.6"]
                  [expound "0.8.4"]
                  [funcool/struct "1.4.0"]
-                 [luminus-immutant "0.2.5"]
+                 [luminus-http-kit "0.1.6"]
                  [luminus-migrations "0.6.7"]
                  [luminus-transit "0.1.2"]
                  [markdown-clj "1.10.2"]
@@ -41,7 +41,8 @@
                  [selmer "1.12.18"]
                  [pez/clerk "1.0.0"]
                  [venantius/accountant "0.2.5"
-                  :exclusions [org.clojure/tools.reader]]]
+                  :exclusions [org.clojure/tools.reader]]
+                 [http-kit "2.3.0"]]
 
   :min-lein-version "2.0.0"
 
@@ -51,8 +52,7 @@
   :target-path "target/%s/"
   :main ^:skip-aot harpocrates.core
 
-  :plugins [[lein-cljsbuild "1.1.7"]
-            [lein-immutant "2.1.0"]]
+  :plugins [[lein-cljsbuild "1.1.7"]]
 
   :clean-targets ^{:protect false} [:target-path
                                     [:cljsbuild :builds :app :compiler :output-dir]

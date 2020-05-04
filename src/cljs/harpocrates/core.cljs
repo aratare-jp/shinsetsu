@@ -33,7 +33,9 @@
      [:h1 "Welcome to reagent-noobies"]
      [:ul
       [:li [:a {:href (path-for :items)} "Items of reagent-noobies"]]
-      [:li [:a {:href "/broken/link"} "Broken link"]]]]))
+      [:li [:a {:href "/broken/link"} "Broken link"]]]
+     
+     [:input]]))
 
 
 
