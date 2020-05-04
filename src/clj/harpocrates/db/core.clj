@@ -1,13 +1,13 @@
 (ns harpocrates.db.core
   (:require
-    [cheshire.core :refer [generate-string parse-string]]
-    [next.jdbc.date-time]
-    [next.jdbc.prepare]
-    [next.jdbc.result-set]
-    [clojure.tools.logging :as log]
-    [conman.core :as conman]
-    [harpocrates.config :refer [env]]
-    [mount.core :refer [defstate]])
+   [cheshire.core :refer [generate-string parse-string]]
+   [next.jdbc.date-time]
+   [next.jdbc.prepare]
+   [next.jdbc.result-set]
+   [clojure.tools.logging :as log]
+   [conman.core :as conman]
+   [harpocrates.config :refer [env]]
+   [mount.core :refer [defstate]])
   (:import (org.postgresql.util PGobject)))
 
 (defstate ^:dynamic *db*

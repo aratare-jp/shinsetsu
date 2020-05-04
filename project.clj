@@ -58,7 +58,8 @@
                                     [:cljsbuild :builds :app :compiler :output-dir]
                                     [:cljsbuild :builds :app :compiler :output-to]]
 
-  :aliases {"fig" ["trampoline" "run" "-m" "figwheel.main"]}
+  :aliases {"fig" ["trampoline" "run" "-m" "figwheel.main"]
+            "fig-dev" ["fig" "--" "-b" "dev" "-r"]}
 
   :profiles
   {:uberjar       {:omit-source    true
@@ -92,7 +93,8 @@
                                     [re-frisk "0.5.5"]
                                     [ring/ring-devel "1.8.0"]
                                     [ring/ring-mock "0.4.0"]
-                                    [com.bhauman/figwheel-main "0.2.4-SNAPSHOT"]
+                                    [com.bhauman/figwheel-main "0.2.4-SNAPSHOT"
+                                     :exclusions [org.slf4j/slf4j-api]]
                                     [com.bhauman/rebel-readline-cljs "0.1.4"]]
                    :plugins        [[com.jakemccrary/lein-test-refresh "0.24.1"]
                                     [jonase/eastwood "0.3.5"]
@@ -124,11 +126,9 @@
                                     {:test
                                      {:source-paths ["src/cljc" "src/cljs" "test/cljs"]
                                       :compiler
-                                                    {:output-to     "target/test.js"
-                                                     :main          "harpocrates.doo-runner"
-                                                     :optimizations :whitespace
-                                                     :pretty-print  true}}}}
-
-                   }
+                                      {:output-to     "target/test.js"
+                                       :main          "harpocrates.doo-runner"
+                                       :optimizations :whitespace
+                                       :pretty-print  true}}}}}
    :profiles/dev  {}
    :profiles/test {}})
