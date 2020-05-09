@@ -1,0 +1,2 @@
+^{:extra-main-files {:testing {:main harpocrates.doo-runner}}}
+{:main harpocrates.app}

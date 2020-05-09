@@ -48,8 +48,8 @@
   :min-lein-version "2.0.0"
 
   :source-paths ["src/clj" "src/cljs" "src/cljc"]
-  :test-paths ["test/clj"]
-  :resource-paths ["resources"]
+  :test-paths ["test/clj" "test/cljs"]
+  :resource-paths ["resources" "target/cljsbuild"]
   :target-path "target/%s/"
   :main ^:skip-aot harpocrates.core
 
@@ -82,7 +82,8 @@
                    :plugins        [[com.jakemccrary/lein-test-refresh "0.24.1"]
                                     [jonase/eastwood "0.3.5"]
                                     [lein-doo "0.1.11"]]
-                   :doo            {:build "test"}
+                   :doo            {:build "test"
+                                    :alias {:default [:chrome]}}
                    :source-paths   ["env/dev/clj" "env/dev/cljs" "target"]
                    :resource-paths ["env/dev/resources"]
                    :repl-options   {:init-ns user

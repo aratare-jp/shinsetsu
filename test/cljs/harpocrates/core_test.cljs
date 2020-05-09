@@ -5,5 +5,10 @@
             [harpocrates.core :as rc]))
 
 (deftest test-home
-  (is (= true true)))
+  (is (= "1" "2")))
 
+(deftest blah
+  (is (= 1 1)))
+
+(deftest blue
+  (is (= 1 1)))

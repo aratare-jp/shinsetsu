@@ -1,22 +1,22 @@
 (ns ^:figwheel-hooks harpocrates.core
   (:require
-   [reagent.core :as reagent :refer [atom]]
-   [reagent.dom :as rdom]
-   [reagent.session :as session]
-   [reitit.frontend :as reitit]
-   [clerk.core :as clerk]
-   [accountant.core :as accountant]))
+    [reagent.core :as reagent :refer [atom]]
+    [reagent.dom :as rdom]
+    [reagent.session :as session]
+    [reitit.frontend :as reitit]
+    [clerk.core :as clerk]
+    [accountant.core :as accountant]))
 
 ;; -------------------------
 ;; Routes
 
 (def router
   (reitit/router
-   [["/" :index]
-    ["/items"
-     ["" :items]
-     ["/:item-id" :item]]
-    ["/about" :about]]))
+    [["/" :index]
+     ["/items"
+      ["" :items]
+      ["/:item-id" :item]]
+     ["/about" :about]]))
 
 (defn path-for [route & [params]]
   (if params
@@ -34,7 +34,7 @@
      [:ul
       [:li [:a {:href (path-for :items)} "Items of reagent-noobies"]]
       [:li [:a {:href "/broken/link"} "Broken link"]]]
-     
+
      [:input]]))
 
 
@@ -52,7 +52,7 @@
 (defn item-page []
   (fn []
     (let [routing-data (session/get :route)
-          item (get-in routing-data [:route-params :item-id])]
+          item         (get-in routing-data [:route-params :item-id])]
       [:span.main
        [:h1 (str "Item " item " of reagent-noobies")]
        [:p [:a {:href (path-for :items)} "Back to the list of items"]]])))
@@ -71,8 +71,8 @@
     :index #'home-page
     :about #'about-page
     :items #'items-page
-    :item #'item-page))
-
+    :item #'item-page
+    #'home-page))
 
 ;; -------------------------
 ;; Page mounting component
@@ -101,17 +101,17 @@
 (defn init! []
   (clerk/initialize!)
   (accountant/configure-navigation!
-   {:nav-handler
-    (fn [path]
-      (let [match (reitit/match-by-path router path)
-            current-page (:name (:data  match))
-            route-params (:path-params match)]
-        (reagent/after-render clerk/after-render!)
-        (session/put! :route {:current-page (page-for current-page)
-                              :route-params route-params})
-        (clerk/navigate-page! path)))
-    :path-exists?
-    (fn [path]
-      (boolean (reitit/match-by-path router path)))})
+    {:nav-handler
+     (fn [path]
+       (let [match        (reitit/match-by-path router path)
+             current-page (:name (:data match))
+             route-params (:path-params match)]
+         (reagent/after-render clerk/after-render!)
+         (session/put! :route {:current-page (page-for current-page)
+                               :route-params route-params})
+         (clerk/navigate-page! path)))
+     :path-exists?
+     (fn [path]
+       (boolean (reitit/match-by-path router path)))})
   (accountant/dispatch-current!)
   (mount-root))
