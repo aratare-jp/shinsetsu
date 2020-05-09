@@ -33,7 +33,7 @@ jobs:
           # Our primary container isn't PostgreSQL so run a sleep command until it's ready.
           name: Waiting for PostgreSQL to be ready
           command: |
-            for i in `seq 1 10`;
+            for i in `seq 1 60`;
             do
               nc -z 127.0.0.1 5432 && echo Success && exit 0
               echo -n .
