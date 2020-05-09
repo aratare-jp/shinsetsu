@@ -39,7 +39,8 @@ jobs:
           command: |
             for i in `seq 1 60`;
             do
-              pg_isready -U postgres -h localhost -p 5432 -d harpocrates && echo Success && exit 0
+              pg_isready -U root -h localhost -p 5432 -d harpocrates && echo
+            Success && exit 0
               sleep 1
             done
             printf "\n"
