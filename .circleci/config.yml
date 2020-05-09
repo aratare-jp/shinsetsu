@@ -1,0 +1,75 @@
+# Clojure CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-clojure/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      - image: circleci/clojure:lein-2.9.1
+
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      - image: circleci/postgres:12.2
+        port: 5432:5432
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: harpocrates
+
+    working_directory: ~/repo
+
+    environment:
+      LEIN_ROOT: "true"
+      # Customize the JVM maximum heap limit
+      JVM_OPTS: -Xmx3200m
+
+    steps:
+      - run:
+          name: Installing PSQL client
+          command: sudo apt-get install -y postgresql-client
+
+      - checkout
+
+      - run:
+          # Our primary container isn't PostgreSQL so run a sleep command until it's ready.
+          name: Waiting for PostgreSQL to be ready
+          command: |
+            for i in `seq 1 60`;
+            do
+              pg_isready -U root -h localhost -p 5432 -d harpocrates && echo Success && exit 0
+              sleep 1
+            done
+            printf "\n"
+            echo "Failed waiting for PostgreSQL" && exit 1
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "project.clj" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+          name: Installing Dependencies
+          command: lein deps
+
+      - run:
+          name: Creating test config
+          command: |
+            echo "{:dev true :database-url \"jdbc:postgresql://localhost:5432/harpocrates?user=root&password=test\"}" > test-config.edn
+
+      - run:
+          name: Enable UUID in Postgres
+          command: PGPASSWORD=test psql -U root -d harpocrates -h localhost -p 5432 -w -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "project.clj" }}
+
+      - run:
+          name: Running tests
+          command: lein test

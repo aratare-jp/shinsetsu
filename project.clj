@@ -13,7 +13,7 @@
                  [day8.re-frame/http-fx "0.1.6"]
                  [expound "0.8.4"]
                  [funcool/struct "1.4.0"]
-                 [luminus-immutant "0.2.5"]
+                 [luminus-http-kit "0.1.6"]
                  [luminus-migrations "0.6.7"]
                  [luminus-transit "0.1.2"]
                  [markdown-clj "1.10.2"]
@@ -41,49 +41,35 @@
                  [selmer "1.12.18"]
                  [pez/clerk "1.0.0"]
                  [venantius/accountant "0.2.5"
-                  :exclusions [org.clojure/tools.reader]]]
+                  :exclusions [org.clojure/tools.reader]]
+                 [http-kit "2.3.0"]
+                 [com.bhauman/figwheel-main "0.2.4-SNAPSHOT"]]
 
   :min-lein-version "2.0.0"
 
   :source-paths ["src/clj" "src/cljs" "src/cljc"]
-  :test-paths ["test/clj"]
+  :test-paths ["test/clj" "test/cljs"]
   :resource-paths ["resources" "target/cljsbuild"]
   :target-path "target/%s/"
   :main ^:skip-aot harpocrates.core
 
-  :plugins [[lein-cljsbuild "1.1.7"]
-            [lein-immutant "2.1.0"]]
+  :clean-targets ^{:protect false} [:target-path]
 
-  :clean-targets ^{:protect false} [:target-path
-                                    [:cljsbuild :builds :app :compiler :output-dir]
-                                    [:cljsbuild :builds :app :compiler :output-to]]
-
-  :aliases {"fig" ["trampoline" "run" "-m" "figwheel.main"]}
+  :aliases {"fig"      ["trampoline" "run" "-m" "figwheel.main"]
+            "fig-dev"  ["fig" "--" "-b" "dev" "-r"]
+            "fig-prod" ["with-profile" "prod" "fig" "--" "--optimizations"
+                        "advanced" "--build-once" "prod"]}
 
   :profiles
-  {:uberjar       {:omit-source    true
-                   :prep-tasks     ["compile" ["cljsbuild" "once" "min"]]
-                   :cljsbuild      {:builds
-                                    {:min
-                                     {:source-paths ["src/cljc" "src/cljs" "env/prod/cljs"]
-                                      :compiler     {:output-dir       "target/cljsbuild/public/js"
-                                                     :output-to        "target/cljsbuild/public/js/app.js"
-                                                     :source-map       "target/cljsbuild/public/js/app.js.map"
-                                                     :optimizations    :advanced
-                                                     :pretty-print     false
-                                                     :infer-externs    true
-                                                     :closure-warnings {:externs-validation :off :non-standard-jsdoc :off}
-                                                     :externs          ["react/externs/react.js"]
-                                                     :main "harpocrates.app"}}}}
+  {:prod          [:uberjar]
+   :uberjar       {:omit-source    true
+                   :prep-tasks     ["compile"]
                    :aot            :all
                    :uberjar-name   "harpocrates.jar"
                    :source-paths   ["env/prod/clj" "env/prod/cljs"]
                    :resource-paths ["env/prod/resources"]}
-
-   :dev           [:project/dev :profiles/dev]
-   :test          [:project/dev :project/test :profiles/test]
-
-   :project/dev   {:jvm-opts       ["-Dconf=dev-config.edn"]
+   :test          [:dev :project/test]
+   :dev           {:jvm-opts       ["-Dconf=dev-config.edn"]
                    :dependencies   [[binaryage/devtools "1.0.0"]
                                     [cider/piggieback "0.4.2"]
                                     [doo "0.1.11"]
@@ -92,43 +78,18 @@
                                     [re-frisk "0.5.5"]
                                     [ring/ring-devel "1.8.0"]
                                     [ring/ring-mock "0.4.0"]
-                                    [com.bhauman/figwheel-main "0.2.4-SNAPSHOT"]
                                     [com.bhauman/rebel-readline-cljs "0.1.4"]]
                    :plugins        [[com.jakemccrary/lein-test-refresh "0.24.1"]
                                     [jonase/eastwood "0.3.5"]
                                     [lein-doo "0.1.11"]]
-                   :cljsbuild      {:builds
-                                    {:app
-                                     {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
-                                      :compiler     {:output-dir      "target/cljsbuild/public/js/out"
-                                                     :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
-                                                     :optimizations   :none
-                                                     :preloads        [re-frisk.preload]
-                                                     :output-to       "target/cljsbuild/public/js/app.js"
-                                                     :asset-path      "/js/out"
-                                                     :source-map      true
-                                                     :main            "harpocrates.app"
-                                                     :pretty-print    true}}}}
-
-                   :doo            {:build "test"}
+                   :doo            {:build "test"
+                                    :alias {:default [:chrome]}}
                    :source-paths   ["env/dev/clj" "env/dev/cljs" "target"]
                    :resource-paths ["env/dev/resources"]
                    :repl-options   {:init-ns user
                                     :timeout 120000}
                    :injections     [(require 'pjstadig.humane-test-output)
                                     (pjstadig.humane-test-output/activate!)]}
-
    :project/test  {:jvm-opts       ["-Dconf=test-config.edn"]
-                   :resource-paths ["env/test/resources"]
-                   :cljsbuild      {:builds
-                                    {:test
-                                     {:source-paths ["src/cljc" "src/cljs" "test/cljs"]
-                                      :compiler
-                                                    {:output-to     "target/test.js"
-                                                     :main          "harpocrates.doo-runner"
-                                                     :optimizations :whitespace
-                                                     :pretty-print  true}}}}
-
-                   }
-   :profiles/dev  {}
+                   :resource-paths ["env/test/resources"]}
    :profiles/test {}})

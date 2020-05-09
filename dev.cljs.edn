@@ -1,3 +1,4 @@
 ^{:css-dirs ["resources/public/css"]
-  :watch-dirs ["src/cljs" "env/dev/cljs"]}
+  :watch-dirs ["src/cljs" "env/dev/cljs" "test/cljs"]
+  :auto-testing true}
 {:main harpocrates.app}

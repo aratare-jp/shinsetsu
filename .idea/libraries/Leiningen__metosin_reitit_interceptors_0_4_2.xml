@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Leiningen: metosin/reitit-interceptors:0.4.2">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/metosin/reitit-interceptors/0.4.2/reitit-interceptors-0.4.2.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
