@@ -42,8 +42,5 @@ jobs:
             - ~/.m2
           key: v1-dependencies-{{ checksum "project.clj" }}
 
-      # database setup
-      - run: lein run migrate
-
       # run tests!
       - run: lein test
