@@ -47,7 +47,7 @@ jobs:
 
       - run:
           name: Enable UUID in Postgres
-          command: docker exect -it postgresql psql -U root -d harpocrates -h localhost -p 5432 -W test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+          command: docker exec -it postgresql psql -U root -d harpocrates -h localhost -p 5432 -W test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
 
       - save_cache:
           paths:
