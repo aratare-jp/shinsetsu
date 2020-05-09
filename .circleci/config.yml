@@ -38,7 +38,7 @@ jobs:
       - run: lein deps
 
       - run: |
-          echo "jdbc:postgresql://localhost:5432/harpocrates?user=postgres&password=156742896" > test-config.edn
+          echo "{:dev true :database-url \"jdbc:postgresql://localhost:5432/harpocrates?user=postgres&password=156742896\"}" > test-config.edn
 
       - save_cache:
           paths:
