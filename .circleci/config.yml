@@ -13,6 +13,7 @@ jobs:
       # CircleCI maintains a library of pre-built images
       # documented at https://circleci.com/docs/2.0/circleci-images/
       - image: circleci/postgres:12.2
+        name: postgresql
         environment:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: test
@@ -46,7 +47,7 @@ jobs:
 
       - run:
           name: Enable UUID in Postgres
-          command: psql -U root -d harpocrates -h localhost -p 5432 -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+          command: docker exect -it postgresql psql -U root -d harpocrates -h localhost -p 5432 -W test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
 
       - save_cache:
           paths:
