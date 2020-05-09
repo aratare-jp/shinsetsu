@@ -35,11 +35,12 @@ jobs:
           command: |
             for i in `seq 1 60`;
             do
-              nc -z 127.0.0.1 5432 && echo Success && exit 0
+              pg_isready -U postgres -h localhost -p 5432 -d harpocrates && echo Success && exit 0
               echo -n .
               sleep 1
             done
-            echo Failed waiting for MySQL && exit 1
+            printf "\n"
+            echo "Failed waiting for PostgreSQL" && exit 1
 
       - run:
           name: Installing PSQL client
