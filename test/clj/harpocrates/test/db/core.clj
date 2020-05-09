@@ -28,7 +28,7 @@
                   :last_name  "Smith"
                   :email      "sam.smith@example.com"
                   :password   "pass"})))
-      (is (= {:id         (UUID/randomUUID)
+      (is (= {:id         uuid
               :first_name "Sam"
               :last_name  "Smith"
               :email      "sam.smith@example.com"
