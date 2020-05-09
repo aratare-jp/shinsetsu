@@ -27,6 +27,10 @@ jobs:
       JVM_OPTS: -Xmx3200m
 
     steps:
+      - run:
+          name: Installing PSQL client
+          command: sudo apt-get install -y postgresql-client
+
       - checkout
 
       - run:
@@ -41,10 +45,6 @@ jobs:
             done
             printf "\n"
             echo "Failed waiting for PostgreSQL" && exit 1
-
-      - run:
-          name: Installing PSQL client
-          command: sudo apt-get install -y postgresql-client
 
       # Download and cache dependencies
       - restore_cache:
