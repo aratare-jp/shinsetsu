@@ -8,11 +8,18 @@
     [accountant.core :as accountant]))
 
 ;; -------------------------
+;; States
+(def is-logged-in (atom false))
+(def email (atom ""))
+(def password (atom ""))
+
+;; -------------------------
 ;; Routes
 
 (def router
   (reitit/router
-    [["/" :index]
+    [["/login" :login]
+     ["/" :index]
      ["/items"
       ["" :items]
       ["/:item-id" :item]]
@@ -23,7 +30,7 @@
     (:path (reitit/match-by-name router route params))
     (:path (reitit/match-by-name router route))))
 
-(path-for :about)
+
 ;; -------------------------
 ;; Page components
 
@@ -34,9 +41,7 @@
      [:ul
       [:li [:a {:href (path-for :items)} "Items of reagent-noobies"]]
       [:li [:a {:href "/broken/link"} "Broken link"]]]
-
      [:input]]))
-
 
 
 (defn items-page []
@@ -59,15 +64,44 @@
 
 
 (defn about-page []
-  (fn [] [:span.main
-          [:h1 "About reagent-noobies"]]))
+  (fn []
+    [:span.main
+     [:h1 "About Harpocrates"]]))
 
+
+(defn login-page []
+  (fn []
+    [:div
+     [:h1 "login"]
+     [:label {:for "email"} "Email Address:"]
+     [:input
+      {:id   "email"
+       :type "email"
+       :value @email
+       :placeholder "Email here"
+       :on-change #(reset! email (-> % .-target .-value))}]
+     [:label {:for "password"} "Password:"]
+     [:input
+      {:id   "password"
+       :type "password"
+       :value @password
+       :placeholder "Password here"
+       :on-change #(reset! password (-> % .-target .-value))}]
+     [:button
+      {:on-click #(println (str @email " " @password))}
+      "Login"]
+     [:button
+      {:on-click (fn []
+                   (reset! email "")
+                   (reset! password ""))}
+      "Login"]]))
 
 ;; -------------------------
 ;; Translate routes -> page components
 
 (defn page-for [route]
   (case route
+    :login #'login-page
     :index #'home-page
     :about #'about-page
     :items #'items-page
@@ -95,6 +129,7 @@
 (defn mount-root []
   (rdom/render [#'current-page] (.getElementById js/document "app")))
 
+;; Figwheel main hook used to rerender reagent after file changes.
 (defn ^:after-load re-render []
   (mount-root))
 
@@ -106,6 +141,8 @@
        (let [match        (reitit/match-by-path router path)
              current-page (:name (:data match))
              route-params (:path-params match)]
+         (if (and (not @is-logged-in) (not= :login current-page))
+           (accountant/navigate! :login))
          (reagent/after-render clerk/after-render!)
          (session/put! :route {:current-page (page-for current-page)
                                :route-params route-params})
@@ -113,5 +150,8 @@
      :path-exists?
      (fn [path]
        (boolean (reitit/match-by-path router path)))})
-  (accountant/dispatch-current!)
+  ;; If not logged in, redirect
+  (if @is-logged-in
+    (accountant/dispatch-current!)
+    (accountant/navigate! "/login"))
   (mount-root))

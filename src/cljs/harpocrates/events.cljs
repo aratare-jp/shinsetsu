@@ -36,7 +36,7 @@
     {:http-xhrio {:method          :get
                   :uri             "/docs"
                   :response-format (ajax/raw-response-format)
-                  :on-success       [:set-docs]}}))
+                  :on-success      [:set-docs]}}))
 
 (rf/reg-event-db
   :common/set-error

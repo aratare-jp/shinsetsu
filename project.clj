@@ -1,7 +1,7 @@
 (defproject harpocrates "0.1.0-SNAPSHOT"
 
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "Bookmark enhancer"
+  :url "http://github.com/aratare-tech/harpocrates"
 
   :dependencies [[cheshire "5.10.0"]
                  [cljs-ajax "0.8.0"]
@@ -55,10 +55,11 @@
 
   :clean-targets ^{:protect false} [:target-path]
 
-  :aliases {"fig"      ["trampoline" "run" "-m" "figwheel.main"]
-            "fig-dev"  ["fig" "--" "-b" "dev" "-r"]
-            "fig-prod" ["with-profile" "prod" "fig" "--" "--optimizations"
-                        "advanced" "--build-once" "prod"]}
+  :aliases {"fig"        ["trampoline" "run" "-m" "figwheel.main"]
+            "fig-config" ["fig" "--" "-pc" "-b" "dev"]
+            "fig-dev"    ["fig" "--" "-b" "dev" "-r"]
+            "fig-prod"   ["with-profile" "prod" "fig" "--" "--optimizations"
+                          "advanced" "--build-once" "prod"]}
 
   :profiles
   {:prod          [:uberjar]
