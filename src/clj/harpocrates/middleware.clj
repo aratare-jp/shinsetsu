@@ -1,17 +1,18 @@
 (ns harpocrates.middleware
   (:require
-   [harpocrates.env :refer [defaults]]
-   [cheshire.generate :as cheshire]
-   [cognitect.transit :as transit]
-   [clojure.tools.logging :as log]
-   [harpocrates.layout :refer [error-page]]
-   [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
-   [harpocrates.middleware.formats :as formats]
-   [muuntaja.middleware :refer [wrap-format wrap-params]]
-   [harpocrates.config :refer [env]]
-   [ring.middleware.flash :refer [wrap-flash]]
-   [ring.middleware.session.cookie :refer [cookie-store]]
-   [ring.middleware.defaults :refer [site-defaults wrap-defaults]]))
+    [harpocrates.env :refer [defaults]]
+    [cheshire.generate :as cheshire]
+    [cognitect.transit :as transit]
+    [clojure.tools.logging :as log]
+    [harpocrates.layout :refer [error-page]]
+    [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
+    [harpocrates.middleware.formats :as formats]
+    [muuntaja.middleware :refer [wrap-format wrap-params]]
+    [harpocrates.config :refer [env]]
+    [ring.middleware.cors :refer [wrap-cors]]
+    [ring.middleware.flash :refer [wrap-flash]]
+    [ring.middleware.session.cookie :refer [cookie-store]]
+    [ring.middleware.defaults :refer [site-defaults wrap-defaults]]))
 
 (defn wrap-internal-error [handler]
   (fn [req]
@@ -19,18 +20,17 @@
       (handler req)
       (catch Throwable t
         (log/error t (.getMessage t))
-        (error-page {:status 500
-                     :title "Something very bad has happened!"
+        (error-page {:status  500
+                     :title   "Something very bad has happened!"
                      :message "We've dispatched a team of highly trained gnomes to take care of the problem."})))))
 
 (defn wrap-csrf [handler]
   (wrap-anti-forgery
-   handler
-   {:error-response
-    (error-page
-     {:status 403
-      :title "Invalid anti-forgery token"})}))
-
+    handler
+    {:error-response
+     (error-page
+       {:status 403
+        :title  "Invalid anti-forgery token"})}))
 
 (defn wrap-formats [handler]
   (let [wrapped (-> handler wrap-params (wrap-format formats/instance))]
@@ -43,8 +43,8 @@
   (-> ((:middleware defaults) handler)
       wrap-flash
       (wrap-defaults
-       (-> site-defaults
-           (assoc-in [:security :anti-forgery] false)
-           (assoc-in [:session :store] (cookie-store))
-           (assoc-in [:session :cookie-name] "example-app-sessions")))
+        (-> site-defaults
+            (assoc-in [:security :anti-forgery] false)
+            (assoc-in [:session :store] (cookie-store))
+            (assoc-in [:session :cookie-name] "example-app-sessions")))
       wrap-internal-error))

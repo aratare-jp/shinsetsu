@@ -35,6 +35,7 @@
                  ;; multipart
                  multipart/multipart-middleware]}
 
+
    ;; swagger documentation
    ["" {:no-doc  true
         :swagger {:info {:title       "my-api"
@@ -53,22 +54,24 @@
 
    ["/graphql" {:post (fn [req] (ok (graphql/execute-request (-> req :body slurp))))}]
 
-   ["/math"
-    {:swagger {:tags ["math"]}}
+   ["/auth"
+    {:swagger {:tags ["auth"]}}
 
-    ["/plus"
-     {:get  {:summary    "plus with spec query parameters"
-             :parameters {:query {:x int?, :y int?}}
-             :responses  {200 {:body {:total pos-int?}}}
-             :handler    (fn [{{{:keys [x y]} :query} :parameters}]
+    ["/login"
+     {:post {:summary    "login with email and password"
+             :parameters {:body {:email string? :password string?}}
+             :responses  {200 {:body {:id           string?
+                                      :first-name   string?
+                                      :last-name    string?
+                                      :email        string?
+                                      :access-token string?}}}
+             :handler    (fn [{{{:keys [email password]} :body} :parameters}]
                            {:status 200
-                            :body   {:total (+ x y)}})}
-      :post {:summary    "plus with spec body parameters"
-             :parameters {:body {:x int?, :y int?}}
-             :responses  {200 {:body {:total pos-int?}}}
-             :handler    (fn [{{{:keys [x y]} :body} :parameters}]
-                           {:status 200
-                            :body   {:total (+ x y)}})}}]]
+                            :body   {:id           "blah"
+                                     :first-name   "John"
+                                     :last-name    "Doe"
+                                     :email        email
+                                     :access-token "123"}})}}]]
 
    ["/files"
     {:swagger {:tags ["files"]}}

@@ -40,7 +40,6 @@
   (when repl-server
     (nrepl/stop repl-server)))
 
-
 (defn stop-app []
   (doseq [component (:stopped (mount/stop))]
     (log/info component "stopped"))
@@ -71,4 +70,3 @@
       (System/exit 0))
     :else
     (start-app args)))
-

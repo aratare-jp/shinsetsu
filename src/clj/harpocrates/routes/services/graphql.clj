@@ -10,15 +10,15 @@
     [mount.core :refer [defstate]]))
 
 (defn get-hero [context args value]
-  (let [data  [{:id 1000
-               :name "Luke"
+  (let [data [{:id          1000
+               :name        "Luke"
                :home_planet "Tatooine"
-               :appears_in ["NEWHOPE" "EMPIRE" "JEDI"]}
-              {:id 2000
-               :name "Lando Calrissian"
+               :appears_in  ["NEWHOPE" "EMPIRE" "JEDI"]}
+              {:id          2000
+               :name        "Lando Calrissian"
                :home_planet "Socorro"
-               :appears_in ["EMPIRE" "JEDI"]}]]
-           (first data)))
+               :appears_in  ["EMPIRE" "JEDI"]}]]
+    (first data)))
 
 (defstate compiled-schema
   :start
@@ -26,16 +26,16 @@
       io/resource
       slurp
       edn/read-string
-      (attach-resolvers {:get-hero get-hero
+      (attach-resolvers {:get-hero  get-hero
                          :get-droid (constantly {})})
       schema/compile))
 
 (defn format-params [query]
-   (let [parsed (json/read-str query)] ;;-> placeholder - need to ensure query meets graphql syntax
-     (str "query { hero(id: \"1000\") { name appears_in }}")))
+  (let [parsed (json/read-str query)]                       ;;-> placeholder - need to ensure query meets graphql syntax
+    (str "query { hero(id: \"1000\") { name appears_in }}")))
 
 (defn execute-request [query]
-    (let [vars nil
-          context nil]
+  (let [vars    nil
+        context nil]
     (-> (lacinia/execute compiled-schema query vars context)
         (json/write-str))))
