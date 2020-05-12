@@ -1,4 +1,7 @@
 ^{:css-dirs     ["resources/public/css"]
   :watch-dirs   ["src/cljs" "env/dev/cljs" "test/cljs"]
-  :auto-testing true}
-{:main harpocrates.app}
+  :auto-testing true
+  :ring-handler harpocrates.app-server/handler}
+{:main            harpocrates.app
+ :preloads        [day8.re-frame-10x.preload]
+ :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}}

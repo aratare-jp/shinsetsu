@@ -10,7 +10,6 @@
                  [com.walmartlabs/lacinia "0.32.0"]
                  [conman "0.8.6"]
                  [cprop "0.1.16"]
-                 [day8.re-frame/http-fx "0.1.6"]
                  [expound "0.8.4"]
                  [funcool/struct "1.4.0"]
                  [luminus-http-kit "0.1.6"]
@@ -33,6 +32,7 @@
                  [org.webjars/webjars-locator "0.39"]
                  [org.webjars/webjars-locator-jboss-vfs "0.1.0"]
                  [re-frame "0.12.0"]
+                 [day8.re-frame/http-fx "v0.2.0"]
                  [reagent "0.10.0"]
                  [reagent-utils "0.3.3"]
                  [ring-webjars "0.2.0"]
@@ -43,7 +43,9 @@
                  [venantius/accountant "0.2.5"
                   :exclusions [org.clojure/tools.reader]]
                  [http-kit "2.3.0"]
-                 [com.bhauman/figwheel-main "0.2.4-SNAPSHOT"]]
+                 [com.bhauman/figwheel-main "0.2.4-SNAPSHOT"]
+                 [com.taoensso/timbre "4.10.0"]
+                 [com.fzakaria/slf4j-timbre "0.3.19"]]
 
   :min-lein-version "2.0.0"
 
@@ -79,7 +81,8 @@
                                     [re-frisk "0.5.5"]
                                     [ring/ring-devel "1.8.0"]
                                     [ring/ring-mock "0.4.0"]
-                                    [com.bhauman/rebel-readline-cljs "0.1.4"]]
+                                    [com.bhauman/rebel-readline-cljs "0.1.4"]
+                                    [day8.re-frame/re-frame-10x "0.6.4"]]
                    :plugins        [[com.jakemccrary/lein-test-refresh "0.24.1"]
                                     [jonase/eastwood "0.3.5"]
                                     [lein-doo "0.1.11"]]
