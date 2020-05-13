@@ -18,6 +18,7 @@
   create-user!
   update-user!
   get-user!
+  get-user-by-email!
   delete-user!)
 
 (defstate ^:dynamic *db*

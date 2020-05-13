@@ -44,7 +44,8 @@
                  [http-kit "2.3.0"]
                  [com.bhauman/figwheel-main "0.2.4-SNAPSHOT"]
                  [com.taoensso/timbre "4.10.0"]
-                 [com.fzakaria/slf4j-timbre "0.3.19"]]
+                 [com.fzakaria/slf4j-timbre "0.3.19"]
+                 [buddy/buddy-hashers "1.4.0"]]
 
   :min-lein-version "2.0.0"
 

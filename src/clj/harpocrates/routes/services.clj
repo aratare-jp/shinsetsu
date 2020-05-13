@@ -10,7 +10,10 @@
     [harpocrates.middleware.exception :as exception]
     [ring.util.http-response :refer :all]
     [clojure.java.io :as io]
-    [harpocrates.spec :as spec]))
+    [harpocrates.spec :as spec]
+    [harpocrates.db.core :refer [*db*] :as db]
+    [next.jdbc :as jdbc]
+    [buddy.hashers :as hashers]))
 
 (defn service-routes []
   ["/api"
@@ -33,25 +36,46 @@
                  ;; multipart
                  multipart/multipart-middleware]}
 
-   ["/graphql" {:post (fn [req] (ok (graphql/execute-request (-> req :body slurp))))}]
+   ["/graphql" {:post (fn [req]
+                        (ok (graphql/execute-request (-> req
+                                                         :body
+                                                         slurp))))}]
 
    ["/auth"
+    ["/signup"
+     {:post {:summary    "signup with user data"
+             :parameters {:body {:email      ::spec/email?
+                                 :password   string?
+                                 :first-name string?
+                                 :last-name  string?}}
+             :responses  {200 {:headers {:authorization string?}}}
+             :handler    (fn [{{{:keys [email
+                                        password
+                                        first-name
+                                        last-name]} :body} :parameters}]
+                           (jdbc/with-transaction [t-conn *db*]
+                             (if (db/create-user!
+                                   t-conn
+                                   {:email      email
+                                    :password   (hashers/derive password)
+                                    :first_name first-name
+                                    :last_name  last-name})
+                               {:status  200
+                                :headers {"Authorization" "test"}}
+                               {:status 500})))}}]
     ["/login"
      {:post {:summary    "login with email and password"
              :parameters {:body {:email    ::spec/email?
                                  :password string?}}
-             :responses  {200 {:body {:id           ::spec/uuid?
-                                      :first-name   string?
-                                      :last-name    string?
-                                      :email        ::spec/email?
-                                      :access-token string?}}}
+             :responses  {200 {:headers {"Authorization" string?}}}
              :handler    (fn [{{{:keys [email password]} :body} :parameters}]
-                           {:status 200
-                            :body   {:id           (.toString (java.util.UUID/randomUUID))
-                                     :first-name   "John"
-                                     :last-name    "Doe"
-                                     :email        email
-                                     :access-token "123"}})}}]]
+                           (jdbc/with-transaction [t-conn *db*]
+                             (let [user (db/get-user-by-email! t-conn {:email email})]
+                               (if (and user (hashers/check password (:password user)))
+                                 {:status  200
+                                  :headers {"Authorization" "testing"}
+                                  :body    user}
+                                 {:status 404}))))}}]]
 
    ["/files"
     ["/upload"
