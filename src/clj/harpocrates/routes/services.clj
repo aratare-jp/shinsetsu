@@ -1,7 +1,5 @@
 (ns harpocrates.routes.services
   (:require
-    [reitit.swagger :as swagger]
-    [reitit.swagger-ui :as swagger-ui]
     [reitit.ring.coercion :as coercion]
     [reitit.coercion.spec :as spec-coercion]
     [reitit.ring.middleware.muuntaja :as muuntaja]
@@ -11,13 +9,13 @@
     [harpocrates.middleware.formats :as formats]
     [harpocrates.middleware.exception :as exception]
     [ring.util.http-response :refer :all]
-    [clojure.java.io :as io]))
+    [clojure.java.io :as io]
+    [harpocrates.spec :as spec]))
 
 (defn service-routes []
   ["/api"
    {:coercion   spec-coercion/coercion
     :muuntaja   formats/instance
-    :swagger    {:id ::api}
     :middleware [;; query-params & form-params
                  parameters/parameters-middleware
                  ;; content-negotiation
@@ -35,47 +33,27 @@
                  ;; multipart
                  multipart/multipart-middleware]}
 
-
-   ;; swagger documentation
-   ["" {:no-doc  true
-        :swagger {:info {:title       "my-api"
-                         :description "https://cljdoc.org/d/metosin/reitit"}}}
-
-    ["/swagger.json"
-     {:get (swagger/create-swagger-handler)}]
-
-    ["/api-docs/*"
-     {:get (swagger-ui/create-swagger-ui-handler
-             {:url    "/api/swagger.json"
-              :config {:validator-url nil}})}]]
-
-   ["/ping"
-    {:get (constantly (ok {:message "pong"}))}]
-
    ["/graphql" {:post (fn [req] (ok (graphql/execute-request (-> req :body slurp))))}]
 
    ["/auth"
-    {:swagger {:tags ["auth"]}}
-
     ["/login"
      {:post {:summary    "login with email and password"
-             :parameters {:body {:email string? :password string?}}
-             :responses  {200 {:body {:id           string?
+             :parameters {:body {:email    ::spec/email?
+                                 :password string?}}
+             :responses  {200 {:body {:id           ::spec/uuid?
                                       :first-name   string?
                                       :last-name    string?
-                                      :email        string?
+                                      :email        ::spec/email?
                                       :access-token string?}}}
              :handler    (fn [{{{:keys [email password]} :body} :parameters}]
                            {:status 200
-                            :body   {:id           "blah"
+                            :body   {:id           (.toString (java.util.UUID/randomUUID))
                                      :first-name   "John"
                                      :last-name    "Doe"
                                      :email        email
                                      :access-token "123"}})}}]]
 
    ["/files"
-    {:swagger {:tags ["files"]}}
-
     ["/upload"
      {:post {:summary    "upload a file"
              :parameters {:multipart {:file multipart/temp-file-part}}
@@ -84,7 +62,6 @@
                            {:status 200
                             :body   {:name (:filename file)
                                      :size (:size file)}})}}]
-
     ["/download"
      {:get {:summary "downloads a file"
             :swagger {:produces ["image/png"]}

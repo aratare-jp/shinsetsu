@@ -15,7 +15,6 @@
                  [luminus-http-kit "0.1.6"]
                  [luminus-migrations "0.6.7"]
                  [luminus-transit "0.1.2"]
-                 [markdown-clj "1.10.2"]
                  [metosin/muuntaja "0.6.6"]
                  [metosin/reitit "0.4.2"]
                  [metosin/ring-http-response "0.9.1"]
