@@ -128,8 +128,8 @@
 (defn current-page []
   (fn []
     (let [page (:current-page (session/get :route))]
-         [:div
-          [page]])))
+      [:div
+       [page]])))
 
 
 ;; -------------------------

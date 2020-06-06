@@ -7,10 +7,10 @@
 
 (defn wrap-dev [handler]
   (-> handler
+      wrap-reload
       (wrap-cors
         :access-control-allow-origin #".*"
         :access-control-allow-headers #{:accept :content-type}
         :access-control-allow-methods [:get :put :post :delete])
-      wrap-reload
       wrap-error-page
       (wrap-exceptions {:app-namespaces ['harpocrates]})))

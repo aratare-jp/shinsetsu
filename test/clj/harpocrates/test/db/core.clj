@@ -6,8 +6,7 @@
     [clojure.test :refer :all]
     [next.jdbc :as jdbc]
     [harpocrates.config :refer [env]]
-    [mount.core :as mount])
-  (:import (java.util UUID)))
+    [mount.core :as mount]))
 
 (use-fixtures
   :once

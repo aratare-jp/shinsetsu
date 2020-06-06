@@ -12,7 +12,17 @@
     [ring.middleware.cors :refer [wrap-cors]]
     [ring.middleware.flash :refer [wrap-flash]]
     [ring.middleware.session.cookie :refer [cookie-store]]
-    [ring.middleware.defaults :refer [site-defaults wrap-defaults]]))
+    [ring.middleware.defaults :refer [site-defaults wrap-defaults]]
+    [buddy.auth :refer [authenticated? throw-unauthorized]]
+    [buddy.auth.backends :refer [jws]]
+    [buddy.auth.middleware :refer [wrap-authentication]]
+    [ring.logger :as logger]
+    [clojure.tools.logging :as log]
+    [ring.middleware.reload :refer [wrap-reload]]
+    [mount.core :refer [defstate]]))
+
+(def secret "secret")
+(def backend (jws {:secret secret}))
 
 (defn wrap-internal-error [handler]
   (fn [req]
@@ -38,6 +48,17 @@
       ;; disable wrap-formats for websockets
       ;; since they're not compatible with this middleware
       ((if (:websocket? request) handler wrapped) request))))
+
+(defn wrap-base-auth [handler]
+  (fn [req]
+    (if (authenticated? req)
+      (do
+        (log/debug "Authenticated!")
+        (handler req))
+      (do
+        (log/debug "Failed authentication")
+        {:status  402
+         :message "Unauthenticated"}))))
 
 (defn wrap-base [handler]
   (-> ((:middleware defaults) handler)

@@ -1,0 +1,29 @@
+{
+  "name": "harpocrates",
+  "version": "1.0.0",
+  "description": "<!-- omit in toc -->\r # Harpocrates",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aratare-tech/harpocrates.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aratare-tech/harpocrates/issues"
+  },
+  "homepage": "https://github.com/aratare-tech/harpocrates#readme",
+  "dependencies": {
+    "highlight.js": "9.18.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-highlight.js": "1.0.7",
+    "shadow-cljs": "^2.10.3"
+  }
+}

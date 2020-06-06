@@ -18,3 +18,4 @@ profiles.clj
 .idea
 *.iml
 .rebel_readline_history
+node_modules

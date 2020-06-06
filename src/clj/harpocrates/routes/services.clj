@@ -13,7 +13,9 @@
     [harpocrates.spec :as spec]
     [harpocrates.db.core :refer [*db*] :as db]
     [next.jdbc :as jdbc]
-    [buddy.hashers :as hashers]))
+    [buddy.hashers :as hashers]
+    [buddy.sign.jwt :as jwt]
+    [harpocrates.middleware :as hmid]))
 
 (defn service-routes []
   ["/api"
@@ -48,34 +50,33 @@
                                  :password   string?
                                  :first-name string?
                                  :last-name  string?}}
-             :responses  {200 {:headers {:authorization string?}}}
              :handler    (fn [{{{:keys [email
                                         password
                                         first-name
                                         last-name]} :body} :parameters}]
                            (jdbc/with-transaction [t-conn *db*]
-                             (if (db/create-user!
-                                   t-conn
-                                   {:email      email
-                                    :password   (hashers/derive password)
-                                    :first_name first-name
-                                    :last_name  last-name})
-                               {:status  200
-                                :headers {"Authorization" "test"}}
+                             (if-let [user (db/create-user!
+                                             t-conn
+                                             {:email      email
+                                              :password   (hashers/derive password)
+                                              :first_name first-name
+                                              :last_name  last-name})]
+                               (let [token (jwt/sign {:user (:id user)} hmid/secret)]
+                                 {:status 200
+                                  :body   {:token token}})
                                {:status 500})))}}]
     ["/login"
      {:post {:summary    "login with email and password"
              :parameters {:body {:email    ::spec/email?
                                  :password string?}}
-             :responses  {200 {:headers {"Authorization" string?}}}
              :handler    (fn [{{{:keys [email password]} :body} :parameters}]
                            (jdbc/with-transaction [t-conn *db*]
                              (let [user (db/get-user-by-email! t-conn {:email email})]
                                (if (and user (hashers/check password (:password user)))
-                                 {:status  200
-                                  :headers {"Authorization" "testing"}
-                                  :body    user}
-                                 {:status 404}))))}}]]
+                                 (let [token (jwt/sign {:user (:id user)} hmid/secret)]
+                                   {:status 200
+                                    :body   {:token token}})
+                                 {:status 401}))))}}]]
 
    ["/files"
     ["/upload"
