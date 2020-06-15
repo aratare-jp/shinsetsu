@@ -32,10 +32,6 @@
                    [jonase/eastwood "0.3.5"]]
 
    :client        {:dependencies   [[thheller/shadow-cljs "2.10.3"]
-                                    [re-frame "0.12.0"]
-                                    [day8.re-frame/http-fx "v0.2.0"]
-                                    [reagent "0.10.0"]
-                                    [reagent-utils "0.3.3"]
                                     [venantius/accountant "0.2.5"]
                                     [cljs-ajax "0.8.0"]
                                     [pez/clerk "1.0.0"]]
@@ -46,12 +42,10 @@
    :client-dev    [:common-dev
                    :client
                    {:dependencies   [[cider/piggieback "0.5.0"]
-                                     [re-frisk "0.5.5"]
                                      [binaryage/devtools "1.0.0"]
-                                     [day8.re-frame/re-frame-10x "0.6.5"]]
+                                     [fulcrologic/fulcro-inspect "2.2.5"]]
                     :source-paths   ["env/dev/cljs" "target"]
-                    :resource-paths ["env/dev/resources"]
-                    :main           ^:skip-aot harpocrates.core}]
+                    :resource-paths ["env/dev/resources"]}]
 
    :client-prod   [:client
                    {:source-paths   ["env/prod/cljs"]

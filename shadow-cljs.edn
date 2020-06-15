@@ -1,4 +1,5 @@
 {:lein     {:profile "+client-dev"}
+ :nrepl    {:port 9000}
  :dev-http {8000 "classpath:public"}
  :builds   {:main {:target     :browser
                    :output-dir "resources/public/js/main"
@@ -6,4 +7,4 @@
                    :modules    {:main {:init-fn harpocrates.client/init
                                        :entries [harpocrates.client]}}
                    :devtools   {:after-load harpocrates.client/refresh
-                                :preloads   [day8.re-frame-10x.preload]}}}}
+                                :preloads   [com.fulcrologic.fulcro.inspect.preload]}}}}
