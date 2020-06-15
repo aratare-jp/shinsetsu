@@ -33,4 +33,5 @@
          :not-acceptable
          (constantly (error-page {:status 406, :title "406 - Not acceptable"}))}))))
 
-(def app (middleware/wrap-base #'app-routes))
+(defn app []
+  (middleware/wrap-base #'app-routes))

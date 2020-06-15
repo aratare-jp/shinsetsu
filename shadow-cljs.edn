@@ -3,7 +3,7 @@
  :builds   {:main {:target     :browser
                    :output-dir "resources/public/js/main"
                    :asset-path "/js/main"
-                   :modules    {:main {:entries [harpocrates.app]}}
-                   :dev        {:closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}}
-                   :devtools   {:after-load harpocrates.core/mount-root
+                   :modules    {:main {:init-fn harpocrates.client/init
+                                       :entries [harpocrates.client]}}
+                   :devtools   {:after-load harpocrates.client/refresh
                                 :preloads   [day8.re-frame-10x.preload]}}}}

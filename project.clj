@@ -11,7 +11,9 @@
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/tools.cli "1.0.194"]
                  [org.clojure/tools.logging "1.0.0"]
-                 [org.clojure/clojurescript "1.10.773"]]
+                 [org.clojure/clojurescript "1.10.773"]
+                 [com.fulcrologic/fulcro "3.2.6"]
+                 [com.wsscode/pathom "2.2.15"]]
 
   :min-lein-version "2.0.0"
 
