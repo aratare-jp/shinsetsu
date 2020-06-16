@@ -92,25 +92,3 @@
                            (apply str (rest type-name)))]
         (.setObject stmt idx (.createArrayOf conn elem-type (to-array v)))
         (.setObject stmt idx (clj->jsonb-pgobj v))))))
-
-(defn result-one-snake->kebab
-  [this result options]
-  (->> (hugsql.adapter/result-one this result options)
-       (transform-keys ->kebab-case)))
-
-(defn result-many-snake->kebab
-  [this result options]
-  (->> (hugsql.adapter/result-many this result options)
-       (map #(transform-keys ->kebab-case %))))
-
-(defmethod hugsql.core/hugsql-result-fn :1 [sym]
-  'harpocrates.db.core/result-one-snake->kebab)
-
-(defmethod hugsql.core/hugsql-result-fn :one [sym]
-  'harpocrates.db.core/result-one-snake->kebab)
-
-(defmethod hugsql.core/hugsql-result-fn :* [sym]
-  'harpocrates.db.core/result-many-snake->kebab)
-
-(defmethod hugsql.core/hugsql-result-fn :many [sym]
-  'harpocrates.db.core/result-many-snake->kebab)
