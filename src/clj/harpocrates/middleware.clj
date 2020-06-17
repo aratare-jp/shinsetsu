@@ -1,14 +1,13 @@
 (ns harpocrates.middleware
   (:require
     [harpocrates.env :refer [defaults]]
-    [cheshire.generate :as cheshire]
-    [cognitect.transit :as transit]
-    [clojure.tools.logging :as log]
     [harpocrates.layout :refer [error-page]]
-    [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
-    [harpocrates.middleware.formats :as formats]
-    [muuntaja.middleware :refer [wrap-format wrap-params]]
     [harpocrates.config :refer [env]]
+    [harpocrates.middleware.formats :as formats]
+    [harpocrates.parser :refer [api-parser]]
+    [clojure.tools.logging :as log]
+    [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
+    [muuntaja.middleware :refer [wrap-format wrap-params]]
     [ring.middleware.cors :refer [wrap-cors]]
     [ring.middleware.flash :refer [wrap-flash]]
     [ring.middleware.session.cookie :refer [cookie-store]]
@@ -16,10 +15,10 @@
     [buddy.auth :refer [authenticated? throw-unauthorized]]
     [buddy.auth.backends :refer [jws]]
     [buddy.auth.middleware :refer [wrap-authentication]]
-    [ring.logger :as logger]
     [clojure.tools.logging :as log]
     [ring.middleware.reload :refer [wrap-reload]]
-    [mount.core :refer [defstate]]))
+    [mount.core :refer [defstate]]
+    [com.fulcrologic.fulcro.server.api-middleware :as server]))
 
 (def secret "secret")
 (def backend (jws {:secret secret}))
@@ -62,7 +61,10 @@
 
 (defn wrap-base [handler]
   (-> ((:middleware defaults) handler)
-      wrap-flash
+      (server/wrap-api {:uri    "/api"
+                        :parser api-parser})
+      (server/wrap-transit-params)
+      (server/wrap-transit-response)
       (wrap-defaults
         (-> site-defaults
             (assoc-in [:security :anti-forgery] false)

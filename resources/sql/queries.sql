@@ -42,7 +42,7 @@ INSERT INTO users_bookmarks
 (user_id, bookmark_id)
 VALUES (:user/user-id, :bookmark/bookmark-id)
 
--- :name get-bookmark-from-user! :? :1
+-- :name get-bookmark-from-user! :?
 -- :doc retrieves a bookmark record given the user id
 SELECT * FROM bookmarks
 WHERE id IN (SELECT bookmark_id FROM users_bookmarks WHERE user_id = :user/id)

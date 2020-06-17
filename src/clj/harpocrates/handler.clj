@@ -3,11 +3,11 @@
     [harpocrates.middleware :as middleware]
     [harpocrates.layout :refer [error-page]]
     [harpocrates.routes.home :refer [home-routes]]
+    [harpocrates.env :refer [defaults]]
     [harpocrates.routes.services :refer [service-routes]]
     [reitit.ring :as ring]
     [ring.middleware.content-type :refer [wrap-content-type]]
     [ring.middleware.webjars :refer [wrap-webjars]]
-    [harpocrates.env :refer [defaults]]
     [mount.core :as mount]))
 
 (mount/defstate init-app

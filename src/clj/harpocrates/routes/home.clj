@@ -14,5 +14,4 @@
   [""
    {:middleware [middleware/wrap-csrf
                  middleware/wrap-formats]}
-   ;["/" {:get home-page}]
    ["/graphiql" {:get (fn [request] (layout/render request "graphiql.html"))}]])

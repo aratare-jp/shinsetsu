@@ -9,7 +9,7 @@
     [harpocrates.config :refer [env]]
     [mount.core :refer [defstate]]
     [camel-snake-kebab.extras :refer [transform-keys]]
-    [camel-snake-kebab.core :refer [->kebab-case]])
+    [camel-snake-kebab.core :refer [->kebab-case-keyword]])
   (:import (org.postgresql.util PGobject)
            (clojure.lang IPersistentVector IPersistentMap)
            (java.sql PreparedStatement Array Time Date Timestamp)))
@@ -26,6 +26,35 @@
   create-bookmark!
   create-user-bookmark!
   get-bookmark-from-user!)
+
+(defn result-one-snake->kebab
+  [this result options]
+  (->> (hugsql.adapter/result-one this result options)
+       (transform-keys ->kebab-case-keyword)))
+
+(defn result-many-snake->kebab
+  [this result options]
+  (->> (hugsql.adapter/result-many this result options)
+       (transform-keys ->kebab-case-keyword)))
+
+(defn result-affected-snake->kebab
+  [this result options]
+  (->> (hugsql.adapter/result-affected this result options)
+       (transform-keys ->kebab-case-keyword)))
+
+(defn result-raw-snake->kebab
+  [this result options]
+  (->> (hugsql.adapter/result-raw this result options)
+       (transform-keys ->kebab-case-keyword)))
+
+(defmethod hugsql.core/hugsql-result-fn :1 [sym] `result-one-snake->kebab)
+(defmethod hugsql.core/hugsql-result-fn :one [sym] `result-one-snake->kebab)
+(defmethod hugsql.core/hugsql-result-fn :* [sym] '`result-many-snake->kebab)
+(defmethod hugsql.core/hugsql-result-fn :many [sym] `result-many-snake->kebab)
+(defmethod hugsql.core/hugsql-result-fn :n [sym] `result-affected-snake->kebab)
+(defmethod hugsql.core/hugsql-result-fn :affected [sym] `result-affected-snake->kebab)
+(defmethod hugsql.core/hugsql-result-fn :raw [sym] `result-raw-snake->kebab)
+(defmethod hugsql.core/hugsql-result-fn :default [sym] `result-raw-snake->kebab)
 
 (defstate ^:dynamic *db*
   :start (if-let [jdbc-url (env :database-url)]
