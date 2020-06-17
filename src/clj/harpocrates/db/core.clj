@@ -18,12 +18,14 @@
 ;; "resources/sql/queries".
 (declare
   create-user!
+  create-user-with-id!
   update-user!
   get-user!
   get-user-by-email!
   delete-user!
-  get-bookmark!
   create-bookmark!
+  create-bookmark-with-id!
+  get-bookmark!
   create-user-bookmark!
   get-bookmark-from-user!)
 

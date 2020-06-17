@@ -21,11 +21,12 @@
                 :user/is-active
                 :user/last-login
                 {:user/bookmarks [:bookmark/id]}]}
-  (let [query    {:user/id (UUID/fromString id)}
-        user     (db/get-user! db/*db* query)
-        bookmark (db/get-bookmark-from-user! db/*db* query)]
-    (-> (assoc user :bookmarks bookmark)
-        (qualify-km "user"))))
+  (let [query     {:user/id (UUID/fromString id)}
+        user      (qualify-km (db/get-user! db/*db* query) "user")
+        bookmarks (map #(qualify-km % "bookmark") (db/get-bookmark-from-user! db/*db* query))]
+    (->> (mapv #(select-keys % [:bookmark/id]) bookmarks)
+         (mapv (fn [bookmark] {:bookmark/id (.toString (:bookmark/id bookmark))}))
+         (assoc user :user/bookmarks))))
 
 (def resolvers [bookmark-resolver
                 user-resolver])

@@ -61,8 +61,7 @@
 
 (defn wrap-base [handler]
   (-> ((:middleware defaults) handler)
-      (server/wrap-api {:uri    "/api"
-                        :parser api-parser})
+      (server/wrap-api {:uri "/api" :parser api-parser})
       (server/wrap-transit-params)
       (server/wrap-transit-response)
       (wrap-defaults

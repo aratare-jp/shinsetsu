@@ -6,7 +6,7 @@
     [harpocrates.resolver :refer [resolvers]]
     [harpocrates.mutation :refer [mutations]]))
 
-(def resolvers-mutations [resolvers mutations])
+(def mutations-resolvers [mutations resolvers])
 
 (def pathom-parser
   (p/parser {::p/env     {::p/reader                 [p/map-reader
@@ -15,7 +15,7 @@
                                                       pc/index-reader]
                           ::pc/mutation-join-globals [:tempids]}
              ::p/mutate  pc/mutate
-             ::p/plugins [(pc/connect-plugin {::pc/register resolvers-mutations})
+             ::p/plugins [(pc/connect-plugin {::pc/register mutations-resolvers})
                           p/error-handler-plugin]}))
 
 (defn api-parser [query]
