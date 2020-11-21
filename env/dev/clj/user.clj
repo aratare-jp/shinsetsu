@@ -3,29 +3,27 @@
   (:require
     [harpocrates.config :refer [env]]
     [clojure.pprint]
-    [clojure.spec.alpha :as s]
+    [clojure.spec.alpha :refer [*explain-out*]]
     [expound.alpha :as expound]
     [mount.core :as mount]
-    [harpocrates.core :refer [start-app]]
-    [harpocrates.db.core]
-    [conman.core :as conman]
+    [harpocrates.core :refer [repl-server]]
+    [harpocrates.db.core :refer [*db*]]
     [luminus-migrations.core :as migrations]
-    [clojure.tools.namespace.repl :as tools-ns :refer [refresh]]))
+    [clojure.tools.namespace.repl :refer [refresh]]))
 
-(alter-var-root #'s/*explain-out* (constantly expound/printer))
+(alter-var-root #'*explain-out* (constantly expound/printer))
 
 (add-tap (bound-fn* clojure.pprint/pprint))
 
 (defn start
-  "Starts application.
-  You'll usually want to run this on startup."
+  "Starts application."
   []
-  (mount/start-without #'harpocrates.core/repl-server))
+  (mount/start-without #'repl-server))
 
 (defn stop
   "Stops application."
   []
-  (mount/stop-except #'harpocrates.core/repl-server))
+  (mount/stop-except #'repl-server))
 
 (defn restart
   "Restarts application."
@@ -36,10 +34,8 @@
 (defn restart-db
   "Restarts database."
   []
-  (mount/stop #'harpocrates.db.core/*db*)
-  (mount/start #'harpocrates.db.core/*db*)
-  (binding [*ns* 'harpocrates.db.core]
-    (conman/bind-connection harpocrates.db.core/*db* "sql/queries.sql")))
+  (mount/stop #'*db*)
+  (mount/start #'*db*))
 
 (defn reset-db
   "Resets database."

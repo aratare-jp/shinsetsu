@@ -14,7 +14,8 @@
                  [org.clojure/clojurescript "1.10.773"]
                  [org.clojure/algo.generic "0.1.3"]
                  [com.fulcrologic/fulcro "3.2.6"]
-                 [com.wsscode/pathom "2.2.15"]]
+                 [com.wsscode/pathom "2.2.15"]
+                 [org.clojure/spec.alpha "0.2.187"]]
 
   :min-lein-version "2.0.0"
 
@@ -32,7 +33,7 @@
    :plugins       [[com.jakemccrary/lein-test-refresh "0.24.1"]
                    [jonase/eastwood "0.3.5"]]
 
-   :client        {:dependencies   [[thheller/shadow-cljs "2.10.3"]
+   :client        {:dependencies   [[thheller/shadow-cljs "2.11.4"]
                                     [venantius/accountant "0.2.5"]
                                     [cljs-ajax "0.8.0"]
                                     [pez/clerk "1.0.0"]]
@@ -75,14 +76,15 @@
                                     [http-kit "2.3.0"]
                                     [buddy/buddy-hashers "1.4.0"]
                                     [buddy/buddy-auth "2.2.0"]
-                                    [ring-logger "1.0.1"]]
+                                    [ring-logger "1.0.1"]
+                                    [toucan "1.15.1"]
+                                    [orchestra "2020.09.18-1"]]
                    :source-paths   ["src/clj"]
                    :test-paths     ["test/clj"]
                    :resource-paths ["resources"]
                    :target-path    "target/%s/"
                    :main           ^:skip-aot harpocrates.core
                    :clean-targets  ^{:protect false} [:target-path]}
-
 
    :server-dev    [:common-dev
                    :server

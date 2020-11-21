@@ -1,6 +1,5 @@
 (ns harpocrates.ui
   (:require
-    [harpocrates.mutations :as api]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.dom :as dom]))
 

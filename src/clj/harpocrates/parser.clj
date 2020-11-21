@@ -3,8 +3,8 @@
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.connect :as pc]
     [taoensso.timbre :as log]
-    [harpocrates.resolver :refer [resolvers]]
-    [harpocrates.mutation :refer [mutations]]))
+    [harpocrates.resolvers.resolvers :refer [resolvers]]
+    [harpocrates.mutations.mutations :refer [mutations]]))
 
 (def mutations-resolvers [mutations resolvers])
 

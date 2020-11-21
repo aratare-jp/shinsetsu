@@ -5,7 +5,8 @@ CREATE TABLE users
     last_name  text        NOT NULL,
     email      text UNIQUE NOT NULL,
     password   text        NOT NULL,
-    timestamp  timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at  timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_active  boolean     DEFAULT TRUE,
     PRIMARY KEY (id)

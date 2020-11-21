@@ -1,73 +1,22 @@
 (ns harpocrates.db.core
   (:require
     [cheshire.core :refer [generate-string parse-string]]
-    [next.jdbc.date-time]
-    [next.jdbc.prepare]
-    [next.jdbc.result-set]
     [clojure.tools.logging :as log]
-    [conman.core :as conman]
+    [toucan.db :as db]
+    [toucan.models :as models]
     [harpocrates.config :refer [env]]
-    [mount.core :refer [defstate]]
-    [camel-snake-kebab.extras :refer [transform-keys]]
-    [camel-snake-kebab.core :refer [->kebab-case-keyword]])
+    [mount.core :refer [defstate]])
   (:import (org.postgresql.util PGobject)
            (clojure.lang IPersistentVector IPersistentMap)
            (java.sql PreparedStatement Array Time Date Timestamp)))
 
-;; Declare here to please the editors. Queries are defined in
-;; "resources/sql/queries".
-(declare
-  create-user!
-  create-user-with-id!
-  update-user!
-  get-user!
-  get-user-by-email!
-  delete-user!
-  create-bookmark!
-  create-bookmark-with-id!
-  get-bookmark!
-  create-user-bookmark!
-  get-bookmark-from-user!)
-
-(defn result-one-snake->kebab
-  [this result options]
-  (->> (hugsql.adapter/result-one this result options)
-       (transform-keys ->kebab-case-keyword)))
-
-(defn result-many-snake->kebab
-  [this result options]
-  (->> (hugsql.adapter/result-many this result options)
-       (transform-keys ->kebab-case-keyword)))
-
-(defn result-affected-snake->kebab
-  [this result options]
-  (->> (hugsql.adapter/result-affected this result options)
-       (transform-keys ->kebab-case-keyword)))
-
-(defn result-raw-snake->kebab
-  [this result options]
-  (->> (hugsql.adapter/result-raw this result options)
-       (transform-keys ->kebab-case-keyword)))
-
-(defmethod hugsql.core/hugsql-result-fn :1 [sym] `result-one-snake->kebab)
-(defmethod hugsql.core/hugsql-result-fn :one [sym] `result-one-snake->kebab)
-(defmethod hugsql.core/hugsql-result-fn :* [sym] '`result-many-snake->kebab)
-(defmethod hugsql.core/hugsql-result-fn :many [sym] `result-many-snake->kebab)
-(defmethod hugsql.core/hugsql-result-fn :n [sym] `result-affected-snake->kebab)
-(defmethod hugsql.core/hugsql-result-fn :affected [sym] `result-affected-snake->kebab)
-(defmethod hugsql.core/hugsql-result-fn :raw [sym] `result-raw-snake->kebab)
-(defmethod hugsql.core/hugsql-result-fn :default [sym] `result-raw-snake->kebab)
-
 (defstate ^:dynamic *db*
-  :start (if-let [jdbc-url (env :database-url)]
-           (conman/connect! {:jdbc-url jdbc-url})
-           (do
-             (log/warn "database connection URL was not found, please set
-             :database-url in your config, e.g: dev-config.edn")
-             *db*))
-  :stop (conman/disconnect! *db*))
-
-(conman/bind-connection *db* "sql/queries.sql")
+  :start
+  (do
+    (log/info "Setting default database connection")
+    (models/set-root-namespace! 'harpocrates.db)
+    (db/set-default-automatically-convert-dashes-and-underscores! true)
+    (db/set-default-db-connection! (:database-url env))))
 
 (defn pgobj->clj [^PGobject pgobj]
   (let [type  (.getType pgobj)

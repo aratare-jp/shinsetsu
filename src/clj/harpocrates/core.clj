@@ -5,7 +5,7 @@
     [luminus.http-server :as http]
     [luminus-migrations.core :as migrations]
     [harpocrates.config :refer [env]]
-    [clojure.tools.cli :refer [parse-opts]]
+    [clojure.tools.cli :as cli]
     [clojure.tools.logging :as log]
     [mount.core :as mount])
   (:gen-class))
@@ -40,14 +40,18 @@
   (when repl-server
     (nrepl/stop repl-server)))
 
-(defn stop-app []
+(defn- stop-app
+  "Stops everything and shutdown the web app."
+  []
   (doseq [component (:stopped (mount/stop))]
     (log/info component "stopped"))
   (shutdown-agents))
 
-(defn start-app [args]
+(defn- start-app
+  "Initialise everything and start the web app."
+  [args]
   (doseq [component (-> args
-                        (parse-opts cli-options)
+                        (cli/parse-opts cli-options)
                         mount/start-with-args
                         :started)]
     (log/info component "started"))

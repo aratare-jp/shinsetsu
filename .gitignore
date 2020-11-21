@@ -19,3 +19,5 @@ profiles.clj
 *.iml
 .rebel_readline_history
 node_modules
+.shadow-cljs
+resources/public
