@@ -11,8 +11,8 @@
     [ring.util.http-response :refer :all]
     [clojure.java.io :as io]
     [harpocrates.spec :as spec]
-    [harpocrates.db.core :refer [*db*] :as db]
-    [next.jdbc :as jdbc]
+    [harpocrates.db.user :refer [User]]
+    [toucan.db :refer [insert!]]
     [buddy.hashers :as hashers]
     [buddy.sign.jwt :as jwt]
     [harpocrates.middleware :as hmid]))
@@ -38,11 +38,6 @@
                  ;; multipart
                  multipart/multipart-middleware]}
 
-   ["/graphql" {:post (fn [req]
-                        (ok (graphql/execute-request (-> req
-                                                         :body
-                                                         slurp))))}]
-
    ["/auth"
     ["/signup"
      {:post {:summary    "signup with user data"
@@ -50,33 +45,30 @@
                                  :password   string?
                                  :first-name string?
                                  :last-name  string?}}
-             :handler    (fn [{{{:keys [email
+             :handler    (fn [{{{:keys [id
+                                        email
                                         password
                                         first-name
                                         last-name]} :body} :parameters}]
-                           (jdbc/with-transaction [t-conn *db*]
-                             (if-let [user (db/create-user!
-                                             t-conn
-                                             {:email      email
-                                              :password   (hashers/derive password)
-                                              :first_name first-name
-                                              :last_name  last-name})]
-                               (let [token (jwt/sign {:user (:id user)} hmid/secret)]
-                                 {:status 200
-                                  :body   {:token token}})
-                               {:status 500})))}}]
+                           ; If not exists, throw.
+                           (if (User :email email)
+                             {:status 401 :message "Email already registered"}
+                             (insert! User {:id         id
+                                            :email      email
+                                            :password   password
+                                            :first-name first-name
+                                            :last-name  last-name})))}}]
     ["/login"
      {:post {:summary    "login with email and password"
              :parameters {:body {:email    ::spec/email?
                                  :password string?}}
              :handler    (fn [{{{:keys [email password]} :body} :parameters}]
-                           (jdbc/with-transaction [t-conn *db*]
-                             (let [user (db/get-user-by-email! t-conn {:email email})]
-                               (if (and user (hashers/check password (:password user)))
-                                 (let [token (jwt/sign {:user (:id user)} hmid/secret)]
-                                   {:status 200
-                                    :body   {:token token}})
-                                 {:status 401}))))}}]]
+                           (let [unauthed [false {:message "User or password incorrect"}]]
+                             (if-let [user (User :email email)]
+                               (if (hashers/check password (:password user))
+                                 [true {:user (dissoc user :password)}]
+                                 unauthed)
+                               unauthed)))}}]]
 
    ["/files"
     ["/upload"

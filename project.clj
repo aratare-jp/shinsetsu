@@ -11,10 +11,9 @@
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/tools.cli "1.0.194"]
                  [org.clojure/tools.logging "1.0.0"]
-                 [org.clojure/clojurescript "1.10.773"]
+                 [org.clojure/clojurescript "1.10.758"]
                  [org.clojure/algo.generic "0.1.3"]
-                 [com.fulcrologic/fulcro "3.2.6"]
-                 [com.wsscode/pathom "2.2.15"]
+                 [com.fulcrologic/fulcro "3.4.6"]
                  [org.clojure/spec.alpha "0.2.187"]]
 
   :min-lein-version "2.0.0"
@@ -33,7 +32,7 @@
    :plugins       [[com.jakemccrary/lein-test-refresh "0.24.1"]
                    [jonase/eastwood "0.3.5"]]
 
-   :client        {:dependencies   [[thheller/shadow-cljs "2.11.4"]
+   :client        {:dependencies   [[thheller/shadow-cljs "2.11.8"]
                                     [venantius/accountant "0.2.5"]
                                     [cljs-ajax "0.8.0"]
                                     [pez/clerk "1.0.0"]]
@@ -44,8 +43,7 @@
    :client-dev    [:common-dev
                    :client
                    {:dependencies   [[cider/piggieback "0.5.0"]
-                                     [binaryage/devtools "1.0.0"]
-                                     [fulcrologic/fulcro-inspect "2.2.5"]]
+                                     [binaryage/devtools "1.0.2"]]
                     :source-paths   ["env/dev/cljs" "target"]
                     :resource-paths ["env/dev/resources"]}]
 
@@ -53,11 +51,9 @@
                    {:source-paths   ["env/prod/cljs"]
                     :resource-paths ["env/prod/resources"]}]
 
-   :server        {:dependencies   [[selmer "1.12.27"]
-                                    [cheshire "5.10.0"]
+   :server        {:dependencies   [[cheshire "5.10.0"]
                                     [clojure.java-time "0.3.2"]
                                     [com.cognitect/transit-clj "1.0.324"]
-                                    [com.walmartlabs/lacinia "0.32.0"]
                                     [conman "0.8.6"]
                                     [expound "0.8.4"]
                                     [funcool/struct "1.4.0"]
@@ -74,8 +70,7 @@
                                     [ring/ring-defaults "0.3.2"]
                                     [ring-cors "0.1.13"]
                                     [http-kit "2.3.0"]
-                                    [buddy/buddy-hashers "1.4.0"]
-                                    [buddy/buddy-auth "2.2.0"]
+                                    [buddy "2.0.0"]
                                     [ring-logger "1.0.1"]
                                     [toucan "1.15.1"]
                                     [orchestra "2020.09.18-1"]]

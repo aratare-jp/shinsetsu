@@ -1,6 +1,6 @@
 (ns harpocrates.db.user
   (:require [toucan.models :as tc]
-            [harpocrates.db.shared :refer [:timestamped? :uuid :tc-password]]))
+            [harpocrates.db.shared :refer :all]))
 
 (tc/defmodel User :users
   tc/IModel

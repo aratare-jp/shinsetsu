@@ -1,5 +1,6 @@
 (ns harpocrates.db.shared
-  (:require [toucan.models :refer [add-property! add-type!]])
+  (:require [toucan.models :refer [add-property! add-type!]]
+            [buddy.hashers :as hs])
   (:import (java.sql Timestamp)
            (java.util UUID)))
 
@@ -25,8 +26,6 @@
   :in #(UUID/fromString %)
   :out #(.toString %))
 
-;; TODO: Add proper salt + hash
 (add-type!
   :tc-password
-  :in #(identity %)
-  :out #(identity %))
+  :in #(hs/encrypt %))

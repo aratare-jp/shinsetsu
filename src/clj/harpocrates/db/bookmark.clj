@@ -1,6 +1,6 @@
 (ns harpocrates.db.bookmark
   (:require [toucan.models :as tc]
-            [harpocrates.db.shared :refer [:timestamped? :uuid]]))
+            [harpocrates.db.shared :as shared]))
 
 (tc/defmodel Bookmark :bookmarks
   tc/IModel
