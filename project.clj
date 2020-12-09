@@ -7,14 +7,15 @@
                  [cprop "0.1.16"]
                  [metosin/reitit "0.4.2"]
                  [org.clojure/clojure "1.10.1"]
-                 [org.clojure/tools.namespace "0.2.11"]
+                 [org.clojure/tools.namespace "1.1.0"]
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/tools.cli "1.0.194"]
                  [org.clojure/tools.logging "1.0.0"]
                  [org.clojure/clojurescript "1.10.758"]
                  [org.clojure/algo.generic "0.1.3"]
                  [com.fulcrologic/fulcro "3.4.6"]
-                 [org.clojure/spec.alpha "0.2.187"]]
+                 [org.clojure/spec.alpha "0.2.187"]
+                 [seancorfield/next.jdbc "1.1.613"]]
 
   :min-lein-version "2.0.0"
 
@@ -28,9 +29,9 @@
                    :uberjar-name   "harpocrates.jar"
                    :resource-paths ["env/prod/resources"]}
 
-   :common-dev    {:dependencies [[pjstadig/humane-test-output "0.10.0"]]}
-   :plugins       [[com.jakemccrary/lein-test-refresh "0.24.1"]
-                   [jonase/eastwood "0.3.5"]]
+   :common-dev    {:dependencies [[pjstadig/humane-test-output "0.10.0"]]
+                   :plugins      [[com.jakemccrary/lein-test-refresh "0.24.1"]
+                                  [jonase/eastwood "0.3.5"]]}
 
    :client        {:dependencies   [[thheller/shadow-cljs "2.11.8"]
                                     [venantius/accountant "0.2.5"]
