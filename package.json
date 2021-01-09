@@ -20,7 +20,6 @@
   },
   "homepage": "https://github.com/aratare-tech/harpocrates#readme",
   "dependencies": {
-    "@blueprintjs/core": "^3.36.0",
     "@elastic/datemath": "^5.0.3",
     "@elastic/eui": "^31.1.0",
     "@js-joda/core": "1.12.0",
