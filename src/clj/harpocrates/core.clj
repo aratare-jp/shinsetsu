@@ -1,30 +1,29 @@
 (ns harpocrates.core
   (:require
-    [harpocrates.parser :refer [api-parser]]
     [org.httpkit.server :as http]
-    [com.fulcrologic.fulcro.server.api-middleware :as server]
-    [ring.middleware.content-type :refer [wrap-content-type]]
-    [ring.middleware.resource :refer [wrap-resource]]))
+    [reitit.ring :as rr]
+    [harpocrates.routers.login :refer [login-routes]]
+    [harpocrates.routers.api :refer [api-routes]]
+    [reitit.ring.coercion :as rrc]
+    [reitit.ring.middleware.parameters :refer [parameters-middleware]]))
 
-(def ^:private not-found-handler
-  (fn [req]
-    {:status  404
-     :headers {"Content-Type" "text/plain"}
-     :body    "Not Found"}))
-
-(def middleware
-  (-> not-found-handler
-      (server/wrap-api {:uri    "/api"
-                        :parser api-parser})
-      (server/wrap-transit-params)
-      (server/wrap-transit-response)
-      (wrap-resource "public")
-      wrap-content-type))
+(def app
+  (rr/ring-handler
+    (rr/router
+      [login-routes
+       api-routes]
+      {:data {:middleware [rrc/coerce-exceptions-middleware
+                           rrc/coerce-request-middleware
+                           rrc/coerce-response-middleware]}})
+    (rr/routes
+      (rr/create-resource-handler {:path "/"})
+      (rr/create-default-handler))
+    {:middleware [parameters-middleware]}))
 
 (defonce stop-fn (atom nil))
 
 (defn start []
-  (reset! stop-fn (http/run-server middleware {:port 3000})))
+  (reset! stop-fn (http/run-server app {:port 3000})))
 
 (defn stop []
   (when @stop-fn
