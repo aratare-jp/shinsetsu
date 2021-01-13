@@ -1,20 +1,53 @@
 (ns user
+  "Userspace functions you can run by default in your local REPL."
   (:require
-    [harpocrates.core :as server]
-    [clojure.tools.namespace.repl :as tools-ns :refer [set-refresh-dirs refresh]]))
+    [harpocrates.config :refer [env]]
+    [clojure.pprint :refer [pprint]]
+    [mount.core :as mount]
+    [harpocrates.core :refer [repl-server]]
+    [harpocrates.db.core :refer [*db*]]
+    [clojure.tools.namespace.repl :refer [refresh]]))
 
-;; Ensure we only refresh the source we care about. This is important
-;; because `resources` is on our classpath and we don't want to
-;; accidentally pull source from there when cljs builds cache files there.
-(set-refresh-dirs "env/dev" "src/clj")
+(add-tap (bound-fn* pprint))
 
-(defn start []
-  (server/start))
+(defn start
+  "Starts application."
+  []
+  (mount/start-without #'repl-server))
+
+(defn stop
+  "Stops application."
+  []
+  (mount/stop-except #'repl-server))
 
 (defn restart
-  "Stop the server, reload all source code, then restart the server.
-
-  See documentation of tools.namespace.repl for more information."
+  "Restarts application."
   []
-  (server/stop)
-  (refresh :after 'user/start))
+  (stop)
+  (refresh :after `start))
+
+(defn restart-db
+  "Restarts database."
+  []
+  (mount/stop #'*db*)
+  (mount/start #'*db*))
+
+;(defn reset-db
+;  "Resets database."
+;  []
+;  (migrations/migrate ["reset"] (select-keys env [:database-url])))
+;
+;(defn migrate
+;  "Migrates database up for all outstanding migrations."
+;  []
+;  (migrations/migrate ["migrate"] (select-keys env [:database-url])))
+;
+;(defn rollback
+;  "Rollback latest database migration."
+;  []
+;  (migrations/migrate ["rollback"] (select-keys env [:database-url])))
+;
+;(defn create-migration
+;  "Create a new up and down migration file with a generated timestamp and `name`."
+;  [name]
+;  (migrations/create name (select-keys env [:database-url])))

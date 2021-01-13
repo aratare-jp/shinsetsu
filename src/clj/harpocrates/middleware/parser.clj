@@ -1,9 +1,9 @@
-(ns harpocrates.middleware.api
+(ns harpocrates.middleware.parser
   (:require
     [com.fulcrologic.fulcro.server.api-middleware :as server]
     [harpocrates.parser :refer [api-parser]]))
 
-(defn wrap-api
+(defn wrap-parser
   "Much like `com.fulcrologic.fulcro.server.api-middleware/wrap-api` but without
   the URI since we can just use reitit instead."
   [handler parser]
