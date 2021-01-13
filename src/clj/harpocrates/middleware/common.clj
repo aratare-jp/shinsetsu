@@ -1,7 +1,9 @@
 (ns harpocrates.middleware.common)
 
-(def not-found-handler
+(defn form-params->keywords
+  "Convert form-params keys into keywords"
+  [handler]
   (fn [req]
-    {:status  404
-     :headers {"Content-Type" "text/plain"}
-     :body    "Not Found"}))
+    (handler (update req :form-params (fn [fp]
+                                        (into {} (mapv (fn [[k v]]
+                                                         [(keyword k) v]) fp)))))))

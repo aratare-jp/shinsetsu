@@ -28,6 +28,8 @@
                         [thheller/shadow-cljs "2.11.11"]
                         [pjstadig/humane-test-output "0.10.0"]
                         [binaryage/devtools "1.0.2"]
-                        [org.clojure/tools.namespace "1.1.0"]]
+                        [org.clojure/tools.namespace "1.1.0"]
+                        [ring/ring-mock "0.4.0"]
+                        [mvxcvi/puget "1.3.1"]]
          :injections   [(require 'pjstadig.humane-test-output)
                         (pjstadig.humane-test-output/activate!)]}})
