@@ -4,18 +4,17 @@
             [com.fulcrologic.fulcro.dom :as dom]
             [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
             [cljs-http.client :as http]
-            [cljs.core.async :refer [<!]]))
+            [cljs.core.async :refer [<!]]
+            [harpocrates.mutations.storage :as storage]))
 
 (defn on-submit-login
-  [{:keys [username password]}]
-  (println username)
-  (println password)
-  (go (let [response (<! (http/post "http://localhost:3000/login" {:form-params {:username username :password password}}))]
-        (println (:status response))
-        (println (:body response)))))
+  [this {:keys [username password]}]
+  (go
+    (let [response (<! (http/post "http://localhost:3000/login" {:form-params {:username username :password password}}))]
+      (comp/transact! this [(storage/set-token (-> response :body :token))]))))
 
 (defsc login-form
-  [_ _]
+  [this _]
   {}
   (let [current-user (atom {})]
     (cm/ui-page
@@ -48,6 +47,6 @@
                    :type     "password"
                    :onChange #(swap! current-user assoc :password (-> % .-target .-value))}))
               (cm/ui-button
-                {:onClick #(on-submit-login @current-user)} "Login"))))))))
+                {:onClick #(on-submit-login this @current-user)} "Login"))))))))
 
 (def ui-login-form (comp/factory login-form))

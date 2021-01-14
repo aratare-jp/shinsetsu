@@ -8,6 +8,7 @@
     [reitit.ring.middleware.parameters :as parameters]
     [ring.middleware.reload :refer [wrap-reload]]
     [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+    [ring.middleware.defaults :refer [wrap-defaults]]
     [harpocrates.routers.api :refer [api-routes]]
     [harpocrates.routers.authentication :refer [login-routes signup-routes]]
     [harpocrates.config :refer [env]]
@@ -28,6 +29,14 @@
       (rr/create-resource-handler {:path "/"})
       (rr/create-default-handler))
     {:middleware [(if (:dev? env) wrap-reload)
+                  [wrap-defaults (into {:security {:anti-forgery         true
+                                                   :content-type-options true
+                                                   :frame-options        true
+                                                   :xss-protection}}
+                                       (if (:dev? env)
+                                         {}
+                                         {:security {:hsts         true
+                                                     :ssl-redirect true}}))]
                   parameters/parameters-middleware
                   muuntaja/format-middleware
                   multipart/multipart-middleware]}))
