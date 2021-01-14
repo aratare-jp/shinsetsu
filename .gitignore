@@ -20,6 +20,6 @@ profiles.clj
 .rebel_readline_history
 node_modules
 .shadow-cljs
-resources/public
+resources/public/js
 .clj-kondo
 .lsp
