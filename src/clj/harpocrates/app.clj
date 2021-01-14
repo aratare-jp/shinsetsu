@@ -30,9 +30,9 @@
       (rr/create-default-handler))
     {:middleware [(if (:dev? env) wrap-reload)
                   [wrap-defaults (into {:security {:anti-forgery         true
-                                                   :content-type-options true
-                                                   :frame-options        true
-                                                   :xss-protection}}
+                                                   :xss-protection       {:enable? true, :mode :block}
+                                                   :frame-options        :sameorigin
+                                                   :content-type-options :nosniff}}
                                        (if (:dev? env)
                                          {}
                                          {:security {:hsts         true

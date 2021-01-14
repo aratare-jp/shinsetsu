@@ -1,7 +1,6 @@
 (ns user
   (:require [cljs.spec.alpha :as s]
             [expound.alpha :as expound]
-            [devtools.core :as devtools]
             [harpocrates.core :as core]))
 
 (defn init
