@@ -23,7 +23,7 @@
   :resource-paths ["resources"]
   :profiles
   {:dev {:jvm-opts     ["-Dconf=dev-config.edn"]
-         :source-paths ["env/dev"]
+         :source-paths ["env/dev/clj" "env/dev/cljs"]
          :dependencies [[org.clojure/clojurescript "1.10.773"]
                         [thheller/shadow-cljs "2.11.11"]
                         [pjstadig/humane-test-output "0.10.0"]
