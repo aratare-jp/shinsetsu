@@ -7,6 +7,7 @@
     [reitit.ring.middleware.muuntaja :as muuntaja]
     [reitit.ring.middleware.parameters :as parameters]
     [ring.middleware.reload :refer [wrap-reload]]
+    [ring.middleware.keyword-params :refer [wrap-keyword-params]]
     [harpocrates.routers.api :refer [api-routes]]
     [harpocrates.routers.authentication :refer [login-routes signup-routes]]
     [harpocrates.config :refer [env]]
