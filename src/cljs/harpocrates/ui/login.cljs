@@ -5,17 +5,25 @@
             [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
             [cljs-http.client :as http]
             [cljs.core.async :refer [<!]]
-            [harpocrates.mutations.storage :as storage]))
+            [harpocrates.vars :refer [token]]
+            [com.fulcrologic.fulcro.routing.dynamic-routing :refer [change-route! route-immediate]]))
 
 (defn on-submit-login
   [this {:keys [username password]}]
   (go
     (let [response (<! (http/post "http://localhost:3000/login" {:form-params {:username username :password password}}))]
-      (comp/transact! this [(storage/set-token (-> response :body :token))]))))
+      (if (= (:status response) 200)
+        (do (reset! token (-> response :body :token))
+            (change-route! this ["main"])))))
+  )
 
-(defsc login-form
+(defsc Login
   [this _]
-  {}
+  {:route-segment ["login"]
+   :query         [:login]
+   :initial-state {:login "blob!"}
+   :indent        [:component/id ::login]
+   :will-enter    (fn [_ _] (route-immediate [:component/id ::main]))}
   (let [current-user (atom {})]
     (cm/ui-page
       nil
@@ -49,4 +57,4 @@
               (cm/ui-button
                 {:onClick #(on-submit-login this @current-user)} "Login"))))))))
 
-(def ui-login-form (comp/factory login-form))
+(def ui-login-form (comp/factory Login))
