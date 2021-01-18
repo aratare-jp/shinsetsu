@@ -2,18 +2,13 @@
   "Userspace functions you can run by default in your local REPL."
   (:require
     [harpocrates.config :refer [env]]
-    [clojure.pprint]
-    [clojure.spec.alpha :refer [*explain-out*]]
-    [expound.alpha :as expound]
+    [clojure.pprint :refer [pprint]]
     [mount.core :as mount]
     [harpocrates.core :refer [repl-server]]
     [harpocrates.db.core :refer [*db*]]
-    [luminus-migrations.core :as migrations]
     [clojure.tools.namespace.repl :refer [refresh]]))
 
-(alter-var-root #'*explain-out* (constantly expound/printer))
-
-(add-tap (bound-fn* clojure.pprint/pprint))
+(add-tap (bound-fn* pprint))
 
 (defn start
   "Starts application."
@@ -37,22 +32,22 @@
   (mount/stop #'*db*)
   (mount/start #'*db*))
 
-(defn reset-db
-  "Resets database."
-  []
-  (migrations/migrate ["reset"] (select-keys env [:database-url])))
-
-(defn migrate
-  "Migrates database up for all outstanding migrations."
-  []
-  (migrations/migrate ["migrate"] (select-keys env [:database-url])))
-
-(defn rollback
-  "Rollback latest database migration."
-  []
-  (migrations/migrate ["rollback"] (select-keys env [:database-url])))
-
-(defn create-migration
-  "Create a new up and down migration file with a generated timestamp and `name`."
-  [name]
-  (migrations/create name (select-keys env [:database-url])))
+;(defn reset-db
+;  "Resets database."
+;  []
+;  (migrations/migrate ["reset"] (select-keys env [:database-url])))
+;
+;(defn migrate
+;  "Migrates database up for all outstanding migrations."
+;  []
+;  (migrations/migrate ["migrate"] (select-keys env [:database-url])))
+;
+;(defn rollback
+;  "Rollback latest database migration."
+;  []
+;  (migrations/migrate ["rollback"] (select-keys env [:database-url])))
+;
+;(defn create-migration
+;  "Create a new up and down migration file with a generated timestamp and `name`."
+;  [name]
+;  (migrations/create name (select-keys env [:database-url])))

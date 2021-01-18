@@ -3,10 +3,10 @@
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.connect :as pc]
     [taoensso.timbre :as log]
-    [harpocrates.resolvers.resolvers :refer [resolvers]]
-    [harpocrates.mutations.mutations :refer [mutations]]))
+    [harpocrates.resolvers]
+    [harpocrates.mutations]))
 
-(def mutations-resolvers [mutations resolvers])
+(def resolvers [harpocrates.resolvers/resolvers harpocrates.mutations/mutations])
 
 (def pathom-parser
   (p/parser {::p/env     {::p/reader                 [p/map-reader
@@ -15,7 +15,7 @@
                                                       pc/index-reader]
                           ::pc/mutation-join-globals [:tempids]}
              ::p/mutate  pc/mutate
-             ::p/plugins [(pc/connect-plugin {::pc/register mutations-resolvers})
+             ::p/plugins [(pc/connect-plugin {::pc/register resolvers})
                           p/error-handler-plugin]}))
 
 (defn api-parser [query]
