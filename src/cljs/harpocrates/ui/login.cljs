@@ -1,12 +1,14 @@
 (ns harpocrates.ui.login
-  (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [harpocrates.ui.common :as cm]
-            [com.fulcrologic.fulcro.dom :as dom]
-            [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
-            [cljs-http.client :as http]
-            [cljs.core.async :refer [<!]]
-            [harpocrates.vars :refer [token]]
-            [com.fulcrologic.fulcro.routing.dynamic-routing :refer [change-route! route-immediate]]))
+  (:require-macros
+    [cljs.core.async.macros :refer [go]])
+  (:require
+    [harpocrates.ui.elastic-ui :as cm]
+    [com.fulcrologic.fulcro.dom :as dom]
+    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+    [cljs-http.client :as http]
+    [cljs.core.async :refer [<!]]
+    [harpocrates.vars :refer [token]]
+    [com.fulcrologic.fulcro.routing.dynamic-routing :refer [change-route! route-immediate]]))
 
 (defn on-submit-login
   [this {:keys [username password]}]
@@ -14,16 +16,16 @@
     (let [response (<! (http/post "http://localhost:3000/login" {:form-params {:username username :password password}}))]
       (if (= (:status response) 200)
         (do (reset! token (-> response :body :token))
-            (change-route! this ["main"])))))
-  )
+            (change-route! this ["main"]))
+        (js/alert "Login unsuccessful")))))
 
 (defsc Login
   [this _]
   {:route-segment ["login"]
    :query         [:login]
-   :initial-state {:login "blob!"}
-   :indent        [:component/id ::login]
-   :will-enter    (fn [_ _] (route-immediate [:component/id ::main]))}
+   :initial-state {:login {}}
+   :indent        [:component/id :login]
+   :will-enter    (fn [_ _] (route-immediate [:component/id :login]))}
   (let [current-user (atom {})]
     (cm/ui-page
       nil

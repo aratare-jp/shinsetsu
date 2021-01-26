@@ -1,4 +1,4 @@
-(ns harpocrates.ui.common
+(ns harpocrates.ui.elastic-ui
   (:require ["@elastic/eui" :refer [EuiButton
                                     EuiCheckboxGroup
                                     EuiFieldText
@@ -17,7 +17,8 @@
                                     EuiPageContentBody
                                     EuiPageContentHeader
                                     EuiPageContentHeaderSection
-                                    EuiTitle]]
+                                    EuiTitle
+                                    EuiControlBar]]
             [com.fulcrologic.fulcro.algorithms.react-interop :as interop]))
 
 (def ui-button (interop/react-factory EuiButton))
@@ -38,3 +39,4 @@
 (def ui-page-content-header (interop/react-factory EuiPageContentHeader))
 (def ui-page-content-header-section (interop/react-factory EuiPageContentHeaderSection))
 (def ui-title (interop/react-factory EuiTitle))
+(def ui-control-bar (interop/react-factory EuiControlBar))

@@ -11,7 +11,10 @@
    ;; ------------------------------------------------------------------------------------------------------------------
 
    :shared      {:source-paths ["src/cljc"]
-                 :dependencies [[com.fulcrologic/fulcro "3.4.12"]]}
+                 :dependencies [[com.fulcrologic/fulcro "3.4.12"]
+                                [com.fulcrologic/fulcro-rad "1.0.8"]
+                                [com.wsscode/pathom "2.3.1"]
+                                [org.clojure/core.async "1.3.610"]]}
    :shared-dev  [:shared
                  {:source-paths ["env/dev/cljc"]}]
    :shared-test [:shared-dev
@@ -28,9 +31,7 @@
    :server      [:shared
                  {:source-paths   ["src/clj"]
                   :resource-paths ["resources"]
-                  :dependencies   [[com.wsscode/pathom "2.3.0"]
-                                   [org.clojure/core.async "1.3.610"]
-                                   [org.clojure/tools.cli "1.0.194"]
+                  :dependencies   [[org.clojure/tools.cli "1.0.194"]
                                    [cprop "0.1.17"]
                                    [http-kit "2.3.0"]
                                    [buddy "2.0.0"]
