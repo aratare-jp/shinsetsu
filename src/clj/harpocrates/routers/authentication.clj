@@ -5,7 +5,8 @@
             [buddy.sign.jws :as jws]
             [harpocrates.db.core :refer [*db*]]
             [harpocrates.config :refer [env]]
-            [ring.util.response :as response]))
+            [ring.util.response :as response]
+            [puget.printer :refer [pprint]]))
 
 (defn on-login [{{{:keys [username password]} :form} :parameters}]
   (let [failed-res {:status 401 :body {:message "Not authenticated"}}
@@ -17,6 +18,7 @@
       failed-res)))
 
 (defn on-signup [{{{:keys [username password]} :form} :parameters}]
+  (pprint env)
   (let [already-created-res {:status 409 :body {:message "Already created"}}
         secret              (:secret env)]
     (if-let [_ (get-in @*db* [:user/id username])]

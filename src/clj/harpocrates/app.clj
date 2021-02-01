@@ -33,8 +33,8 @@
                                                    :xss-protection       {:enable? true, :mode :block}
                                                    :frame-options        :sameorigin
                                                    :content-type-options :nosniff}}
-                                       (if (:dev? env)
-                                         {}
+                                       (if (or (:dev? env) (:test? env))
+                                         {:security {:anti-forgery false}}
                                          {:security {:hsts         true
                                                      :ssl-redirect true}}))]
                   parameters/parameters-middleware

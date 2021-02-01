@@ -24,7 +24,7 @@
   {:route-segment ["login"]
    :query         [:login]
    :initial-state {:login {}}
-   :indent        [:component/id :login]
+   :ident        [:component/id :login]
    :will-enter    (fn [_ _] (route-immediate [:component/id :login]))}
   (let [current-user (atom {})]
     (cm/ui-page

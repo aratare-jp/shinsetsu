@@ -6,7 +6,7 @@
 
 (defsc Main
   [_ _]
-  {:indent        [:component/id :main]
+  {:ident        [:component/id :main]
    :route-segment ["main"]
    :query         [:main]
    :initial-state {:main {}}
