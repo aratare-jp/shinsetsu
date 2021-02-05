@@ -5,6 +5,7 @@
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
     [harpocrates.ui.login :refer [Login]]
     [harpocrates.ui.main :refer [Main]]
+    [taoensso.timbre :as log]
     [harpocrates.ui.elastic-ui :refer [ui-control-bar]]))
 
 (defn controls
@@ -36,6 +37,6 @@
 (defsc Root [this {:root/keys [router]}]
   {:query         [{:root/router (comp/get-query RootRouter)}]
    :initial-state {:root/router {}}}
-  (dom/div :.bp3-dark
+  (dom/div
     (ui-control-bar {:controls (controls this)})
     (ui-root-router router)))

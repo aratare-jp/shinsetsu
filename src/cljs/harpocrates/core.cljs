@@ -28,4 +28,5 @@
   (app/set-root! app Root {:initialize-state? true})
   (dr/initialize! app)
   (app/mount! app Root "app" {:initialize-state? false})
+  ;(app/mount! app Root "app")
   (dr/change-route! app (dr/path-to Main)))

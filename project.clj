@@ -43,10 +43,13 @@
                                    [honeysql "1.0.444"]
                                    [medley "1.3.0"]
                                    [mount "0.1.16"]
-                                   [metosin/reitit "0.5.11"]]
+                                   [metosin/reitit "0.5.11"]
+                                   [bk/ring-gzip "0.3.0"]]
                   :target-path    "target/%s/"
                   :main           ^:skip-aot harpocrates.core
-                  :clean-targets  ^{:protect false} [:target-path]}]
+                  :clean-targets  ^{:protect false} [:target-path]
+                  :repl-options   {:init-ns user
+                                   :timeout 120000}}]
    :server-dev  [:shared-dev
                  :server
                  {:jvm-opts     ["-Dconf=dev-config.edn"]

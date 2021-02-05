@@ -24,14 +24,10 @@
 (use-fixtures :each db-fixture)
 
 (deftest middleware
-  (let [username "hero@test.com"
-        password "awesome"
+  (let [username  "hero@test.com"
+        password  "awesome"
         form-data {:username username :password password}]
-    (let [res (app/app (-> (mock/request :post "/signup" form-data)
-                           (mock/header "x-csrf-token" "testing")))]
-      (pprint (-> (mock/request :post "/signup" form-data)
-                  (mock/header "x-csrf-token" "testing")))
+    (let [res (app/app (mock/request :post "/signup" form-data))]
       (pprint res)
       (is (= (:status res) 200))
-      (is (-> res :body :token))
-      (is (hashers/check password (get-in @db/*db* [:user/id username :password]))))))
+      (is (-> res :body :token)))))

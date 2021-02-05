@@ -20,11 +20,11 @@
         (js/alert "Login unsuccessful")))))
 
 (defsc Login
-  [this _]
-  {:route-segment ["login"]
-   :query         [:login]
-   :initial-state {:login {}}
-   :ident        [:component/id :login]
+  [this {:keys [is-loading?] :as props}]
+  {:ident         (fn [] [:component/id :login])
+   :query         [:is-loading?]
+   :initial-state {:is-loading? false}
+   :route-segment ["login"]
    :will-enter    (fn [_ _] (route-immediate [:component/id :login]))}
   (let [current-user (atom {})]
     (cm/ui-page
