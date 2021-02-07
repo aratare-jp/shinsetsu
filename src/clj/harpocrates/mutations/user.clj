@@ -17,11 +17,13 @@
     (if (hashers/check password (:user/password user))
       {:user/id    (:user/id user)
        :user/token (jws/sign "test@test.com" secret)}
-      {:user/id :nobody})))
+      (throw (ex-info nil {:status-code 401
+                           :message     "Incorrect username or password"})))))
 
 (pc/defmutation logout
   [env _]
   {::pc/output [:user/id]}
+  ;; TODO: Clear the logged-in cache.
   {:user/id :nobody})
 
 (def mutations [login
