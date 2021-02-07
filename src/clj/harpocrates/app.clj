@@ -12,7 +12,6 @@
     [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
     [ring.middleware.gzip :refer [wrap-gzip]]
     [harpocrates.routers.api :refer [api-routes]]
-    [harpocrates.routers.authentication :refer [login-routes signup-routes]]
     [harpocrates.config :refer [env]]
     [harpocrates.middleware.exception :as exception]
     [hiccup.page :as h.page]
@@ -46,9 +45,7 @@
   :start
   (rr/ring-handler
     (rr/router
-      [login-routes
-       signup-routes
-       api-routes]
+      [api-routes]
       {:data {:middleware [rrc/coerce-exceptions-middleware
                            rrc/coerce-request-middleware
                            rrc/coerce-response-middleware

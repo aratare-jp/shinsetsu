@@ -37,6 +37,6 @@
 (defsc Root [this {:root/keys [router]}]
   {:query         [{:root/router (comp/get-query RootRouter)}]
    :initial-state {:root/router {}}}
-  (dom/div
-    (ui-control-bar {:controls (controls this)})
-    (ui-root-router router)))
+  (dom/div :.full-height
+           (ui-control-bar {:controls (controls this)})
+           (ui-root-router router)))

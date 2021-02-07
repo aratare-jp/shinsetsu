@@ -18,7 +18,7 @@
 
 (defsc Root [this {:root/keys [router]}]
   {:query         [{:root/router (comp/get-query RootRouter)}]
-   :initial-state {:root/router  {}
+   :initial-state {:root/router  {}i
                    :component/id {:main  (comp/get-initial-state Main)
                                   :login (comp/get-initial-state Login)}}}
   (dom/div (ui-root-router router)))

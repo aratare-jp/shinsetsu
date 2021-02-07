@@ -24,10 +24,10 @@
 (use-fixtures :each db-fixture)
 
 (deftest middleware
-  (let [username  "hero@test.com"
-        password  "awesome"
-        form-data {:username username :password password}]
-    (let [res (app/app (mock/request :post "/signup" form-data))]
+  (let [username "hero@test.com"
+        password "awesome"]
+    (let [res (app/app (mock/request :post "/api" "[(harpocrates.mutations.auth/login {:username hero@test.com
+                                                                                       :password awesome})]"))]
       (pprint res)
       (is (= (:status res) 200))
       (is (-> res :body :token)))))

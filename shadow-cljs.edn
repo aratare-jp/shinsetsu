@@ -1,4 +1,4 @@
-{:lein     {:profile "+client-dev"}
+{:lein     {:profile "+client-dev,+client-test"}
  :nrepl    {:port 9000}
  :dev-http {8000 "classpath:public"}
  :builds   {:main {:target           :browser
