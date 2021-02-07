@@ -6,7 +6,8 @@
     [harpocrates.resolvers]
     [harpocrates.mutations]))
 
-(def resolvers [harpocrates.resolvers/resolvers harpocrates.mutations/mutations])
+(def resolvers [harpocrates.resolvers/resolvers
+                harpocrates.mutations/mutations])
 
 (def pathom-parser
   (p/parser {::p/env     {::p/reader                 [p/map-reader
