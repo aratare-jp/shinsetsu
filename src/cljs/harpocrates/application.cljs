@@ -2,13 +2,13 @@
   (:require
     [com.fulcrologic.fulcro.application :as app]
     [com.fulcrologic.fulcro.networking.http-remote :as http]
-    [harpocrates.vars :refer [token]]
+    [harpocrates.db :refer [db]]
     [com.wsscode.pathom.core :as p]))
 
 (defn attach-token
-  [handler]
+  [handler app]
   (fn [req]
-    (if-let [token @token]
+    (if-let [token @db]
       (handler (assoc req :token token))
       (handler req))))
 
@@ -25,9 +25,13 @@
         false
         values))))
 
-(defonce app (app/fulcro-app {:remotes       {:remote (http/fulcro-http-remote {:request-middleware
-                                                                                (-> (http/wrap-fulcro-request)
-                                                                                    attach-token)})}
-                              :remote-error? (fn [{:keys [body] :as result}]
-                                               (or (app/default-remote-error? result)
-                                                   (contains-error? body)))}))
+;; TODO: Global remote error
+;:remote-error? (fn [{:keys [body] :as result}]
+;                 (or (app/default-remote-error? result)
+;                     (contains-error? body)))
+
+(defonce app (app/fulcro-app {:remotes {:remote (http/fulcro-http-remote {})}}))
+
+;(defonce app (app/fulcro-app {:remotes {:remote (http/fulcro-http-remote {:request-middleware
+;                                                                          (-> (http/wrap-fulcro-request)
+;                                                                              (attach-token app))})}}))

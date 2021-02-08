@@ -9,34 +9,28 @@
             [puget.printer :refer [pprint]]))
 
 (pc/defmutation login
-  [env {:user/keys [username password]}]
-  {::pc/params #{:user/username :user/password}
-   ::pc/output [:user/id :user/token]}
-  (let [user   (get-in @*db* [:user/id username])
-        secret (:secret env)]
-    (if (hashers/check password (:user/password user))
-      {:user/id    (:user/id user)
-       :user/token (jws/sign "test@test.com" secret)}
-      (throw (ex-info nil {:status-code 401
-                           :message     "Incorrect username or password"})))))
+  [env {:user/keys [email password]}]
+  {::pc/params #{:user/email :user/password}
+   ::pc/output [:user/id :user/valid?]}
+  (log/info "Login" email)
+  (let [secret   (:secret env)
+        user-map (get @*db* :user/id)
+        subject  (second (first (filter (fn [[_ v]] (= (:user/email v) email)) user-map)))]
+    (if (hashers/check password (:user/password subject))
+      (augment-response
+        {:user/email  email
+         :user/id     (:user/id subject)
+         :user/valid? true}
+        (fn [ring-resp] (assoc ring-resp :session subject)))
+      {:user/valid? false})))
 
-(pc/defmutation logout
-  [env _]
-  {::pc/output [:user/id]}
-  ;; TODO: Clear the logged-in cache.
-  {:user/id :nobody})
+(pc/defmutation logout [env {:user/keys [email password]}]
+  {::pc/params #{:user/email :user/password}
+   ::pc/output [:user/id :user/valid?]}
+  (augment-response
+    {:user/id     :nobody
+     :user/valid? false}
+    (fn [ring-resp] (assoc ring-resp :session {}))))
 
 (def mutations [login
                 logout])
-
-(comment
-  (user/restart)
-  (require '[buddy.hashers :as hashers])
-  (require '[buddy.sign.jws :as jws])
-  (require '[harpocrates.db.core :refer [*db*]])
-  (get-in @*db* [:user/id "test@test.com"])
-  (require '[harpocrates.config :refer [env]])
-  (mount.core/start #'env)
-  env
-  (:secret env)
-  (jws/sign "test@test.com" (:secret env)))

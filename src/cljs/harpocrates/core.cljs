@@ -1,17 +1,17 @@
 (ns harpocrates.core
   (:require
-    [harpocrates.application :refer [app]]
-    [com.fulcrologic.fulcro.components :as comp]
-    [com.fulcrologic.fulcro.application :as app]
-    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
-    [harpocrates.ui.root :refer [Root]]
-    [com.fulcrologic.fulcro.application :as app]
-    [com.fulcrologic.fulcro.components :as comp]
     [com.fulcrologic.fulcro.algorithms.timbre-support :refer [console-appender prefix-output-fn]]
-    [taoensso.timbre :as log]
-    [com.fulcrologic.fulcro.algorithms.tx-processing.synchronous-tx-processing :as stx]
+    [com.fulcrologic.fulcro.application :as app]
+    [com.fulcrologic.fulcro.data-fetch :as df]
+    [com.fulcrologic.fulcro.components :as comp]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
-    [harpocrates.ui.main :refer [Main]]))
+    [taoensso.timbre :as log]
+    [harpocrates.application :refer [app]]
+    [harpocrates.routing :as routing]
+    [harpocrates.ui.main :refer [Main]]
+    [harpocrates.ui.root :refer [Root]]
+    [harpocrates.ui.user :refer [CurrentUser]]
+    [harpocrates.mutations.user :refer [finish-login]]))
 
 (defn ^:export refresh []
   ;; re-mounting will cause forced UI refresh
@@ -24,9 +24,7 @@
   (log/merge-config! {:output-fn prefix-output-fn
                       :appenders {:console (console-appender)}})
   (log/info "Starting App")
-  ;; Avoid startup async timing issues by pre-initializing things before mount
-  (app/set-root! app Root {:initialize-state? true})
+  (app/mount! app Root "app")
   (dr/initialize! app)
-  (app/mount! app Root "app" {:initialize-state? false})
-  ;(app/mount! app Root "app")
-  (dr/change-route! app (dr/path-to Main)))
+  (routing/start!)
+  (df/load! app :session/current-user CurrentUser {:post-mutation `finish-login}))

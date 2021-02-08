@@ -18,12 +18,13 @@
 (def pathom-parser
   (p/parser {::p/env     {::p/reader                 [p/map-reader
                                                       pc/reader2
-                                                      pc/ident-reader
-                                                      pc/index-reader]
-                          ::p/process-error          process-error
+                                                      pc/open-ident-reader]
+                          ;::p/process-error          process-error
                           ::pc/mutation-join-globals [:tempids]}
              ::p/mutate  pc/mutate
              ::p/plugins [(pc/connect-plugin {::pc/register resolvers})
+                          (p/env-plugin {:hello "hello"})
+                          (p/post-process-parser-plugin p/elide-not-found)
                           p/error-handler-plugin]}))
 
 (defn api-parser [query]

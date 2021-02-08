@@ -14,9 +14,11 @@
     [harpocrates.routers.api :refer [api-routes]]
     [harpocrates.config :refer [env]]
     [harpocrates.middleware.exception :as exception]
+    [ring.middleware.session :refer [wrap-session]]
     [hiccup.page :as h.page]
     [taoensso.timbre :as timbre]
-    [ring.util.response :as response]))
+    [ring.util.response :as response]
+    [clojure.string :as str]))
 
 (defn generate-index [{:keys [anti-forgery-token]}]
   "Dynamically generate the index.html so we can embed CSRF nicely."
@@ -41,6 +43,18 @@
       (generator req)
       (handler req))))
 
+(defn all-routes-to-index [handler]
+  (fn [{:keys [uri] :as req}]
+    (if (or
+          (= "/api" uri)
+          (str/ends-with? uri ".css")
+          (str/ends-with? uri ".map")
+          (str/ends-with? uri ".jpg")
+          (str/ends-with? uri ".png")
+          (str/ends-with? uri ".js"))
+      (handler req)
+      (handler (assoc req :uri "/index.html")))))
+
 (defstate app
   :start
   (rr/ring-handler
@@ -54,8 +68,7 @@
       (rr/create-resource-handler {:path "/"})
       (rr/create-default-handler))
     {:middleware [(if (:dev? env) wrap-reload)
-                  ;[wrap-uris {"/"           generate-index
-                  ;            "/index.html" generate-index}]
+                  wrap-session
                   ;; FIXME: Enable anti-forgery later.
                   [wrap-defaults {:security {:anti-forgery         false
                                              :xss-protection       {:enable? true :mode :block}
@@ -64,4 +77,5 @@
                   parameters/parameters-middleware
                   muuntaja/format-middleware
                   multipart/multipart-middleware
+                  all-routes-to-index
                   wrap-gzip]}))

@@ -14,7 +14,8 @@
                  :dependencies [[com.fulcrologic/fulcro "3.4.12"]
                                 [com.fulcrologic/fulcro-rad "1.0.8"]
                                 [com.wsscode/pathom "2.3.1"]
-                                [org.clojure/core.async "1.3.610"]]}
+                                [org.clojure/core.async "1.3.610"]
+                                [medley "1.3.0"]]}
    :shared-dev  [:shared
                  {:source-paths ["env/dev/cljc"]}]
    :shared-test [:shared-dev
@@ -41,7 +42,6 @@
                                    [ring/ring-defaults "0.3.2"]
                                    [seancorfield/next.jdbc "1.1.613"]
                                    [honeysql "1.0.444"]
-                                   [medley "1.3.0"]
                                    [mount "0.1.16"]
                                    [metosin/reitit "0.5.11"]
                                    [bk/ring-gzip "0.3.0"]]
@@ -81,7 +81,8 @@
                                 [thheller/shadow-cljs "2.11.11"]
                                 [venantius/accountant "0.2.5"]
                                 [pez/clerk "1.0.0"]
-                                [cljs-http "0.1.46"]]}
+                                [cljs-http "0.1.46"]
+                                [kibu/pushy "0.3.8"]]}
    :client-dev  [:shared-dev
                  :client
                  {:source-paths ["env/dev/cljs"]

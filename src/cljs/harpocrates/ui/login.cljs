@@ -4,21 +4,20 @@
     [harpocrates.mutations.user :refer [login]]
     [harpocrates.application :refer [app]]
     [com.fulcrologic.fulcro.dom :as dom]
-    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+    [com.fulcrologic.fulcro.components :as comp :refer-macros [defsc]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :refer [change-route! route-immediate]]
     [com.fulcrologic.fulcro.dom.events :as evt]
-    [com.fulcrologic.fulcro.algorithms.merge :as m]
-    [com.fulcrologic.fulcro.mutations :as mut]))
+    [com.fulcrologic.fulcro.mutations :as m]))
 
 (defsc Login
-  [this {:keys      [status-code]
-         :ui/keys   [is-loading?]
-         :user/keys [username password]}]
-  {:ident         (fn [] [:component/id :login])
-   :query         [:ui/is-loading? :status-code :user/username :user/password]
-   :initial-state {:ui/is-loading? false}
+  [this {:ui/keys [email password error? busy?] :as props}]
+  {:query         [:ui/email :ui/password :ui/error? :ui/busy?]
+   :ident         (fn [] [:component/id :login])
    :route-segment ["login"]
-   :will-enter    (fn [_ _] (route-immediate [:component/id :login]))}
+   :initial-state {:ui/email    ""
+                   :ui/password ""
+                   :ui/error?   false
+                   :ui/busy?    false}}
   (cm/ui-page
     {:className "full-height"}
     (cm/ui-page-body
@@ -39,28 +38,32 @@
           nil
           (cm/ui-form
             {:component "form"
-             :isInvalid (and status-code (not= status-code 200))
-             :error     "Incorrect username or password"}
+             :error     "Incorrect username or password"
+             :isInvalid error?}
             (cm/ui-form-row
               {:label     "Username"
                :fullWidth true}
               (cm/ui-field-text
-                {:isInvalid (and status-code (not= status-code 200))
-                 :name      "username"
-                 :value     username
-                 :onChange  #(mut/set-string! this :user/username :event %)}))
+                {:value     email
+                 :disabled  busy?
+                 :onChange  #(m/set-string! this :ui/email :event %)
+                 :isInvalid error?}))
             (cm/ui-form-row
               {:label     "Password"
                :fullWidth true}
               (cm/ui-field-text
-                {:isInvalid (and status-code (not= status-code 200))
-                 :name      "password"
+                {:type      "password"
                  :value     password
-                 :type      "password"
-                 :onChange  #(mut/set-string! this :user/password :event %)}))
+                 :disabled  busy?
+                 :onKeyDown (fn [evt]
+                              (when (evt/enter-key? evt)
+                                (comp/transact! this [(login {:user/email email :user/password password})])))
+                 :onChange  #(m/set-string! this :ui/password :event %)
+                 :isInvalid error?}))
             (cm/ui-button
-              {:isLoading is-loading?
-               :disabled  is-loading?
-               :onClick   #(comp/transact! this [(login {:user/username username :user/password password})])} "Login")))))))
+              {:isLoading busy?
+               :disabled  busy?
+               :onClick   #(comp/transact! this [(login {:user/email email :user/password password})])}
+              "Login")))))))
 
 (def ui-login-form (comp/factory Login))
