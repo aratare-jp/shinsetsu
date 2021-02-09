@@ -3,6 +3,7 @@
     [com.fulcrologic.fulcro.algorithms.merge :refer [merge-component!]]
     [com.fulcrologic.fulcro.components :refer [registry-key->class]]
     [com.fulcrologic.fulcro.mutations :refer-macros [defmutation] :as m]
+    [com.fulcrologic.fulcro.algorithms.denormalize :as fdn]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
     [medley.core :refer [dissoc-in]]
     [taoensso.timbre :as log]
@@ -31,8 +32,11 @@
                                    (show-login-error* true)))))
   (ok-action [{:keys [state]}]
              (log/info "OK action")
-             (let [logged-in? (get-in @state [:session/current-user :user/valid?])]
-               (if logged-in?
+             (let [current-user-query [{:session/current-user [:user/valid?]}]
+                   {{:user/keys [valid?]} :session/current-user} (fdn/db->tree current-user-query
+                                                                               @state
+                                                                               @state)]
+               (if [valid?]
                  (do
                    (swap! state (fn [s]
                                   (-> s
@@ -48,19 +52,23 @@
            [:ui/error? :ui/busy?])
   (remote [env]
           (-> env
-              (m/returning `harpocrates.ui.user/CurrentUser)
+              (m/returning `harpocrates.ui.user/User)
               (m/with-target [:session/current-user]))))
 
 (defmutation logout [_]
   (action [{:keys [state]}]
           (routing/route-to! "/login")
+          ;; TODO: Need to clear everything when logging out, not just the user.
           (swap! state assoc :session/current-user {:user/id :nobody :user/valid? false}))
   (remote [env] true))
 
 (defmutation finish-login [_]
-  (action [{:keys [app state]}]
-          (let [logged-in? (get-in @state [:session/current-user :user/valid?])]
-            (if logged-in?
+  (action [{:keys [state]}]
+          (let [current-user-query [{:session/current-user [:user/valid?]}]
+                {{:user/keys [valid?]} :session/current-user} (fdn/db->tree current-user-query
+                                                                            @state
+                                                                            @state)]
+            (if valid?
               (routing/route-to! "/main")
               (routing/route-to! "/login"))
             (swap! state assoc :root/ready? true))))

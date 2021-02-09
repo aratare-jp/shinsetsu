@@ -5,12 +5,13 @@
     [com.fulcrologic.fulcro.data-fetch :as df]
     [com.fulcrologic.fulcro.components :as comp]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
+    [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
     [taoensso.timbre :as log]
     [harpocrates.application :refer [app]]
     [harpocrates.routing :as routing]
     [harpocrates.ui.main :refer [Main]]
     [harpocrates.ui.root :refer [Root]]
-    [harpocrates.ui.user :refer [CurrentUser]]
+    [harpocrates.ui.user :refer [CurrentUser User]]
     [harpocrates.mutations.user :refer [finish-login]]))
 
 (defn ^:export refresh []
@@ -27,4 +28,5 @@
   (app/mount! app Root "app")
   (dr/initialize! app)
   (routing/start!)
-  (df/load! app :session/current-user CurrentUser {:post-mutation `finish-login}))
+  (df/load! app :session/current-user User
+            {:post-mutation `finish-login}))

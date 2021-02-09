@@ -30,8 +30,5 @@
 ;                 (or (app/default-remote-error? result)
 ;                     (contains-error? body)))
 
-(defonce app (app/fulcro-app {:remotes {:remote (http/fulcro-http-remote {})}}))
-
-;(defonce app (app/fulcro-app {:remotes {:remote (http/fulcro-http-remote {:request-middleware
-;                                                                          (-> (http/wrap-fulcro-request)
-;                                                                              (attach-token app))})}}))
+(defonce app (app/fulcro-app {:remotes {:remote (http/fulcro-http-remote {:request-middleware
+                                                                          (-> (http/wrap-fulcro-request))})}}))

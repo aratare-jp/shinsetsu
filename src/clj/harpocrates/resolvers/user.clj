@@ -9,9 +9,11 @@
 (pc/defresolver user-resolver
   [env {:user/keys [id]}]
   {::pc/input  #{:user/id}
-   ::pc/output [:user/email]}
-  {:user/id    id
-   :user/email (get-in @*db* [:user/id id :user/email])})
+   ::pc/output [:user/email {:user/tabs [:tabs/id]}]}
+  (let [{:user/keys [email tabs]} (get-in @*db* [:user/id id])]
+    {:user/id    id
+     :user/email email
+     :user/tabs  tabs}))
 
 (pc/defresolver current-user-resolver [env _]
   {::pc/output [{:session/current-user [:user/id]}]}

@@ -5,7 +5,7 @@
     [com.fulcrologic.fulcro.routing.dynamic-routing :refer [defrouter]]
     [harpocrates.ui.login :refer [Login]]
     [harpocrates.ui.main :refer [Main]]
-    [harpocrates.ui.user :refer [CurrentUser ui-current-user]]
+    [harpocrates.ui.user :refer [User ui-current-user]]
     [harpocrates.ui.elastic-ui :refer [ui-button]]))
 
 (defrouter RootRouter [_ {:keys [current-state]}]
@@ -21,7 +21,7 @@
   [_ {:root/keys    [ready? router]
       :session/keys [current-user]}]
   {:query         [:root/ready? {:root/router (comp/get-query RootRouter)}
-                   {:session/current-user (comp/get-query CurrentUser)}]
+                   {:session/current-user (comp/get-query User)}]
    :initial-state {:root/router {}}}
   (let [logged-in? (:user/valid? current-user)]
     (dom/div
