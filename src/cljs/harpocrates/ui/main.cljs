@@ -2,23 +2,30 @@
   (:require
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.dom :as dom]
-    [com.fulcrologic.fulcro.routing.dynamic-routing :refer [route-immediate]]
+    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
+    [com.fulcrologic.fulcro.data-fetch :as df]
     [com.fulcrologic.fulcro.application :refer [current-state]]
     [harpocrates.application :refer [app]]
+    [com.fulcrologic.fulcro.algorithms.denormalize :refer [db->tree]]
     [taoensso.timbre :as log]
-    [harpocrates.ui.tab :refer [ui-tab-list TabList]]))
+    [harpocrates.ui.elastic-ui :refer [ui-button]]
+    [harpocrates.ui.tab :refer [ui-tab-list TabList Tab]]
+    [harpocrates.ui.user :refer [CurrentUser]]
+    [com.fulcrologic.fulcro.mutations :as m]
+    [com.fulcrologic.fulcro.algorithms.merge :as merge]
+    [com.fulcrologic.fulcro.mutations :refer-macros [defmutation]]))
 
 (defsc Main
-  [this {:keys [ui/is-loading?] :as props}]
+  [this {:ui/keys      [tab-list]
+         :session/keys [current-user]
+         :as           props}]
   {:ident         (fn [] [:component/id :main])
-   :query         [:ui/is-loading?]
-   :initial-state {:ui/is-loading? false}
+   :query         [{:ui/tab-list (comp/get-query TabList)}
+                   {[:session/current-user '_] (comp/get-query CurrentUser)}]
+   :initial-state (fn [_] {:ui/tab-list (comp/get-initial-state TabList)})
    :route-segment ["main"]
-   :will-enter    (fn [_ _] (route-immediate [:component/id :main]))}
-  (let [app-state (current-state app)
-        user-tabs (log/spy :info (get-in app-state [:session/current-user :user/tabs]))]
-    (dom/div
-      (dom/h1 "Main!")
-      (ui-tab-list {:user/tabs user-tabs}))))
+   :will-enter    (fn [app _] (dr/route-immediate [:component/id :main]))}
+  (dom/div
+    (ui-tab-list (assoc tab-list :user/tabs (:user/tabs current-user)))))
 
 (def ui-main (comp/factory Main))

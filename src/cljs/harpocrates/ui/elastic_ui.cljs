@@ -1,25 +1,31 @@
 (ns harpocrates.ui.elastic-ui
-  (:require ["@elastic/eui" :refer [EuiButton
-                                    EuiCheckboxGroup
-                                    EuiFieldText
-                                    EuiForm
-                                    EuiFormRow
-                                    EuiFilePicker
-                                    EuiLink
-                                    EuiRange
-                                    EuiSelect
-                                    EuiSpacer
-                                    EuiSwitch
-                                    EuiText
-                                    EuiPage
-                                    EuiPageBody
-                                    EuiPageContent
-                                    EuiPageContentBody
-                                    EuiPageContentHeader
-                                    EuiPageContentHeaderSection
-                                    EuiTitle
-                                    EuiControlBar]]
-            [com.fulcrologic.fulcro.algorithms.react-interop :as interop]))
+  (:require
+    [com.fulcrologic.fulcro.algorithms.react-interop :as interop]
+    ["@elastic/eui" :refer [EuiButton
+                            EuiCheckboxGroup
+                            EuiFieldText
+                            EuiForm
+                            EuiFormRow
+                            EuiFilePicker
+                            EuiLink
+                            EuiRange
+                            EuiSelect
+                            EuiSpacer
+                            EuiSwitch
+                            EuiText
+                            EuiPage
+                            EuiPageBody
+                            EuiPageContent
+                            EuiPageContentBody
+                            EuiPageContentHeader
+                            EuiPageContentHeaderSection
+                            EuiTitle
+                            EuiControlBar
+                            EuiIcon
+                            EuiTabs
+                            EuiTab
+                            EuiTabbedContent
+                            EuiText]]))
 
 (def ui-button (interop/react-factory EuiButton))
 (def ui-checkbox-group (interop/react-factory EuiCheckboxGroup))
@@ -40,3 +46,8 @@
 (def ui-page-content-header-section (interop/react-factory EuiPageContentHeaderSection))
 (def ui-title (interop/react-factory EuiTitle))
 (def ui-control-bar (interop/react-factory EuiControlBar))
+(def ui-icon (interop/react-factory EuiIcon))
+(def ui-tabs (interop/react-factory EuiTabs))
+(def ui-tab (interop/react-factory EuiTab))
+(def ui-text (interop/react-factory EuiText))
+(def ui-tabbed-content (interop/react-factory EuiTabbedContent))

@@ -21,7 +21,7 @@
         {:user/email  email
          :user/id     (:user/id subject)
          :user/valid? true}
-        (fn [ring-resp] (assoc ring-resp :session subject)))
+        (fn [ring-resp] (assoc ring-resp :session (:user/id subject))))
       {:user/valid? false})))
 
 (pc/defmutation logout [env {:user/keys [email password]}]
