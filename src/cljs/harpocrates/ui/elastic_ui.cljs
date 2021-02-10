@@ -25,7 +25,11 @@
                             EuiTabs
                             EuiTab
                             EuiTabbedContent
-                            EuiText]]))
+                            EuiText
+                            EuiCard
+                            EuiFlexGroup
+                            EuiFlexGrid
+                            EuiFlexItem]]))
 
 (def ui-button (interop/react-factory EuiButton))
 (def ui-checkbox-group (interop/react-factory EuiCheckboxGroup))
@@ -51,3 +55,7 @@
 (def ui-tab (interop/react-factory EuiTab))
 (def ui-text (interop/react-factory EuiText))
 (def ui-tabbed-content (interop/react-factory EuiTabbedContent))
+(def ui-card (interop/react-factory EuiCard))
+(def ui-flex-group (interop/react-factory EuiFlexGroup))
+(def ui-flex-grid (interop/react-factory EuiFlexGrid))
+(def ui-flex-item (interop/react-factory EuiFlexItem))

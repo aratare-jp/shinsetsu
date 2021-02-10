@@ -17,8 +17,18 @@
    :initial-state {:tab/id        :invalid
                    :tab/name      :invalid
                    :tab/bookmarks []}}
-  (dom/ul
-    (map #(ui-bookmark %) bookmarks)))
+  (eui/ui-page
+    nil
+    (eui/ui-page-body
+      nil
+      (eui/ui-page-content
+        nil
+        (eui/ui-page-content-body
+          nil
+          (eui/ui-flex-grid
+            {:gutterSize "l"
+             :columns    4}
+            (map #(ui-bookmark %) bookmarks)))))))
 
 (def ui-tab (comp/factory Tab {:keyfn :tab/id}))
 
@@ -28,35 +38,20 @@
                    {:user/tabs (comp/get-query Tab)}]
    :initial-state (fn [p] {:ui/selected-tab :invalid})
    :ident         (fn [] [:component/id :tab-list])}
-  (let [tabs           (mapv (fn [{:tab/keys [id name bookmarks]}] {:id      (str "tab" id)
-                                                                    :name    name
-                                                                    :content (ui-tab
-                                                                               {:tab/id        id
-                                                                                :tab/name      name
-                                                                                :tab/bookmarks bookmarks})})
-                             tabs)
-        select-handler (fn [obj] (m/set-string! this :ui/selected-tab :value (-> obj (js->clj :keywordize-keys true) :id)))]
-    (eui/ui-tabbed-content
-      {:tabs               tabs
-       :initialSelectedTab (if (not= selected-tab :invalid)
-                             (first (filter #(= selected-tab (:tab/id %)) tabs))
-                             (first tabs))
-       :autoFocus          "selected"
-       :onTabClick         select-handler})))
+  (let [tabs           (conj tabs {:tab/id   "tab-plus"
+                                   :tab/name (eui/ui-icon {:type "plus"})})
+        select-handler (fn [id] (m/set-string! this :ui/selected-tab :value id))]
+    [(eui/ui-tabs
+       nil
+       (map (fn [{:tab/keys [id name]}]
+              (eui/ui-tab
+                {:onClick    #(select-handler id)
+                 :isSelected (= id selected-tab)
+                 :key        id}
+                name))
+            tabs))
+     (if (= selected-tab "tab-plus")
+       (dom/div "Creating new here")
+       (ui-tab (first (filter #(= (:tab/id %) selected-tab) tabs))))]))
 
 (def ui-tab-list (comp/factory TabList))
-
-(comment
-  (def s (com.fulcrologic.fulcro.application/current-state harpocrates.application/app))
-  (def tabs (com.fulcrologic.fulcro.algorithms.denormalize/db->tree
-              [{:session/current-user [{:user/tabs ['*]}]}]
-              s
-              s))
-  tabs
-  (map (fn [[k {:tab/keys [id name bookmarks]}]] {:id      id
-                                                  :name    name
-                                                  :content (harpocrates.ui.tab/ui-tab
-                                                             {:id        id
-                                                              :name      name
-                                                              :bookmarks bookmarks})})
-       (get-in tabs [:user/current-user :user/tabs])))
