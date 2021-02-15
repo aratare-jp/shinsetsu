@@ -94,6 +94,9 @@
    :client-prod [:shared-prod
                  :client
                  {:source-paths ["env/prod/cljs"]}]
+   :client-demo [:shared-prod
+                 :client
+                 {:source-paths ["env/demo/cljs"]}]
 
    ;; ------------------------------------------------------------------------------------------------------------------
    ;;

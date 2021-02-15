@@ -5,11 +5,12 @@
     [com.fulcrologic.fulcro.routing.dynamic-routing :refer [defrouter]]
     [harpocrates.ui.login :refer [Login]]
     [harpocrates.ui.main :refer [Main]]
+    [harpocrates.ui.bookmark :refer [Bookmark]]
     [harpocrates.ui.user :refer [User ui-current-user]]
     [harpocrates.ui.elastic-ui :refer [ui-button]]))
 
 (defrouter RootRouter [_ {:keys [current-state]}]
-  {:router-targets [Login Main]}
+  {:router-targets [Login Main Bookmark]}
   (case current-state
     :pending (dom/div "Loading...")
     :failed (dom/div "Loading seems to have failed. Try another route.")

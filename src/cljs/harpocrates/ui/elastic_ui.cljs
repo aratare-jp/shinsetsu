@@ -29,7 +29,13 @@
                             EuiCard
                             EuiFlexGroup
                             EuiFlexGrid
-                            EuiFlexItem]]))
+                            EuiFlexItem
+                            EuiModal
+                            EuiModalHeader
+                            EuiModalBody
+                            EuiModalFooter
+                            EuiButtonEmpty
+                            EuiModalHeaderTitle]]))
 
 (def ui-button (interop/react-factory EuiButton))
 (def ui-checkbox-group (interop/react-factory EuiCheckboxGroup))
@@ -59,3 +65,10 @@
 (def ui-flex-group (interop/react-factory EuiFlexGroup))
 (def ui-flex-grid (interop/react-factory EuiFlexGrid))
 (def ui-flex-item (interop/react-factory EuiFlexItem))
+(def ui-modal (interop/react-factory EuiModal))
+(def ui-modal-header (interop/react-factory EuiModalHeader))
+(def ui-modal-header-title (interop/react-factory EuiModalHeaderTitle))
+(def ui-modal-body (interop/react-factory EuiModalBody))
+(def ui-modal-footer (interop/react-factory EuiModalFooter))
+(def ui-button-empty (interop/react-factory EuiButtonEmpty))
+
