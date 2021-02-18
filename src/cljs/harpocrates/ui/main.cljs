@@ -16,16 +16,13 @@
     [com.fulcrologic.fulcro.mutations :refer-macros [defmutation]]))
 
 (defsc Main
-  [this {:ui/keys      [tab-list]
-         :session/keys [current-user]
-         :as           props}]
+  [_ {:ui/keys [tab-list] :session/keys [current-user]}]
   {:ident         (fn [] [:component/id :main])
    :query         [{:ui/tab-list (comp/get-query TabList)}
                    {[:session/current-user '_] (comp/get-query CurrentUser)}]
    :initial-state (fn [_] {:ui/tab-list (comp/get-initial-state TabList)})
    :route-segment ["main"]
-   :will-enter    (fn [app _] (dr/route-immediate [:component/id :main]))}
-  (dom/div
-    (ui-tab-list (assoc tab-list :user/tabs (:user/tabs current-user)))))
+   :will-enter    (fn [_ _] (dr/route-immediate [:component/id :main]))}
+  (dom/div (ui-tab-list (assoc tab-list :ui/tabs (:user/tabs current-user)))))
 
 (def ui-main (comp/factory Main))

@@ -28,5 +28,4 @@
   (app/mount! app Root "app")
   (dr/initialize! app)
   (routing/start!)
-  (df/load! app :session/current-user User
-            {:post-mutation `finish-login}))
+  (df/load! app :session/current-user User {:post-mutation `finish-login}))

@@ -2,37 +2,15 @@
   (:require [com.fulcrologic.fulcro.dom :as dom]
             [com.fulcrologic.fulcro.components :refer [defsc] :as comp]
             [harpocrates.ui.elastic-ui :as eui]
+            [harpocrates.ui.bookmark :refer [ui-bookmark-card BookmarkCard]]
             [taoensso.timbre :as log]
             [com.fulcrologic.fulcro.mutations :as m]
             [com.fulcrologic.fulcro.mutations :refer [defmutation]]
             [harpocrates.routing :as routing]))
 
-(defsc BookmarkCard [this {:bookmark/keys [id name url]
-                           :ui/keys       [show-bookmark-modal?]
-                           :as            props}]
-  {:query [:bookmark/id :bookmark/url :bookmark/name
-           :ui/show-bookmark-modal?]
-   :ident :bookmark/id}
-  (eui/ui-flex-item
-    nil
-    (dom/div
-      (eui/ui-card
-        {:image       "https://source.unsplash.com/400x200/?Nature"
-         :title       name
-         :description "Hello world"
-         :onClick     #(routing/route-to! (str "/bookmark/" id))}))))
-
-(def ui-bookmark-card (comp/factory BookmarkCard {:keyfn :bookmark/id}))
-
-(defsc Tab [this
-            {:tab/keys [id name bookmarks] :as props}]
-  {:query         [:tab/id
-                   :tab/name
-                   {:tab/bookmarks (comp/get-query BookmarkCard)}]
-   :ident         :tab/id
-   :initial-state {:tab/id        :invalid
-                   :tab/name      :invalid
-                   :tab/bookmarks []}}
+(defsc Tab [_ {:tab/keys [bookmarks]}]
+  {:query [:tab/id :tab/name {:tab/bookmarks (comp/get-query BookmarkCard)}]
+   :ident :tab/id}
   (eui/ui-page
     nil
     (eui/ui-page-body
@@ -48,14 +26,11 @@
 
 (def ui-tab (comp/factory Tab {:keyfn :tab/id}))
 
-(defsc TabList
-  [this {:user/keys [tabs] :ui/keys [selected-tab]}]
-  {:query         [:ui/selected-tab
-                   {:user/tabs (comp/get-query Tab)}]
-   :initial-state (fn [p] {:ui/selected-tab :invalid})
+(defsc TabList [this {:ui/keys [selected-tab tabs]}]
+  {:query         [:ui/selected-tab {:ui/tabs (comp/get-query Tab)}]
+   :initial-state (fn [_] {:ui/selected-tab :invalid})
    :ident         (fn [] [:component/id :tab-list])}
-  (let [tabs           (conj tabs {:tab/id   "tab-plus"
-                                   :tab/name (eui/ui-icon {:type "plus"})})
+  (let [tabs           (conj tabs {:tab/id "tab-plus" :tab/name (eui/ui-icon {:type "plus"})})
         select-handler (fn [id] (m/set-string! this :ui/selected-tab :value id))
         selected-tab   (if (= :invalid selected-tab) (-> tabs first :tab/id) selected-tab)]
     [(eui/ui-tabs

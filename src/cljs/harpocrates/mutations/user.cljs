@@ -22,38 +22,24 @@
       (assoc-in [:component/id :login :ui/password] "")))
 
 (defmutation login [_]
-  (action [{:keys [state]}]
-          (swap! state show-login-busy* true))
+  (action [{:keys [state]}] (swap! state show-login-busy* true))
   (error-action [{:keys [state]}]
                 (log/error "Error action")
-                (swap! state (fn [s]
-                               (-> s
-                                   (show-login-busy* false)
-                                   (show-login-error* true)))))
+                (swap! state (fn [s] (-> s (show-login-busy* false) (show-login-error* true)))))
   (ok-action [{:keys [state]}]
              (log/info "OK action")
              (let [current-user-query [{:session/current-user [:user/valid?]}]
-                   {{:user/keys [valid?]} :session/current-user} (fdn/db->tree current-user-query
-                                                                               @state
-                                                                               @state)]
+                   {{:user/keys [valid?]} :session/current-user} (fdn/db->tree current-user-query @state @state)]
                (if [valid?]
                  (do
-                   (swap! state (fn [s]
-                                  (-> s
-                                      (show-login-busy* false)
-                                      (show-login-error* false)
-                                      clear-credentials)))
+                   (swap! state (fn [s] (-> s (show-login-busy* false) (show-login-error* false) clear-credentials)))
                    (routing/route-to! "/main"))
                  (swap! state (fn [s]
                                 (-> s
                                     (show-login-busy* false)
                                     (show-login-error* true)))))))
-  (refresh [_]
-           [:ui/error? :ui/busy?])
-  (remote [env]
-          (-> env
-              (m/returning `harpocrates.ui.user/User)
-              (m/with-target [:session/current-user]))))
+  (refresh [_] [:ui/error? :ui/busy?])
+  (remote [env] (-> env (m/returning `harpocrates.ui.user/User) (m/with-target [:session/current-user]))))
 
 (defmutation logout [_]
   (action [{:keys [state]}]
@@ -65,9 +51,7 @@
 (defmutation finish-login [_]
   (action [{:keys [state]}]
           (let [current-user-query [{:session/current-user [:user/valid?]}]
-                {{:user/keys [valid?]} :session/current-user} (fdn/db->tree current-user-query
-                                                                            @state
-                                                                            @state)]
+                {{:user/keys [valid?]} :session/current-user} (fdn/db->tree current-user-query @state @state)]
             (if valid?
               (routing/route-to! "/main")
               (routing/route-to! "/login"))

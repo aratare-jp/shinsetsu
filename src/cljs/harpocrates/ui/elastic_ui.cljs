@@ -35,7 +35,8 @@
                             EuiModalBody
                             EuiModalFooter
                             EuiButtonEmpty
-                            EuiModalHeaderTitle]]))
+                            EuiModalHeaderTitle
+                            EuiOverlayMask]]))
 
 (def ui-button (interop/react-factory EuiButton))
 (def ui-checkbox-group (interop/react-factory EuiCheckboxGroup))
@@ -71,4 +72,5 @@
 (def ui-modal-body (interop/react-factory EuiModalBody))
 (def ui-modal-footer (interop/react-factory EuiModalFooter))
 (def ui-button-empty (interop/react-factory EuiButtonEmpty))
+(def ui-overlay-mask (interop/react-factory EuiOverlayMask))
 

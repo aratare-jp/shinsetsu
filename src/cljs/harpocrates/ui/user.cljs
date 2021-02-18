@@ -7,12 +7,12 @@
             [harpocrates.mutations.user :refer [logout]]))
 
 (defsc CurrentUser
-  [this {:user/keys [id email valid? tabs] :as props}]
+  [this {:user/keys [valid?]}]
   {:query         [:user/id :user/email :user/valid?
                    {:user/tabs (comp/get-query Tab)}]
    :initial-state {:user/id     :nobody
                    :user/valid? false
-                   :user/tabs []}}
+                   :user/tabs   []}}
   (dom/div
     (if valid?
       (ui-button {:onClick #(comp/transact! this [(logout)])} "Logout")
@@ -27,7 +27,7 @@
                    {:user/tabs (comp/get-query Tab)}]
    :initial-state {:user/id     :nobody
                    :user/valid? false
-                   :user/tabs []}}
+                   :user/tabs   []}}
   (dom/div "User"))
 
 (def ui-user (comp/factory User))
