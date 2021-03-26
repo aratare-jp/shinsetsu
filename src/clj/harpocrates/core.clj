@@ -63,9 +63,9 @@
 (defn -main [& args]
   (start #'harpocrates.config/env)
   (cond
-    (nil? (:database-url env))
+    (nil? (:jdbcUrl env))
     (do
-      (log/error "Database configuration not found, :database-url environment variable must be set before running")
+      (log/error "Database configuration not found, :jdbcUrl environment variable must be set before running")
       (System/exit 1))
     :else
     (start-app args)))

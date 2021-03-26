@@ -1,6 +1,6 @@
 (ns harpocrates.resolvers.user
   (:require [com.wsscode.pathom.connect :as pc]
-            [harpocrates.db.core :refer [*db*]]
+            [harpocrates.db.core :refer [db]]
             [taoensso.timbre :as log]
             [buddy.sign.jws :as jws]
             [harpocrates.config :refer [env]]
@@ -10,7 +10,7 @@
   [env {:user/keys [id]}]
   {::pc/input  #{:user/id}
    ::pc/output [:user/email {:user/tabs [:tabs/id]}]}
-  (let [{:user/keys [email tabs]} (get-in @*db* [:user/id id])]
+  (let [{:user/keys [email tabs]} (get-in @db [:user/id id])]
     {:user/id    id
      :user/email email
      :user/tabs  tabs}))
@@ -18,7 +18,7 @@
 (pc/defresolver current-user-resolver [env _]
   {::pc/output [{:session/current-user [:user/id]}]}
   (let [user-id (-> env :request :session)
-        {:user/keys [id email]} (log/spy :info (get-in @*db* [:user/id user-id]))]
+        {:user/keys [id email]} (log/spy :info (get-in @db [:user/id user-id]))]
     {:session/current-user
      (if id
        {:user/email  email

@@ -40,11 +40,16 @@
                                    [ring "1.8.2"]
                                    [metosin/muuntaja "0.6.7"]
                                    [ring/ring-defaults "0.3.2"]
-                                   [seancorfield/next.jdbc "1.1.613"]
+                                   [seancorfield/next.jdbc "1.1.646"]
                                    [honeysql "1.0.444"]
                                    [mount "0.1.16"]
                                    [metosin/reitit "0.5.11"]
-                                   [bk/ring-gzip "0.3.0"]]
+                                   [bk/ring-gzip "0.3.0"]
+                                   [migratus "1.3.5"]
+                                   [prismatic/schema "1.1.12"]
+                                   [org.postgresql/postgresql "42.2.19.jre7"]
+                                   [com.zaxxer/HikariCP "4.0.3"]
+                                   [com.fzakaria/slf4j-timbre "0.3.21"]]
                   :target-path    "target/%s/"
                   :main           ^:skip-aot harpocrates.core
                   :clean-targets  ^{:protect false} [:target-path]

@@ -2,7 +2,7 @@
   (:require [com.fulcrologic.fulcro.server.api-middleware :refer [augment-response]]
             [com.wsscode.pathom.connect :as pc]
             [taoensso.timbre :as log]
-            [harpocrates.db.core :refer [*db*]]
+            [harpocrates.db.core :refer [db]]
             [harpocrates.config :refer [env]]
             [buddy.sign.jws :as jws]
             [buddy.hashers :as hashers]
@@ -14,7 +14,7 @@
    ::pc/output [:user/id :user/valid?]}
   (log/info "Login" email)
   (let [secret   (:secret env)
-        user-map (get @*db* :user/id)
+        user-map (get @db :user/id)
         subject  (second (first (filter (fn [[_ v]] (= (:user/email v) email)) user-map)))]
     (if (hashers/check password (:user/password subject))
       (augment-response

@@ -16,9 +16,9 @@
 
 (defn db-fixture
   [f]
-  (mount/start #'db/*db*)
+  (mount/start #'db/db)
   (f)
-  (mount/stop #'db/*db*))
+  (mount/stop #'db/db))
 
 (use-fixtures :once app-fixture)
 (use-fixtures :each db-fixture)

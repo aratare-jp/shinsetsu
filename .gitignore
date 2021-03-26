@@ -3,7 +3,7 @@
 /classes
 /checkouts
 pom.xml
-dev-config.edn
+test-config.edn
 test-config.edn
 *.jar
 *.class
