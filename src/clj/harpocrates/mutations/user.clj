@@ -6,31 +6,54 @@
             [harpocrates.config :refer [env]]
             [buddy.sign.jws :as jws]
             [buddy.hashers :as hashers]
-            [puget.printer :refer [pprint]]))
+            [puget.printer :refer [pprint]]
+            [schema.core :as s]
+            [harpocrates.spec :as hs]
+            [harpocrates.db.user :as db])
+  (:import [java.util Date]))
 
 (pc/defmutation login
-  [env {:user/keys [email password]}]
-  {::pc/params #{:user/email :user/password}
+  [env {:user/keys [username password]}]
+  {::pc/params #{:user/username :user/password}
    ::pc/output [:user/id :user/valid?]}
-  (log/info "Login" email)
-  (let [secret   (:secret env)
-        user-map (get @db :user/id)
-        subject  (second (first (filter (fn [[_ v]] (= (:user/email v) email)) user-map)))]
-    (if (hashers/check password (:user/password subject))
-      (augment-response
-        {:user/email  email
-         :user/id     (:user/id subject)
-         :user/valid? true}
-        (fn [ring-resp] (assoc ring-resp :session (:user/id subject))))
+  (s/validate hs/NonEmptyContinuousStr username)
+  (s/validate hs/NonEmptyContinuousStr password)
+  (log/info "Login with" username)
+  (let [secret  (:secret env)
+        user    (db/read-user-by-username {:user/username username})
+        user-id (:user-id user)
+        token   (jws/sign user-id secret)]
+    (if (hashers/check password (:user/password user))
+      (do
+        (db/create-current-user {:user/id      user-id
+                                 :user/token   token
+                                 :user/created (new Date)
+                                 :user/updated (new Date)})
+        (augment-response
+          {:user/id user-id :user/valid? true}
+          (fn [ring-resp] (assoc ring-resp :session token))))
       {:user/valid? false})))
 
-(pc/defmutation logout [env {:user/keys [email password]}]
-  {::pc/params #{:user/email :user/password}
+(pc/defmutation logout
+  [env {:user/keys [username password]}]
+  {::pc/params #{:user/username :user/password}
    ::pc/output [:user/id :user/valid?]}
-  (augment-response
-    {:user/id     :nobody
-     :user/valid? false}
-    (fn [ring-resp] (assoc ring-resp :session {}))))
+  (s/validate hs/NonEmptyContinuousStr username)
+  (s/validate hs/NonEmptyContinuousStr password)
+  (log/info "Logging out with" username)
+  (let [secret    (:secret env)
+        jws-token (-> env :request :session)
+        user-id   (jws/unsign jws-token secret)
+        tokens    (db/read-current-user {:user/id user-id})]
+    (if (some #(= % jws-token) tokens)
+      (do
+        (log/info "Retiring token" jws-token)
+        (db/delete-current-user {:user/id user-id :user/token jws-token})
+        (augment-response
+          {:user/id :nobody :user/valid? false}
+          (fn [ring-resp] (assoc ring-resp :session {}))))
+      (do
+        (log/warn username "tried to log out with invalid token" jws-token)
+        {:user/id :nobody :user/valid? false}))))
 
-(def mutations [login
-                logout])
+(def mutations [login logout])
