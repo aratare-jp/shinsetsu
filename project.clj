@@ -15,7 +15,9 @@
                                 [com.fulcrologic/fulcro-rad "1.0.8"]
                                 [com.wsscode/pathom "2.3.1"]
                                 [org.clojure/core.async "1.3.610"]
-                                [medley "1.3.0"]]}
+                                [medley "1.3.0"]
+                                [prismatic/schema "1.1.12"]
+                                [prismatic/schema-generators "0.1.3"]]}
    :shared-dev  [:shared
                  {:source-paths ["env/dev/cljc"]}]
    :shared-test [:shared-dev
@@ -46,7 +48,7 @@
                                    [metosin/reitit "0.5.11"]
                                    [bk/ring-gzip "0.3.0"]
                                    [migratus "1.3.5"]
-                                   [prismatic/schema "1.1.12"]
+                                   [valip "0.2.0"]
                                    [org.postgresql/postgresql "42.2.19.jre7"]
                                    [com.zaxxer/HikariCP "4.0.3"]
                                    [com.fzakaria/slf4j-timbre "0.3.21"]]

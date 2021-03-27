@@ -8,11 +8,14 @@
     [harpocrates.db.core :refer [db]]
     [harpocrates.config :refer [env]]
     [clojure.tools.namespace.repl :refer [refresh]]
-    [migratus.core :as migratus]))
+    [migratus.core :as migratus]
+    [schema.core :as s]))
 
 (add-tap (bound-fn* pprint))
 
 (mount/start #'env #'db)
+
+(s/set-fn-validation! true)
 
 (def migratus-config {:store         :database
                       :migration-dir "migrations/"
@@ -55,28 +58,17 @@
   []
   (migratus/rollback migratus-config))
 
-(defn up
+(s/defn up
   "Bring up migrations matching the given ids"
-  [& ids]
+  [& ids :- [s/Str]]
   (apply migratus/up migratus-config ids))
 
-(defn down
+(s/defn down
   "Bring down migrations matching the given ids"
-  [& ids]
+  [& ids :- [s/Str]]
   (apply migratus/down migratus-config ids))
 
-(defn create-migration
-  "Create a new up and down migration file with a generated timestamp and `name`."
-  [name]
+(s/defn create-migration
+  "Create a new migration instruction"
+  [name :- s/Str]
   (migratus/create migratus-config name))
-
-(comment
-  (reset-db)
-  (rollback)
-  (migrate)
-  (create-migration "create-user")
-  (create-migration "create-bookmark")
-  (create-migration "create-tab")
-  (create-migration "create-tag")
-  (create-migration "create-bookmark-tag")
-  (create-migration "create-tab-tag"))
