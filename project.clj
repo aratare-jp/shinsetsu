@@ -1,6 +1,6 @@
-(defproject harpocrates "0.1.0-SNAPSHOT"
+(defproject shinsetsu "0.1.0-SNAPSHOT"
   :description "Bookmark enhancer"
-  :url "http://github.com/aratare-tech/harpocrates"
+  :url "http://github.com/aratare-tech/shinsetsu"
   :dependencies [[org.clojure/clojure "1.10.1"]]
   :profiles
   {
@@ -21,7 +21,9 @@
    :shared-dev  [:shared
                  {:source-paths ["env/dev/cljc"]}]
    :shared-test [:shared-dev
-                 {:source-paths ["env/test/cljc"]}]
+                 {:source-paths ["env/test/cljc"]
+                  :dependencies [[eftest "0.5.9"]]
+                  :plugins      [[lein-eftest "0.5.9"]]}]
    :shared-prod [:shared
                  {:source-paths ["env/prod/cljc"]}]
 
@@ -53,7 +55,7 @@
                                    [com.zaxxer/HikariCP "4.0.3"]
                                    [com.fzakaria/slf4j-timbre "0.3.21"]]
                   :target-path    "target/%s/"
-                  :main           ^:skip-aot harpocrates.core
+                  :main           ^:skip-aot shinsetsu.core
                   :clean-targets  ^{:protect false} [:target-path]
                   :repl-options   {:init-ns user
                                    :timeout 120000}}]
@@ -114,7 +116,7 @@
    :uberjar     {:omit-source  true
                  :prep-tasks   ["compile"]
                  :aot          :all
-                 :uberjar-name "harpocrates.jar"}
+                 :uberjar-name "shinsetsu.jar"}
    :prod        [:client-prod
                  :server-prod
                  :uberjar]})

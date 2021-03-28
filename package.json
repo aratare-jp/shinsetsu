@@ -1,5 +1,5 @@
 {
-  "name": "harpocrates",
+  "name": "shinsetsu",
   "version": "1.0.0",
   "description": "Bookmark on steroid!",
   "main": "index.js",
@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aratare-tech/harpocrates.git"
+    "url": "git+https://github.com/aratare-tech/shinsetsu.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/aratare-tech/harpocrates/issues"
+    "url": "https://github.com/aratare-tech/shinsetsu/issues"
   },
-  "homepage": "https://github.com/aratare-tech/harpocrates#readme",
+  "homepage": "https://github.com/aratare-tech/shinsetsu#readme",
   "dependencies": {
     "@elastic/datemath": "^5.0.3",
     "@elastic/eui": "31.5.0",

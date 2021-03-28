@@ -1,7 +1,7 @@
 FROM openjdk:8-alpine
 
-COPY target/uberjar/harpocrates.jar /harpocrates/app.jar
+COPY target/uberjar/shinsetsu.jar /shinsetsu/app.jar
 
 EXPOSE 3000
 
-CMD ["java", "-jar", "/harpocrates/app.jar"]
+CMD ["java", "-jar", "/shinsetsu/app.jar"]

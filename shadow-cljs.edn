@@ -5,7 +5,7 @@
                    :output-dir       "resources/public/js/main"
                    :asset-path       "/js/main"
                    :modules          {:main {:init-fn user/init}}
-                   :devtools         {:after-load harpocrates.core/refresh
+                   :devtools         {:after-load shinsetsu.core/refresh
                                       :preloads   [com.fulcrologic.fulcro.inspect.preload]}
                    :compiler-options {:output-feature-set :es6}
                    :js-options       {:js-provider    :external

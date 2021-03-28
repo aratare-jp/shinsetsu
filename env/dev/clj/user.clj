@@ -1,12 +1,12 @@
 (ns user
   "Userspace functions you can run by default in your local REPL."
   (:require
-    [harpocrates.config :refer [env]]
+    [shinsetsu.config :refer [env]]
     [clojure.pprint :refer [pprint]]
     [mount.core :as mount]
-    [harpocrates.core :refer [repl-server]]
-    [harpocrates.db.core :refer [db]]
-    [harpocrates.config :refer [env]]
+    [shinsetsu.core :refer [repl-server]]
+    [shinsetsu.db.core :refer [db]]
+    [shinsetsu.config :refer [env]]
     [clojure.tools.namespace.repl :refer [refresh]]
     [migratus.core :as migratus]
     [schema.core :as s]))
