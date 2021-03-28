@@ -48,7 +48,7 @@
                                    [metosin/muuntaja "0.6.7"]
                                    [ring/ring-defaults "0.3.2"]
                                    [seancorfield/next.jdbc "1.1.646"]
-                                   [honeysql "1.0.444"]
+                                   [com.github.seancorfield/honeysql "2.0.0-alpha3"]
                                    [mount "0.1.16"]
                                    [metosin/reitit "0.5.11"]
                                    [bk/ring-gzip "0.3.0"]
@@ -56,7 +56,8 @@
                                    [valip "0.2.0"]
                                    [org.postgresql/postgresql "42.2.19.jre7"]
                                    [com.zaxxer/HikariCP "4.0.3"]
-                                   [com.fzakaria/slf4j-timbre "0.3.21"]]
+                                   [com.fzakaria/slf4j-timbre "0.3.21"]
+                                   [cheshire "5.10.0"]]
                   :target-path    "target/%s/"
                   :main           ^:skip-aot shinsetsu.core
                   :clean-targets  ^{:protect false} [:target-path]

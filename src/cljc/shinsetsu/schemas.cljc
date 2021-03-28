@@ -1,18 +1,20 @@
 (ns shinsetsu.schemas
   (:require [schema.core :as s]
             [schema-generators.generators :as g]
-            [valip.predicates :as p])
-  (:import [java.time ZonedDateTime]))
+            [valip.predicates :as p]
+            [clojure.test.check.generators :as check-gen])
+  (:import [java.time ZonedDateTime Instant]))
 
-(defn zoned-date-time?
+(defn instant?
   [v]
   (try
-    (ZonedDateTime/parse v)
+    (or
+      (instance? Instant v)
+      (Instant/parse v))
     (catch Exception _ false)))
 
-(def ZDateTime (s/pred zoned-date-time?))
+(def IInstant (s/pred instant?))
 (def Bytes (s/pred bytes?))
-(def Email (s/pred p/email-address?))
 (def NonEmptyStr (s/constrained s/Str (complement empty?) "Not empty string"))
 
 (def ContinuousStr
@@ -24,21 +26,23 @@
 (defn MaxLengthStr [l]
   (s/constrained s/Str #(>= l (count %)) (str "Max length " l)))
 
-(def Bytes (s/pred bytes?))
+(def default-leaf-generator
+  {IInstant (check-gen/elements (doall (repeatedly 100 #(Instant/now))))
+   Bytes    check-gen/bytes})
 
 (def User
   {:user/id       s/Uuid
    :user/username NonEmptyContinuousStr
    :user/password NonEmptyContinuousStr
    :user/image    Bytes
-   :user/created  s/Inst
-   :user/updated  s/Inst})
+   :user/created  IInstant
+   :user/updated  IInstant})
 
 (def CurrentUser
   {:user/id      s/Uuid
    :user/token   NonEmptyContinuousStr
-   :user/created s/Inst
-   :user/updated s/Inst})
+   :user/created IInstant
+   :user/updated IInstant})
 
 (def User? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) User)))
 
@@ -46,8 +50,8 @@
   {:tab/id       s/Uuid
    :tab/name     s/Str
    :tab/password s/Str
-   :tab/created  s/Inst
-   :tab/updated  s/Inst
+   :tab/created  IInstant
+   :tab/updated  IInstant
    :tab/tab-id   s/Uuid})
 
 (def Tab? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Tab)))
@@ -57,8 +61,8 @@
    :tag/name    s/Str
    :tag/colour  (MaxLengthStr 10)
    :tag/image   Bytes
-   :tag/created s/Inst
-   :tag/updated s/Inst
+   :tag/created IInstant
+   :tag/updated IInstant
    :tag/tag-id  s/Uuid})
 
 (def Tag? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Tag)))
@@ -68,8 +72,8 @@
    :bookmark/title       s/Str
    :bookmark/url         s/Str
    :bookmark/image       Bytes
-   :bookmark/created     s/Inst
-   :bookmark/updated     s/Inst
+   :bookmark/created     IInstant
+   :bookmark/updated     IInstant
    :bookmark/bookmark-id s/Uuid
    :bookmark/tab-id      s/Uuid})
 

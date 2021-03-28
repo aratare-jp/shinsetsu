@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [shinsetsu.db.user :refer :all]
             [shinsetsu.db.core :refer [db]]
+            [shinsetsu.config :refer [env]]
             [clojure.test.check.generators :as check-gen]
             [expectations.clojure.test :refer [defexpect expect]]
             [schema.core :as s]
@@ -10,11 +11,13 @@
             [schema-generators.generators :as g]
             [shinsetsu.schemas :refer :all]
             [user :refer [reset-db migrate]]
-            [taoensso.timbre :as log]))
+            [taoensso.timbre :as log]
+            [mount.core :as mount]))
 
 (defn migrate-db-fixture
   [f]
   (log/info "Migrating db")
+  (mount/start #'env #'db)
   (migrate)
   (f))
 
@@ -27,19 +30,10 @@
 (use-fixtures :once migrate-db-fixture)
 (use-fixtures :each reset-db-fixture)
 
-(defexpect create-user-test
-  (testing "normal create"
-    (let [user (g/generate User)]
-      (s/set-fn-validation! false)
-      (with-redefs [nj/execute-one!     (fn [_ sql] (log/spy :info sql))
-                    nj/with-transaction (fn [_ sql] (log/spy :info sql))]
-        (create-user user))
-      (expect user (read-user user)))))
-
 (defexpect user-db
-  (let [user     (g/generate User {Bytes check-gen/bytes})
+  (let [user     (g/generate User default-leaf-generator)
         user-id  {:user/id (:user/id user)}
-        diff     (dissoc (g/generate User {Bytes check-gen/bytes}) :user/id)
+        diff     (dissoc (g/generate User default-leaf-generator) :user/id)
         new-user (merge user diff)]
     (expect nil? (read-user user-id))
     (create-user user)
