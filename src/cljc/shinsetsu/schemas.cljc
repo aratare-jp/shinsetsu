@@ -24,10 +24,13 @@
 (defn MaxLengthStr [l]
   (s/constrained s/Str #(>= l (count %)) (str "Max length " l)))
 
+(def Bytes (s/pred bytes?))
+
 (def User
   {:user/id       s/Uuid
    :user/username NonEmptyContinuousStr
    :user/password NonEmptyContinuousStr
+   :user/image    Bytes
    :user/created  s/Inst
    :user/updated  s/Inst})
 
@@ -53,7 +56,7 @@
   {:tag/id      s/Uuid
    :tag/name    s/Str
    :tag/colour  (MaxLengthStr 10)
-   :tag/image   s/Any
+   :tag/image   Bytes
    :tag/created s/Inst
    :tag/updated s/Inst
    :tag/tag-id  s/Uuid})
@@ -64,7 +67,7 @@
   {:bookmark/id          s/Uuid
    :bookmark/title       s/Str
    :bookmark/url         s/Str
-   :bookmark/image       s/Any
+   :bookmark/image       Bytes
    :bookmark/created     s/Inst
    :bookmark/updated     s/Inst
    :bookmark/bookmark-id s/Uuid

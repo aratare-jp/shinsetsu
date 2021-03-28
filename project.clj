@@ -22,8 +22,11 @@
                  {:source-paths ["env/dev/cljc"]}]
    :shared-test [:shared-dev
                  {:source-paths ["env/test/cljc"]
-                  :dependencies [[eftest "0.5.9"]]
-                  :plugins      [[lein-eftest "0.5.9"]]}]
+                  :dependencies [[eftest "0.5.9"]
+                                 [tortue/spy "2.4.0"]
+                                 [expectations/clojure-test "1.2.1"]]
+                  :plugins      [[lein-eftest "0.5.9"]
+                                 [lein-cloverage "1.2.1"]]}]
    :shared-prod [:shared
                  {:source-paths ["env/prod/cljc"]}]
 
@@ -70,10 +73,7 @@
                  :server-dev
                  {:jvm-opts     ["-Dconf=test-config.edn"]
                   :source-paths ["env/test/clj"]
-                  :test-paths   ["test/clj"]
-                  :dependencies [[pjstadig/humane-test-output "0.10.0"]]
-                  :injections   [(require 'pjstadig.humane-test-output)
-                                 (pjstadig.humane-test-output/activate!)]}]
+                  :test-paths   ["test/clj"]}]
    :server-prod [:shared-prod
                  :server
                  {:jvm-opts     ["-Dconf=prod-config.edn"]

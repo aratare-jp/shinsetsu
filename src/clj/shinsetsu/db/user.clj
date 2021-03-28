@@ -4,10 +4,10 @@
             [next.jdbc :as nj]
             [honeysql.helpers :as helpers]
             [honeysql.core :as sql]
-            [buddy.hashers :as hashers]
-            [shinsetsu.db.core :refer [db]]))
+            [shinsetsu.db.core :refer [db]]
+            [taoensso.timbre :as log]))
 
-(s/defn read-user :- User
+(s/defn read-user :- (s/maybe User)
   [{:user/keys [id]} :- {:user/id s/Uuid}]
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/select :*)
@@ -15,7 +15,7 @@
                             (helpers/where [:= :user/id id])
                             (sql/format :quoting :ansi)))))
 
-(s/defn read-user-by-username :- User
+(s/defn read-user-by-username :- (s/maybe User)
   [{:user/keys [username]} :- (:username User)]
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/select :*)
@@ -25,24 +25,22 @@
 
 (s/defn create-user :- User
   [data :- User]
-  (let [data (update data :password hashers/derive)]
-    (nj/with-transaction [tx db]
-      (nj/execute-one! tx (-> (helpers/insert-into :user)
-                              (helpers/values [data])
-                              (sql/format :quoting :ansi))))
-    data))
+  (nj/with-transaction [tx db]
+    (nj/execute-one! tx (log/spy :info (-> (helpers/insert-into :user)
+                                           (helpers/values [data])
+                                           (sql/format :quoting :ansi)))))
+  data)
 
 (s/defn update-user :- User?
   [{:user/keys [id] :as data} :- User?]
-  (let [data (if (:password data) (update data :password hashers/derive) data)]
-    (nj/with-transaction [tx db]
-      (nj/execute-one! tx (-> (helpers/update :user)
-                              (helpers/sset data)
-                              (helpers/where [:= :user/id ~id])
-                              (sql/format :quoting :ansi))))
-    data))
+  (nj/with-transaction [tx db]
+    (nj/execute-one! tx (-> (helpers/update :user)
+                            (helpers/sset data)
+                            (helpers/where [:= :user/id id])
+                            (sql/format :quoting :ansi))))
+  data)
 
-(s/defn delete-user :- User
+(s/defn delete-user :- (s/maybe User)
   [{:user/keys [id]} :- {:user/id s/Uuid}]
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/delete-from :user)
@@ -59,12 +57,10 @@
 
 (s/defn create-current-user :- CurrentUser
   [data :- CurrentUser]
-  (let [data (update data :password hashers/derive)]
-    (nj/with-transaction [tx db]
-      (nj/execute-one! tx (-> (helpers/insert-into :current-user)
-                              (helpers/values [data])
-                              (sql/format :quoting :ansi))))
-    data))
+  (nj/with-transaction [tx db]
+    (nj/execute-one! tx (-> (helpers/insert-into :current-user)
+                            (helpers/values [data])
+                            (sql/format :quoting :ansi)))))
 
 (s/defn delete-current-user :- CurrentUser
   [{:user/keys [id token]} :- CurrentUser]
