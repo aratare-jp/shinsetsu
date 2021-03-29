@@ -26,26 +26,23 @@ TBC
 
 As we progress through the information age, our ability to organise information effectively seems to stay the same. For
 example, have you ever found a really nice website about cooking and thought "I'll just bookmark this website just in
-case I need it in the future" and _never_ touched it again? I surely have. In fact, all the time. But, why?
+case I need it in the future" and _never_ touched it again? I sure have. In fact, all the time. But, why?
 
 Once bookmarked, that website will join the others in a folder somewhere, perhaps aptly named "cooking". Problem
 starts arising when there are just _too_ many bookmarks in the same place. Just scrolling through them and trying to
 find that one website you want is an already tiring exercise. Solution? Either you type in the address bar in hope to
 find it with the help of autocompletion, or you will need to summon up the bookmark manager. Regardless, chances are
-you can find it, but not without being distracted by all these unnecessary steps.
+you can find it, but not without being distracted by all these unnecessary steps. Oh, and good luck trying to do so 
+with a _nested structure_ (i.e. bookmark folders within bookmark folders) that a majority of us, when feel the need
+to "organise" our bookmarks, seem to always fall back on.
 
-Oh, and good luck trying to do so with a _nested structure_ (i.e. bookmark folders within bookmark folders) that a
-majority of us, when feel the need to "organise" our bookmarks, seem to always fall back on.
-
-As my bookmarks grow each day, and finding things has become such a chore that I truly need a better way to truly
-find things, I started wanting to find a solution that suits my need, or build one if I have to. I did the latter.
+As my bookmarks grow each day, and finding things has become such a chore that I truly need a better way to tame this
+beast. And so I started finding a solution that suits my need, or building one if I have to. I did the latter.
 
 Enter Shinsetsu, designed to be a replacement for the standard bookmark manager.
 
 Shinsetsu was designed to be as seamless as possible, in the sense that if you need to find something, you can do so
-_quickly_. You can find its features in the section above, but in general, it aims to replace the standard bookmark
-manager that comes with any browser nowadays. It does so by replacing some of the common functionality as well as
-adding other features. For example:
+_quickly_. You can find its features in the section above, but here's a quick sneakpeek:
 
 - Instead of having nested structure, Shinsetsu promotes _tabs_ and _tags_.
     * Tabs are the highest level of aggregation, i.e. your "cooking" bookmark folder. You use tabs to put bookmarks
@@ -55,7 +52,7 @@ library, e.g. History, Culture, Literature, etc.
 find that Italian cooking website about pasta? One way to organise such website would be to put it in "cooking" tab
 with "Italian" and "Pasta" tags. It's like searching for a book in a library: you walk through sections (tab) and go
 through the alphabetically labeled shelves (tags) within the section.
-- Secret sections in a library are cool, and so are protected tabs. You can assign passwords to tabs to protected
+- Secret sections in a library are cool, and so are protected tabs. You can assign passwords to tabs to protect
 sensitive data, such as work-related documentations.
 - Cross-browser synchronisation so no longer do you need to maintain separate accounts for different browsers. Add a
 bookmark in Firefox and access it in Chrome with ease.
