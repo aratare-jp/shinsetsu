@@ -15,11 +15,12 @@ TBC
 
 == Features
 
-- Standard bookmark operations (minus a few things)
-- Cross-browser bookmark sync
-- Tagging for easy searching & filtering
-- Securing with passwords
-- DYI self-hosted server for absolute data privacy
+- [ ] Standard bookmark operations (minus a few things)
+- [ ] Cross-browser bookmark sync
+- [ ] Tagging for easy searching & filtering
+- [ ] Securing with passwords
+- [ ] Self-hosted server for absolute data privacy
+- [ ] One-stop command line interface for all operations above
 
 == Rationale
 
