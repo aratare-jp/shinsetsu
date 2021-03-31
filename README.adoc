@@ -9,18 +9,21 @@ ____
 
 Shinsetsu is a browser plugin that takes the bookmark pain away from you.
 
+== Status
+`Active development`
+
 == Installation
 
 TBC
 
 == Features
 
-- [ ] Standard bookmark operations (minus a few things)
-- [ ] Cross-browser bookmark sync
-- [ ] Tagging for easy searching & filtering
-- [ ] Securing with passwords
-- [ ] Self-hosted server for absolute data privacy
-- [ ] One-stop command line interface for all operations above
+- One-stop command line interface for all operations
+- Standard bookmark operations (minus a few things)
+- Cross-browser bookmark sync
+- Tagging for easy searching & filtering
+- Securing with passwords
+- Self-hosted server for absolute data privacy
 
 == Rationale
 
