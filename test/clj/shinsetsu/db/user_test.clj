@@ -36,7 +36,9 @@
         diff     (dissoc (g/generate User default-leaf-generator) :user/id)
         new-user (merge user diff)]
     (expect nil? (read-user user-id))
-    (create-user user)
+    (doseq [[k v] (create-user user)]
+      (expect (get user k) v k))
+    ;(expect user (create-user user))
     (expect user (read-user user-id))
     (update-user new-user)
     (expect new-user (read-user user-id))
@@ -45,10 +47,13 @@
 
 (comment
   (-> "HELLO WORLD!" .getBytes)
+  (println (read-user {:user/id (java.util.UUID/fromString "2fbd6cd8-aa7a-4040-b427-f8e53f3b7794")}))
+  (create-user (log/spy :info (g/generate User default-leaf-generator)))
   (let [byte (g/generate Bytes {Bytes check-gen/bytes})]
     (println (= byte byte)))
   (bytes? (g/generate Bytes {Bytes check-gen/bytes}))
   (require '[eftest.runner :as runner])
+  (g/generate User {Bytes check-gen/bytes})
   (create-user (g/generate User {Bytes check-gen/bytes}))
   (runner/run-tests [#'shinsetsu.db.user-test/user-db]))
 

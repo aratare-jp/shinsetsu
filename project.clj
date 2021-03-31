@@ -54,7 +54,7 @@
                                    [bk/ring-gzip "0.3.0"]
                                    [migratus "1.3.5"]
                                    [valip "0.2.0"]
-                                   [org.postgresql/postgresql "42.2.19.jre7"]
+                                   [org.postgresql/postgresql "42.2.19"]
                                    [com.zaxxer/HikariCP "4.0.3"]
                                    [com.fzakaria/slf4j-timbre "0.3.21"]
                                    [cheshire "5.10.0"]]

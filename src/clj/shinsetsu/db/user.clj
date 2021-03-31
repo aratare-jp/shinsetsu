@@ -4,7 +4,7 @@
             [next.jdbc :as nj]
             [honey.sql.helpers :as helpers]
             [honey.sql :as sql]
-            [shinsetsu.db.core :refer [db]]
+            [shinsetsu.db.core :refer [db builder-fn]]
             [taoensso.timbre :as log]))
 
 (s/defn read-user :- (s/maybe User)
@@ -13,7 +13,8 @@
     (nj/execute-one! tx (-> (helpers/select :*)
                             (helpers/from :user)
                             (helpers/where [:= :user/id id])
-                            (sql/format {:dialect :ansi})))))
+                            (sql/format {:dialect :ansi}))
+                     {:builder-fn builder-fn})))
 
 (s/defn read-user-by-username :- (s/maybe User)
   [{:user/keys [username]} :- (:username User)]
@@ -26,19 +27,21 @@
 (s/defn create-user :- User
   [data :- User]
   (nj/with-transaction [tx db]
-    (nj/execute-one! tx (log/spy :info (-> (helpers/insert-into :user)
-                                           (helpers/values [data])
-                                           (helpers/returning :*)
-                                           (sql/format {:dialect :ansi}))))))
+    (nj/execute-one! tx (-> (helpers/insert-into :user)
+                            (helpers/values [data])
+                            (helpers/returning :*)
+                            (sql/format {:dialect :ansi}))
+                     {:builder-fn builder-fn})))
 
 (s/defn update-user :- User
   [{:user/keys [id] :as data} :- User?]
-  (nj/with-transaction [tx db]
-    (nj/execute-one! tx (-> (helpers/update :user)
-                            (helpers/set data)
-                            (helpers/where [:= :user/id id])
-                            (helpers/returning :*)
-                            (sql/format {:dialect :ansi})))))
+  (let [data (dissoc data :user/id)]
+    (nj/with-transaction [tx db]
+      (nj/execute-one! tx (log/spy :info (-> (helpers/update :user)
+                                             (helpers/set data)
+                                             (helpers/where [:= :user/id id])
+                                             (helpers/returning :*)
+                                             (sql/format {:dialect :ansi})))))))
 
 (s/defn delete-user :- (s/maybe User)
   [{:user/keys [id]} :- {:user/id s/Uuid}]
@@ -78,7 +81,3 @@
     (nj/execute-one! tx (-> (helpers/select :tab)
                             (helpers/where [:= :tab/user-id id])
                             (sql/format {:dialect :ansi})))))
-
-(comment
-  (require '[schema-generators.generators :as g])
-  (create-user (g/generate User default-leaf-generator)))

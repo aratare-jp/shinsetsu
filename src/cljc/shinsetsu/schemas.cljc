@@ -3,17 +3,16 @@
             [schema-generators.generators :as g]
             [valip.predicates :as p]
             [clojure.test.check.generators :as check-gen])
-  (:import [java.time ZonedDateTime Instant]))
+  (:import [java.time OffsetDateTime]))
 
-(defn instant?
-  [v]
+(defn offset-dt?
+  "Check if dt is an OffsetDateTime-compatible string or instance."
+  [dt]
   (try
-    (or
-      (instance? Instant v)
-      (Instant/parse v))
-    (catch Exception _ false)))
+    (or (instance? OffsetDateTime dt) (OffsetDateTime/parse dt))
+    (catch Exception e false)))
 
-(def IInstant (s/pred instant?))
+(def OffsetDT (s/pred offset-dt?))
 (def Bytes (s/pred bytes?))
 (def NonEmptyStr (s/constrained s/Str (complement empty?) "Not empty string"))
 
@@ -27,22 +26,22 @@
   (s/constrained s/Str #(>= l (count %)) (str "Max length " l)))
 
 (def default-leaf-generator
-  {IInstant (check-gen/elements (doall (repeatedly 100 #(Instant/now))))
-   Bytes    check-gen/bytes})
+  {Bytes    check-gen/bytes
+   OffsetDT (check-gen/elements (repeatedly 100 #(OffsetDateTime/now)))})
 
 (def User
   {:user/id       s/Uuid
    :user/username NonEmptyContinuousStr
    :user/password NonEmptyContinuousStr
    :user/image    Bytes
-   :user/created  IInstant
-   :user/updated  IInstant})
+   :user/created  OffsetDT
+   :user/updated  OffsetDT})
 
 (def CurrentUser
   {:user/id      s/Uuid
    :user/token   NonEmptyContinuousStr
-   :user/created IInstant
-   :user/updated IInstant})
+   :user/created OffsetDT
+   :user/updated OffsetDT})
 
 (def User? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) User)))
 
@@ -50,8 +49,8 @@
   {:tab/id       s/Uuid
    :tab/name     s/Str
    :tab/password s/Str
-   :tab/created  IInstant
-   :tab/updated  IInstant
+   :tab/created  OffsetDT
+   :tab/updated  OffsetDT
    :tab/tab-id   s/Uuid})
 
 (def Tab? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Tab)))
@@ -61,8 +60,8 @@
    :tag/name    s/Str
    :tag/colour  (MaxLengthStr 10)
    :tag/image   Bytes
-   :tag/created IInstant
-   :tag/updated IInstant
+   :tag/created OffsetDT
+   :tag/updated OffsetDT
    :tag/tag-id  s/Uuid})
 
 (def Tag? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Tag)))
@@ -72,8 +71,8 @@
    :bookmark/title       s/Str
    :bookmark/url         s/Str
    :bookmark/image       Bytes
-   :bookmark/created     IInstant
-   :bookmark/updated     IInstant
+   :bookmark/created     OffsetDT
+   :bookmark/updated     OffsetDT
    :bookmark/bookmark-id s/Uuid
    :bookmark/tab-id      s/Uuid})
 

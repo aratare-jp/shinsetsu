@@ -5,12 +5,14 @@
             [next.jdbc.date-time]
             [next.jdbc.prepare]
             [next.jdbc.result-set]
-            [cheshire.core :refer [generate-string parse-string]])
+            [cheshire.core :refer [generate-string parse-string]]
+            [next.jdbc.result-set :refer [builder-adapter as-maps as-maps-adapter]]
+            [taoensso.timbre :as log])
   (:import [com.zaxxer.hikari HikariDataSource]
            [org.postgresql.util PGobject]
-           [java.sql Timestamp Date Time Array PreparedStatement]
+           [java.sql Timestamp Date Time Array PreparedStatement ResultSet ResultSetMetaData]
            [clojure.lang IPersistentMap IPersistentVector]
-           [java.time ZonedDateTime LocalDateTime OffsetDateTime]))
+           [java.time LocalDateTime OffsetDateTime ZoneOffset ZonedDateTime]))
 
 (defstate db
   :start
@@ -28,11 +30,11 @@
       value)))
 
 (extend-protocol next.jdbc.result-set/ReadableColumn
-  Timestamp
-  (read-column-by-label [^Timestamp v _]
-    (.toInstant v))
-  (read-column-by-index [^Timestamp v _2 _3]
-    (.toInstant v))
+  OffsetDateTime
+  (read-column-by-label [^OffsetDateTime v _]
+    v)
+  (read-column-by-index [^OffsetDateTime v _2 _3]
+    v)
   Date
   (read-column-by-label [^Date v _]
     (.toLocalDate v))
@@ -60,9 +62,6 @@
     (.setValue (generate-string value))))
 
 (extend-protocol next.jdbc.prepare/SettableParameter
-  LocalDateTime
-  (set-parameter [^LocalDateTime v ^PreparedStatement stmt ^long idx]
-    (.setObject stmt idx (-> v OffsetDateTime/from)))
   IPersistentMap
   (set-parameter [^IPersistentMap v ^PreparedStatement stmt ^long idx]
     (.setObject stmt idx (clj->jsonb-pgobj v)))
@@ -75,3 +74,11 @@
                            (apply str (rest type-name)))]
         (.setObject stmt idx (.createArrayOf conn elem-type (to-array v)))
         (.setObject stmt idx (clj->jsonb-pgobj v))))))
+
+(def builder-fn (as-maps-adapter as-maps (fn [^ResultSet rs ^ResultSetMetaData dt ^Integer i]
+                                           (case (.getColumnName dt i)
+                                             "created"
+                                             (.getObject rs i OffsetDateTime)
+                                             "updated"
+                                             (.getObject rs i OffsetDateTime)
+                                             (.getObject rs i)))))
