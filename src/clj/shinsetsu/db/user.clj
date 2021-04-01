@@ -12,6 +12,7 @@
 
 (s/defn read-user :- (s/maybe UserDB)
   [{:user/keys [id]} :- {:user/id s/Uuid}]
+  (log/info "Reading user with id" id)
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/select :*)
                             (helpers/from :user)
@@ -20,6 +21,7 @@
 
 (s/defn read-user-by-username :- (s/maybe UserDB)
   [{:user/keys [username]} :- {:user/username Username}]
+  (log/info "Reading user by username" username)
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/select :*)
                             (helpers/from :user)
@@ -28,6 +30,7 @@
 
 (s/defn create-user :- UserDB
   [data :- User]
+  (log/info "Creating new user with id" (:user/id data))
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/insert-into :user)
                             (helpers/values [data])
@@ -36,12 +39,12 @@
 
 (s/defn update-user :- UserDB
   [{:user/keys [id] :as data} :- PartialUser]
+  (log/info "Updating user with id" id)
   (let [data (-> data
                  (dissoc :user/id)
                  (merge {:user/updated (now)})
                  ;; FIXME: This shouldn't be required. Checkin with HoneySQL for fix.
-                 (->> (map (fn [[k v]] [(keyword (name k)) v]))
-                      (into {})))]
+                 (->> (map (fn [[k v]] [(keyword (name k)) v])) (into {})))]
     (nj/with-transaction [tx db]
       (nj/execute-one! tx (-> (helpers/update :user)
                               (helpers/set data)
@@ -51,6 +54,7 @@
 
 (s/defn delete-user :- (s/maybe UserDB)
   [{:user/keys [id]} :- {:user/id s/Uuid}]
+  (log/info "Deleting user with id" id)
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/delete-from :user)
                             (helpers/where [:= :user/id id])
@@ -60,6 +64,7 @@
 (s/defn check-current-user :- s/Bool
   "Check if the given user id and token is still valid, i.e. the token is still operational."
   [{:user/keys [id token]} :- CurrentUser]
+  (log/info "Check current user with id" id)
   (boolean (nj/with-transaction [tx db]
              (nj/execute-one! tx (-> (helpers/select :*)
                                      (helpers/from [:current_user :user])
@@ -68,6 +73,7 @@
 
 (s/defn create-current-user :- CurrentUserDB
   [data :- CurrentUser]
+  (log/info "Creating a current user with id" (:user/id data))
   (simplify-kw
     (nj/with-transaction [tx db]
       (nj/execute-one! tx (-> (helpers/insert-into :current_user)
@@ -78,6 +84,7 @@
 
 (s/defn delete-current-user :- CurrentUserDB
   [{:user/keys [id token]} :- CurrentUser]
+  (log/info "Deleting current user with id" id)
   (simplify-kw
     (nj/with-transaction [tx db]
       (nj/execute-one! tx (-> (helpers/delete-from :current_user :user)
@@ -85,13 +92,6 @@
                               (helpers/returning :*)
                               (sql/format {:dialect :ansi}))))
     "user"))
-
-(s/defn read-user-tab :- [TabDB]
-  [{:user/keys [id]} :- {:user/id s/Uuid}]
-  (nj/with-transaction [tx db]
-    (nj/execute-one! tx (-> (helpers/select :tab)
-                            (helpers/where [:= :tab/user-id id])
-                            (sql/format {:dialect :ansi})))))
 
 (comment
   (require '[schema-generators.generators :as g])

@@ -1,6 +1,7 @@
 (ns shinsetsu.resolvers.user
   (:require [com.wsscode.pathom.connect :as pc]
             [shinsetsu.db.user :as db]
+            [shinsetsu.db.tab :as tag-db]
             [shinsetsu.schemas :refer :all]
             [taoensso.timbre :as log]
             [buddy.sign.jws :as jws]
@@ -26,7 +27,7 @@
         token   (-> env :request :session)
         user-id (jws/unsign token secret)]
     (if (= user-id id)
-      (db/read-user-tab data)
+      (tag-db/read-user-tab data)
       (throw (ex-info "Cannot query other user's data" {})))))
 
 (pc/defresolver current-user-resolver

@@ -3,7 +3,6 @@
             [shinsetsu.db.user :refer :all]
             [shinsetsu.db.core :refer [db]]
             [shinsetsu.config :refer [env]]
-            [clojure.test.check.generators :as check-gen]
             [expectations.clojure.test :refer [defexpect expect more in]]
             [puget.printer :refer [pprint]]
             [schema-generators.generators :as g]
@@ -70,11 +69,3 @@
     (expect (check-current-user current-user))
     (current-user-compare current-user (delete-current-user current-user))
     (expect false (check-current-user current-user))))
-
-(comment
-  (create-user (g/generate User default-leaf-generator))
-  (create-current-user {:user/id    (java.util.UUID/fromString "a0f7bad9-c730-40f7-9c21-392c938a3b29")
-                        :user/token "bao"})
-  (require '[eftest.runner :as runner])
-  (runner/run-tests [#'shinsetsu.db.user-test/user-db])
-  (runner/run-tests [#'shinsetsu.db.user-test/current-user-db]))
