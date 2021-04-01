@@ -17,7 +17,8 @@
                                 [org.clojure/core.async "1.3.610"]
                                 [medley "1.3.0"]
                                 [prismatic/schema "1.1.12"]
-                                [prismatic/schema-generators "0.1.3"]]}
+                                [prismatic/schema-generators "0.1.3"]
+                                [camel-snake-kebab "0.4.2"]]}
    :shared-dev  [:shared
                  {:source-paths ["env/dev/cljc"]}]
    :shared-test [:shared-dev

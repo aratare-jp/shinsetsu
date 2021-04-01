@@ -44,7 +44,7 @@
   (let [secret    (:secret env)
         jws-token (-> env :request :session)
         user-id   (jws/unsign jws-token secret)
-        tokens    (db/read-current-user {:user/id user-id})]
+        tokens    (db/check-current-user {:user/id user-id})]
     (if (some #(= % jws-token) tokens)
       (do
         (log/info "Retiring token" jws-token)

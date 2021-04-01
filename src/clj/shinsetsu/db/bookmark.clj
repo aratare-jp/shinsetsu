@@ -23,7 +23,7 @@
   data)
 
 (s/defn update-bookmark :- Bookmark
-  [{:bookmark/keys [id] :as data} :- Bookmark?]
+  [{:bookmark/keys [id] :as data} :- PartialBookmark]
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/update :bookmark)
                             (helpers/set data)

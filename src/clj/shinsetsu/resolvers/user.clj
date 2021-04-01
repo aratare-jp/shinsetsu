@@ -36,7 +36,7 @@
         jws-token (-> env :request :session)]
     (if jws-token
       (let [user-id (jws/unsign jws-token secret)
-            tokens  (db/read-current-user {:user/id user-id})]
+            tokens  (db/check-current-user {:user/id user-id})]
         (if tokens
           {:session/current-user {:user/id user-id :user/valid true}}
           {:user/id :nobody :user/valid? false}))

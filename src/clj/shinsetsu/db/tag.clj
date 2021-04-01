@@ -21,8 +21,8 @@
                             (helpers/values [data])
                             (sql/format {:dialect :ansi})))))
 
-(s/defn update-tag :- Tag?
-  [{:tag/keys [id] :as data} :- Tag?]
+(s/defn update-tag :- PartialTag
+  [{:tag/keys [id] :as data} :- PartialTag]
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/update :tag)
                             (helpers/set data)

@@ -22,8 +22,8 @@
                             (sql/format {:dialect :ansi}))))
   data)
 
-(s/defn update-tab :- Tab?
-  [{:tab/keys [id] :as data} :- Tab?]
+(s/defn update-tab :- PartialTab
+  [{:tab/keys [id] :as data} :- PartialTab]
   (nj/with-transaction [tx db]
     (nj/execute-one! tx (-> (helpers/update :tab)
                             (helpers/set data)

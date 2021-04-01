@@ -4,6 +4,6 @@ CREATE TABLE IF NOT EXISTS "current_user"
     token   varchar NOT NULL,
     created timestamptz DEFAULT now(),
     updated timestamptz DEFAULT now(),
-    PRIMARY KEY (id),
+    PRIMARY KEY (id, token),
     CONSTRAINT fk_user FOREIGN KEY (id) REFERENCES "user" (id)
 )

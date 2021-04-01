@@ -3,14 +3,22 @@
             [schema-generators.generators :as g]
             [valip.predicates :as p]
             [clojure.test.check.generators :as check-gen])
-  (:import [java.time OffsetDateTime]))
+  (:import [java.time OffsetDateTime ZoneOffset]))
 
 (defn offset-dt?
-  "Check if dt is an OffsetDateTime-compatible string or instance."
+  "Check if dt is:
+
+  - an ISO-8601 string with offset of +00:00
+  - a java.time.OffsetDateTime instance with offset of +00:00"
   [dt]
   (try
-    (or (instance? OffsetDateTime dt) (OffsetDateTime/parse dt))
-    (catch Exception e false)))
+    (if-let [v (condp = (class dt)
+                 java.time.OffsetDateTime dt
+                 String (OffsetDateTime/parse dt)
+                 false)]
+      (= ZoneOffset/UTC (.getOffset v))
+      false)
+    (catch Exception _ false)))
 
 (def OffsetDT (s/pred offset-dt?))
 (def Bytes (s/pred bytes?))
@@ -27,53 +35,84 @@
 
 (def default-leaf-generator
   {Bytes    check-gen/bytes
-   OffsetDT (check-gen/elements (repeatedly 100 #(OffsetDateTime/now)))})
+   OffsetDT (check-gen/elements
+              (repeatedly 100 #(-> (OffsetDateTime/now)
+                                   (.withOffsetSameInstant ZoneOffset/UTC))))})
+
+(def Username NonEmptyContinuousStr)
 
 (def User
   {:user/id       s/Uuid
-   :user/username NonEmptyContinuousStr
+   :user/username Username
    :user/password NonEmptyContinuousStr
-   :user/image    Bytes
-   :user/created  OffsetDT
-   :user/updated  OffsetDT})
+   :user/image    Bytes})
+
+(def PartialUser
+  (-> {}
+      (into (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) User))
+      (dissoc :user/id)))
+
+(def UserDB
+  (merge User
+         {:user/created OffsetDT
+          :user/updated OffsetDT}))
 
 (def CurrentUser
-  {:user/id      s/Uuid
-   :user/token   NonEmptyContinuousStr
-   :user/created OffsetDT
-   :user/updated OffsetDT})
+  {:user/id    s/Uuid
+   :user/token NonEmptyContinuousStr})
 
-(def User? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) User)))
+(def CurrentUserDB
+  (merge CurrentUser
+         {:user/created OffsetDT
+          :user/updated OffsetDT}))
 
 (def Tab
   {:tab/id       s/Uuid
    :tab/name     s/Str
    :tab/password s/Str
-   :tab/created  OffsetDT
-   :tab/updated  OffsetDT
-   :tab/tab-id   s/Uuid})
+   :tab/user-id  s/Uuid})
 
-(def Tab? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Tab)))
+(def PartialTab
+  (-> {}
+      (into (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Tab))
+      (dissoc :tab/id)))
+
+(def TabDB
+  (merge Tab
+         {:tab/created OffsetDT
+          :tab/updated OffsetDT}))
+
+(def Bookmark
+  {:bookmark/id      s/Uuid
+   :bookmark/title   s/Str
+   :bookmark/url     s/Str
+   :bookmark/image   Bytes
+   :bookmark/user-id s/Uuid
+   :bookmark/tab-id  s/Uuid})
+
+(def PartialBookmark
+  (-> {}
+      (into (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Bookmark))
+      (dissoc :bookmark/id)))
+
+(def BookmarkDB
+  (merge Bookmark
+         {:bookmark/created OffsetDT
+          :bookmark/updated OffsetDT}))
 
 (def Tag
   {:tag/id      s/Uuid
    :tag/name    s/Str
-   :tag/colour  (MaxLengthStr 10)
+   :tag/colour  s/Str
    :tag/image   Bytes
-   :tag/created OffsetDT
-   :tag/updated OffsetDT
-   :tag/tag-id  s/Uuid})
+   :tag/user-id s/Uuid})
 
-(def Tag? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Tag)))
+(def PartialTag
+  (-> {}
+      (into (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Tag))
+      (dissoc :tag/id)))
 
-(def Bookmark
-  {:bookmark/id          s/Uuid
-   :bookmark/title       s/Str
-   :bookmark/url         s/Str
-   :bookmark/image       Bytes
-   :bookmark/created     OffsetDT
-   :bookmark/updated     OffsetDT
-   :bookmark/bookmark-id s/Uuid
-   :bookmark/tab-id      s/Uuid})
-
-(def Bookmark? (into {} (map (fn [[k v]] [(s/optional-key k) (s/maybe v)]) Bookmark)))
+(def TagDB
+  (merge Tag
+         {:tag/created OffsetDT
+          :tag/updated OffsetDT}))

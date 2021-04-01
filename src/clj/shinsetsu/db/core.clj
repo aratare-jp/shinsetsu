@@ -3,16 +3,12 @@
             [next.jdbc.connection :as connection]
             [shinsetsu.config :refer [env]]
             [next.jdbc.date-time]
-            [next.jdbc.prepare]
-            [next.jdbc.result-set]
-            [cheshire.core :refer [generate-string parse-string]]
-            [next.jdbc.result-set :refer [builder-adapter as-maps as-maps-adapter]]
-            [taoensso.timbre :as log])
+            [cheshire.core :refer [generate-string parse-string]])
   (:import [com.zaxxer.hikari HikariDataSource]
            [org.postgresql.util PGobject]
-           [java.sql Timestamp Date Time Array PreparedStatement ResultSet ResultSetMetaData]
+           [java.sql Timestamp Date Time Array PreparedStatement]
            [clojure.lang IPersistentMap IPersistentVector]
-           [java.time LocalDateTime OffsetDateTime ZoneOffset ZonedDateTime]))
+           [java.time OffsetDateTime ZoneOffset]))
 
 (defstate db
   :start
@@ -30,11 +26,11 @@
       value)))
 
 (extend-protocol next.jdbc.result-set/ReadableColumn
-  OffsetDateTime
-  (read-column-by-label [^OffsetDateTime v _]
-    v)
-  (read-column-by-index [^OffsetDateTime v _2 _3]
-    v)
+  Timestamp
+  (read-column-by-label [^Timestamp v _]
+    (-> v .toInstant (OffsetDateTime/ofInstant ZoneOffset/UTC)))
+  (read-column-by-index [^Timestamp v _2 _3]
+    (-> v .toInstant (OffsetDateTime/ofInstant ZoneOffset/UTC)))
   Date
   (read-column-by-label [^Date v _]
     (.toLocalDate v))
@@ -62,6 +58,9 @@
     (.setValue (generate-string value))))
 
 (extend-protocol next.jdbc.prepare/SettableParameter
+  OffsetDateTime
+  (set-parameter [^OffsetDateTime v ^PreparedStatement stmt ^long idx]
+    (.setObject stmt idx (-> v (.withOffsetSameInstant ZoneOffset/UTC) .toInstant Timestamp/from)))
   IPersistentMap
   (set-parameter [^IPersistentMap v ^PreparedStatement stmt ^long idx]
     (.setObject stmt idx (clj->jsonb-pgobj v)))
@@ -75,10 +74,26 @@
         (.setObject stmt idx (.createArrayOf conn elem-type (to-array v)))
         (.setObject stmt idx (clj->jsonb-pgobj v))))))
 
-(def builder-fn (as-maps-adapter as-maps (fn [^ResultSet rs ^ResultSetMetaData dt ^Integer i]
-                                           (case (.getColumnName dt i)
-                                             "created"
-                                             (.getObject rs i OffsetDateTime)
-                                             "updated"
-                                             (.getObject rs i OffsetDateTime)
-                                             (.getObject rs i)))))
+(comment
+  (.toString (java.time.OffsetDateTime/now))
+  (-> (java.time.OffsetDateTime/now)
+      (.withOffsetSameInstant java.time.ZoneOffset/UTC)
+      .toInstant
+      Timestamp/from)
+  (let [now (java.time.OffsetDateTime/now)]
+    (println (-> now
+                 (.withOffsetSameInstant java.time.ZoneOffset/UTC)
+                 .toInstant
+                 Timestamp/from
+                 .toInstant
+                 (OffsetDateTime/ofInstant ZoneOffset/UTC)
+                 .toString)))
+  (let [now (java.time.OffsetDateTime/now)]
+    (println (-> now
+                 (.withOffsetSameInstant java.time.ZoneOffset/UTC)
+                 .toInstant
+                 Timestamp/from
+                 .toString)))
+  (-> (java.time.OffsetDateTime/now)
+      .toInstant
+      Timestamp/from))

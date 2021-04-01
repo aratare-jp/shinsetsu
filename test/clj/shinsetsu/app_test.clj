@@ -23,7 +23,7 @@
 (use-fixtures :once app-fixture)
 (use-fixtures :each db-fixture)
 
-(deftest middleware
+#_(deftest middleware
   (let [username "hero@test.com"
         password "awesome"]
     (let [res (app/app (mock/request :post "/api" "[(shinsetsu.mutations.auth/login {:username hero@test.com
