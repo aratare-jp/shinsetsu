@@ -76,7 +76,9 @@
                  {:jvm-opts     ["-Dconf=test-config.edn"]
                   :source-paths ["env/test/clj"]
                   :test-paths   ["test/clj"]
-                  :eftest       {:multithread? :vars}}]
+                  :eftest       {:multithread? :vars}
+                  :runner-opts  {:runner       :eftest
+                                 :multithread? :vars}}]
    :server-prod [:shared-prod
                  :server
                  {:jvm-opts     ["-Dconf=prod-config.edn"]
