@@ -104,7 +104,6 @@
   {:tag/id      s/Uuid
    :tag/name    s/Str
    :tag/colour  s/Str
-   :tag/image   Bytes
    :tag/user-id s/Uuid})
 
 (def PartialTag

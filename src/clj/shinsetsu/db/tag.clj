@@ -51,4 +51,5 @@
   (log/info "Deleting tag with id" id)
   (with-tx-execute-one! (-> (helpers/delete-from :tag)
                             (helpers/where [:= :id id])
+                            (helpers/returning :*)
                             (sql/format))))

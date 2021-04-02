@@ -1,6 +1,8 @@
-(ns ^:eftest/synchronized shinsetsu.db.bookmark-test
+(ns shinsetsu.db.bookmark-test
   (:require [clojure.test :refer :all]
             [shinsetsu.db.user :refer :all]
+            [shinsetsu.db.tab :refer :all]
+            [shinsetsu.db.bookmark :refer :all]
             [shinsetsu.db.core :as db]
             [shinsetsu.config :refer [env]]
             [expectations.clojure.test :refer [defexpect expect more in]]
@@ -12,44 +14,60 @@
             [clojure.data :refer [diff]])
   (:import [java.util Arrays]))
 
-(defn migrate-db-fixture
+(defn once-fixture
   [f]
-  (log/info "Migrating db")
   (mount/start #'env #'db/db #'db/migratus-config)
   (db/migrate)
   (f)
   (mount/stop #'env #'db/db #'db/migratus-config))
 
-(defn reset-db-fixture
+(defn each-fixture
   [f]
   (f)
   (log/info "Resetting db")
   (db/reset-db))
 
-(use-fixtures :once migrate-db-fixture)
-(use-fixtures :each reset-db-fixture)
+(use-fixtures :once once-fixture)
+(use-fixtures :each each-fixture)
 
-(defn- user-compare
+(defn- bookmark-compare
   [expected actual]
-  (expect (:user/created actual))
-  (expect (:user/updated actual))
-  (let [image          (bytes (:user/image actual))
-        expected-image (bytes (:user/image expected))
-        actual         (dissoc actual :user/image)
-        expected       (dissoc expected :user/image)]
+  (expect (:bookmark/created actual))
+  (expect (:bookmark/updated actual))
+  (let [image          (bytes (:bookmark/image actual))
+        expected-image (bytes (:bookmark/image expected))
+        actual         (dissoc actual :bookmark/image)
+        expected       (dissoc expected :bookmark/image)]
     (expect expected (in actual))
     (expect (Arrays/equals image expected-image))))
 
-#_(defexpect user-db
-    (doseq [user (g/sample 50 User default-leaf-generator)]
-      (let [user-id    {:user/id (:user/id user)}
-            difference (dissoc (g/generate User default-leaf-generator) :user/id)
-            new-user   (merge user difference)]
-        (expect nil? (read-user user-id))
-        (user-compare user (create-user user))
-        (user-compare user (read-user user-id))
-        (user-compare user (read-user-by-username (:user/id user)))
-        (user-compare new-user (update-user new-user))
-        (user-compare new-user (read-user user-id))
-        (user-compare new-user (delete-user user-id))
-        (expect nil? (read-user user-id)))))
+(defexpect complete-test
+  (testing "Normal path"
+    (let [user    (create-user (g/generate User default-leaf-generator))
+          user-id (:user/id user)
+          tab     (create-tab (merge (g/generate Tab default-leaf-generator)
+                                     {:tab/user-id user-id}))
+          tab-id  (:tab/id tab)]
+      (doseq [bookmark (g/sample 50 Bookmark default-leaf-generator)]
+        (let [bookmark     (merge bookmark
+                                  {:bookmark/user-id user-id
+                                   :bookmark/tab-id  tab-id})
+              bookmark-id  (:bookmark/id bookmark)
+              difference   (-> (g/generate Bookmark default-leaf-generator)
+                               (dissoc :bookmark/id)
+                               (merge {:bookmark/user-id user-id
+                                       :bookmark/tab-id  tab-id}))
+              new-bookmark (merge bookmark difference)]
+          (expect nil? (read-bookmark {:bookmark/id bookmark-id}))
+          (bookmark-compare bookmark (create-bookmark bookmark))
+          (bookmark-compare bookmark (read-bookmark {:bookmark/id bookmark-id}))
+          (bookmark-compare new-bookmark (update-bookmark new-bookmark))
+          (bookmark-compare new-bookmark (read-bookmark {:bookmark/id bookmark-id}))
+          (bookmark-compare new-bookmark (delete-bookmark {:bookmark/id bookmark-id}))
+          (expect nil? (read-bookmark {:bookmark/id bookmark-id})))))))
+
+(comment
+  (mount.core/start #'shinsetsu.config/env #'shinsetsu.db.core/db #'shinsetsu.db.core/migratus-config)
+  (db/reset-db)
+  (require '[eftest.runner :as ef])
+  (ef/run-tests [#'shinsetsu.db.bookmark-test/complete-test]))

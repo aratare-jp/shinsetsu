@@ -1,4 +1,4 @@
-(ns ^:eftest/synchronized shinsetsu.db.user-test
+(ns shinsetsu.db.user-test
   (:require [clojure.test :refer :all]
             [shinsetsu.db.user :refer :all]
             [shinsetsu.db.core :as db]
@@ -12,7 +12,7 @@
             [clojure.data :refer [diff]])
   (:import [java.util Arrays]))
 
-(defn migrate-db-fixture
+(defn once-fixture
   [f]
   (log/info "Migrating db")
   (mount/start #'env #'db/db #'db/migratus-config)
@@ -20,14 +20,14 @@
   (f)
   (mount/stop #'env #'db/db #'db/migratus-config))
 
-(defn reset-db-fixture
+(defn each-fixture
   [f]
   (f)
   (log/info "Resetting db")
   (db/reset-db))
 
-(use-fixtures :once migrate-db-fixture)
-(use-fixtures :each reset-db-fixture)
+(use-fixtures :once once-fixture)
+(use-fixtures :each each-fixture)
 
 (defn- user-compare
   [expected actual]
