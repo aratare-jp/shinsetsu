@@ -57,14 +57,14 @@
          {:user/created OffsetDT
           :user/updated OffsetDT}))
 
-(def CurrentUser
-  {:user/id    s/Uuid
-   :user/token NonEmptyContinuousStr})
+(def Session
+  {:session/user-id s/Uuid
+   :session/token   NonEmptyContinuousStr})
 
-(def CurrentUserDB
-  (merge CurrentUser
-         {:user/created OffsetDT
-          :user/updated OffsetDT}))
+(def SessionDB
+  (merge Session
+         {:session/created OffsetDT
+          :session/updated OffsetDT}))
 
 (def Tab
   {:tab/id       s/Uuid

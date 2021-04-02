@@ -19,7 +19,7 @@
   (s/validate NonEmptyContinuousStr username)
   (s/validate NonEmptyContinuousStr password)
   (log/info "Login with" username)
-  (let [secret  (:secret env)
+  #_(let [secret  (:secret env)
         user    (db/read-user-by-username {:user/username username})
         user-id (:user-id user)
         token   (jws/sign user-id secret)]
@@ -41,7 +41,7 @@
   (s/validate NonEmptyContinuousStr username)
   (s/validate NonEmptyContinuousStr password)
   (log/info "Logging out with" username)
-  (let [secret    (:secret env)
+  #_(let [secret    (:secret env)
         jws-token (-> env :request :session)
         user-id   (jws/unsign jws-token secret)
         tokens    (db/check-current-user {:user/id user-id})]

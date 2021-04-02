@@ -3,7 +3,11 @@
             [next.jdbc.connection :as connection]
             [shinsetsu.config :refer [env]]
             [next.jdbc.date-time]
-            [cheshire.core :refer [generate-string parse-string]])
+            [cheshire.core :refer [generate-string parse-string]]
+            [next.jdbc :as jdbc]
+            [next.jdbc.result-set :as rs]
+            [schema.core :as s]
+            [migratus.core :as migratus])
   (:import [com.zaxxer.hikari HikariDataSource]
            [org.postgresql.util PGobject]
            [java.sql Timestamp Date Time Array PreparedStatement]
@@ -12,9 +16,33 @@
 
 (defstate db
   :start
-  (connection/->pool HikariDataSource (select-keys env [:jdbcUrl]))
+  (jdbc/with-options
+    (connection/->pool HikariDataSource (select-keys env [:jdbcUrl]))
+    jdbc/snake-kebab-opts)
   :stop
-  (.close db))
+  (-> db :connectable .close))
+
+(defstate migratus-config
+  :start
+  {:store         :database
+   :migration-dir "migrations/"
+   :db            {:datasource (:connectable db)}})
+
+(defn with-tx-execute!
+  "`execute!` the given query inside a tx. This function properly handles wrapping of the underlying
+  transaction with proper `builder-fn`"
+  [query]
+  (jdbc/with-transaction [tx db]
+    (let [tx (jdbc/with-options tx jdbc/snake-kebab-opts)]
+      (jdbc/execute! tx query))))
+
+(defn with-tx-execute-one!
+  "`execute-one!` the given query inside a tx. This function properly handles wrapping of the
+  underlying transaction with proper `builder-fn`"
+  [query]
+  (jdbc/with-transaction [tx db]
+    (let [tx (jdbc/with-options tx jdbc/snake-kebab-opts)]
+      (jdbc/execute-one! tx query))))
 
 (defn pgobj->clj [^PGobject pgobj]
   (let [type  (.getType pgobj)
@@ -97,3 +125,34 @@
   (-> (java.time.OffsetDateTime/now)
       .toInstant
       Timestamp/from))
+
+
+(defn reset-db
+  "Resets database."
+  []
+  (migratus/reset migratus-config))
+
+(defn migrate
+  "Migrates database up for all outstanding migrations."
+  []
+  (migratus/migrate migratus-config))
+
+(defn rollback
+  "Rollback latest database migration."
+  []
+  (migratus/rollback migratus-config))
+
+(s/defn up
+  "Bring up migrations matching the given ids"
+  [& ids :- [s/Str]]
+  (apply migratus/up migratus-config ids))
+
+(s/defn down
+  "Bring down migrations matching the given ids"
+  [& ids :- [s/Str]]
+  (apply migratus/down migratus-config ids))
+
+(s/defn create-migration
+  "Create a new migration instruction"
+  [name :- s/Str]
+  (migratus/create migratus-config name))

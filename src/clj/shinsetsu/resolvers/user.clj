@@ -33,7 +33,7 @@
 (pc/defresolver current-user-resolver
   [env _]
   {::pc/output [{:session/current-user [:user/id :user/valid]}]}
-  (let [secret    (:secret env)
+  #_(let [secret    (:secret env)
         jws-token (-> env :request :session)]
     (if jws-token
       (let [user-id (jws/unsign jws-token secret)

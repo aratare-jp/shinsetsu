@@ -5,7 +5,7 @@
             [honey.sql.helpers :as helpers]
             [honey.sql :as sql]
             [puget.printer :refer [pprint]]
-            [shinsetsu.db.core :refer [db]]
+            [shinsetsu.db.core :refer :all]
             [taoensso.timbre :as log]
             [shinsetsu.utility :refer :all]
             [schema-generators.generators :as g]))
@@ -13,11 +13,18 @@
 (s/defn read-bookmark :- (s/maybe BookmarkDB)
   [{:bookmark/keys [id]} :- {:bookmark/id s/Uuid}]
   (log/info "Reading bookmark with id" id)
-  (nj/with-transaction [tx db]
-    (nj/execute-one! tx (-> (helpers/select :*)
+  (with-tx-execute-one! (-> (helpers/select :*)
                             (helpers/from :bookmark)
-                            (helpers/where [:= :bookmark/id id])
-                            (sql/format {:dialect :ansi})))))
+                            (helpers/where [:= :id id])
+                            (sql/format))))
+
+(s/defn read-tag-bookmark :- [BookmarkDB]
+  [{:tag/keys [id]} :- {:tag/id s/Uuid}]
+  (log/info "Reading bookmark with tag id" id)
+  (with-tx-execute-one! (-> (helpers/select :*)
+                            (helpers/from :bookmark)
+                            (helpers/where [:= :tag-id id])
+                            (sql/format))))
 
 (s/defn create-bookmark :- Bookmark
   [data :- Bookmark]
