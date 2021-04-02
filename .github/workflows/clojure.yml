@@ -35,8 +35,8 @@ jobs:
       - name: Install Clojure dependencies
         run: lein deps
 
-      - name: Run tests
-        run: lein with-profile test cloverage --runner :eftest --codecov
+      - name: Run server tests
+        run: lein with-profile server-test cloverage --runner :eftest --codecov
 
       - name: Upload code coverage to Codecov
         uses: codecov/codecov-action@v1
@@ -44,7 +44,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./target/coverage/codecov.json
           flags: unittests
-          name: epsilon-clj-unit
+          name: shinsetsu-unit
           fail_ci_if_error: true
           verbose: true
 
