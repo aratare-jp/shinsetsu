@@ -1,14 +1,12 @@
 (ns shinsetsu.db.session
   (:require [schema.core :as s]
             [shinsetsu.schemas :refer :all]
-            [next.jdbc :as nj]
             [honey.sql.helpers :as helpers]
             [honey.sql :as sql]
             [puget.printer :refer [pprint]]
             [shinsetsu.db.core :refer :all]
             [taoensso.timbre :as log]
-            [shinsetsu.utility :refer :all]
-            [schema-generators.generators :as g]))
+            [shinsetsu.utility :refer :all]))
 
 (s/defn read-session :- [SessionDB]
   [{:session/keys [user-id]} :- {:session/user-id s/Uuid}]

@@ -1,4 +1,4 @@
-(ns ^:eftest/synchronized shinsetsu.db.user-test
+(ns ^:eftest/synchronized shinsetsu.db.bookmark-test
   (:require [clojure.test :refer :all]
             [shinsetsu.db.user :refer :all]
             [shinsetsu.db.core :as db]
@@ -40,15 +40,16 @@
     (expect expected (in actual))
     (expect (Arrays/equals image expected-image))))
 
-(defexpect user-db
-  (doseq [user (g/sample 50 User default-leaf-generator)]
-    (let [user-id    {:user/id (:user/id user)}
-          difference (dissoc (g/generate User default-leaf-generator) :user/id)
-          new-user   (merge user difference)]
-      (expect nil? (read-user user-id))
-      (user-compare user (create-user user))
-      (user-compare user (read-user user-id))
-      (user-compare new-user (update-user new-user))
-      (user-compare new-user (read-user user-id))
-      (user-compare new-user (delete-user user-id))
-      (expect nil? (read-user user-id)))))
+#_(defexpect user-db
+    (doseq [user (g/sample 50 User default-leaf-generator)]
+      (let [user-id    {:user/id (:user/id user)}
+            difference (dissoc (g/generate User default-leaf-generator) :user/id)
+            new-user   (merge user difference)]
+        (expect nil? (read-user user-id))
+        (user-compare user (create-user user))
+        (user-compare user (read-user user-id))
+        (user-compare user (read-user-by-username (:user/id user)))
+        (user-compare new-user (update-user new-user))
+        (user-compare new-user (read-user user-id))
+        (user-compare new-user (delete-user user-id))
+        (expect nil? (read-user user-id)))))

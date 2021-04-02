@@ -15,7 +15,7 @@
   (log/info "Reading tab with id" id)
   (with-tx-execute-one! (-> (helpers/select :*)
                             (helpers/from :tab)
-                            (helpers/where [:= :tab/id id])
+                            (helpers/where [:= :id id])
                             (sql/format))))
 
 (s/defn read-user-tab :- [TabDB]
@@ -25,6 +25,14 @@
                         (helpers/from :tab)
                         (helpers/where [:= :user-id id])
                         (sql/format))))
+
+(s/defn count-user-tab :- {:count s/Int}
+  [{:user/keys [id]} :- {:user/id s/Uuid}]
+  (log/info "Reading tabs for user id" id)
+  (with-tx-execute-one! (-> (helpers/select :%count.*)
+                            (helpers/from :tab)
+                            (helpers/where [:= :user-id id])
+                            (sql/format))))
 
 (s/defn create-tab :- TabDB
   [data :- Tab]
@@ -44,7 +52,7 @@
                  (->> (map (fn [[k v]] [(keyword (name k)) v])) (into {})))]
     (with-tx-execute-one! (-> (helpers/update :tab)
                               (helpers/set data)
-                              (helpers/where [:= :tab/id id])
+                              (helpers/where [:= :id id])
                               (helpers/returning :*)
                               (sql/format)))))
 
@@ -52,6 +60,6 @@
   [{:tab/keys [id]} :- {:tab/id s/Uuid}]
   (log/info "Deleting tab with id" id)
   (with-tx-execute-one! (-> (helpers/delete-from :tab)
-                            (helpers/where [:= :tab/id id])
+                            (helpers/where [:= :id id])
                             (helpers/returning :*)
                             (sql/format))))
