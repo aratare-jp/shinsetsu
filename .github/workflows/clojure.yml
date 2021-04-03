@@ -33,7 +33,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Install Clojure dependencies
-        run: lein deps
+        run: lein with-profile server-test deps
 
       - name: Setup database
         uses: harmon758/postgresql-action@v1
@@ -48,6 +48,10 @@ jobs:
           touch test-config.edn
           echo "{:jdbcUrl "jdbc:postgresql://localhost:5432/shinsetsu?username=shinsetsu&password=shinsetsu"}" \
             > test-config.edn
+
+      - run: |
+          pwd
+          echo test-config.edn
 
       - name: Run server tests
         run: lein with-profile server-test cloverage --runner :eftest --codecov
@@ -86,7 +90,7 @@ jobs:
           lein: 2.9.5
 
       - name: Install Clojure dependencies
-        run: lein deps
+        run: lein with-profile server-test deps
 
       - name: Setting up Python
         uses: actions/setup-python@v2
