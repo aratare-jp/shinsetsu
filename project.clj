@@ -76,10 +76,7 @@
                  {:jvm-opts     ["-Dconf=test-config.edn"]
                   :source-paths ["env/test/clj"]
                   :test-paths   ["test/clj"]
-                  :dependencies [[ring/ring-mock "0.4.0"]]
-                  :eftest       {:multithread? :vars}
-                  :runner-opts  {:runner   :eftest
-                                 :codecov? true}}]
+                  :dependencies [[ring/ring-mock "0.4.0"]]}]
    :server-prod [:shared-prod
                  :server
                  {:jvm-opts     ["-Dconf=prod-config.edn"]
