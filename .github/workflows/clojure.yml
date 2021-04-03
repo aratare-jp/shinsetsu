@@ -16,16 +16,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     services:
-      # Label used to access the service container
       postgres:
-        # Docker Hub image
         image: postgres
-        # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: shinsetsu
           POSTGRES_USER: shinsetsu
           POSTGRES_DB: shinsetsu
-        # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -55,10 +51,6 @@ jobs:
         run: |
           touch test-config.edn
           echo '{:jdbcUrl "jdbc:postgresql://localhost:5432/shinsetsu?username=shinsetsu&password=shinsetsu"}' > test-config.edn
-
-      - run: |
-          pwd
-          cat test-config.edn
 
       - name: Run server tests
         run: lein with-profile server-test cloverage

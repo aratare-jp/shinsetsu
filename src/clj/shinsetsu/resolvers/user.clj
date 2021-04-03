@@ -2,6 +2,7 @@
   (:require [com.wsscode.pathom.connect :as pc]
             [shinsetsu.db.user :as db]
             [shinsetsu.db.tab :as tag-db]
+            [shinsetsu.db.core :refer [db]]
             [shinsetsu.schemas :refer :all]
             [taoensso.timbre :as log]
             [buddy.sign.jws :as jws]
@@ -16,7 +17,7 @@
         token   (-> env :request :session)
         user-id (jws/unsign token secret)]
     (if (= user-id id)
-      (db/read-user data)
+      (db/read-user db data)
       (throw (ex-info "Cannot query other user's data" {})))))
 
 (pc/defresolver user-tabs-resolver
@@ -27,20 +28,20 @@
         token   (-> env :request :session)
         user-id (jws/unsign token secret)]
     (if (= user-id id)
-      (tag-db/read-user-tab data)
+      (tag-db/read-user-tab db data)
       (throw (ex-info "Cannot query other user's data" {})))))
 
 (pc/defresolver current-user-resolver
   [env _]
   {::pc/output [{:session/current-user [:user/id :user/valid]}]}
   #_(let [secret    (:secret env)
-        jws-token (-> env :request :session)]
-    (if jws-token
-      (let [user-id (jws/unsign jws-token secret)
-            tokens  (db/check-current-user {:user/id user-id})]
-        (if tokens
-          {:session/current-user {:user/id user-id :user/valid true}}
-          {:user/id :nobody :user/valid? false}))
-      {:user/id :nobody :user/valid? false})))
+          jws-token (-> env :request :session)]
+      (if jws-token
+        (let [user-id (jws/unsign jws-token secret)
+              tokens  (db/check-current-user {:user/id user-id})]
+          (if tokens
+            {:session/current-user {:user/id user-id :user/valid true}}
+            {:user/id :nobody :user/valid? false}))
+        {:user/id :nobody :user/valid? false})))
 
 (def resolvers [user-resolver user-tabs-resolver current-user-resolver])

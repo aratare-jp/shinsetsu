@@ -1,33 +1,17 @@
 (ns shinsetsu.db.user-test
   (:require [clojure.test :refer :all]
             [shinsetsu.db.user :refer :all]
-            [shinsetsu.db.core :as db]
-            [shinsetsu.config :refer [env]]
             [expectations.clojure.test :refer [defexpect expect more in]]
-            [puget.printer :refer [pprint]]
             [schema-generators.generators :as g]
             [shinsetsu.schemas :refer :all]
-            [taoensso.timbre :as log]
-            [mount.core :as mount]
-            [clojure.data :refer [diff]])
+            [clojure.data :refer [diff]]
+            [shinsetsu.db.utility :refer :all])
   (:import [java.util Arrays]))
 
-(defn once-fixture
-  [f]
-  (log/info "Migrating db")
-  (mount/start #'env #'db/db #'db/migratus-config)
-  (db/migrate)
-  (f)
-  (mount/stop #'env #'db/db #'db/migratus-config))
-
-(defn each-fixture
-  [f]
-  (f)
-  (log/info "Resetting db")
-  (db/reset-db))
-
-(use-fixtures :once once-fixture)
-(use-fixtures :each each-fixture)
+(def db-fixture (get-db-fixture "shinsetsu-user-db"))
+(def db (:db db-fixture))
+(use-fixtures :once (get-in db-fixture [:fixture :once]))
+(use-fixtures :each (get-in db-fixture [:fixture :each]))
 
 (defn- user-compare
   [expected actual]
@@ -45,10 +29,10 @@
     (let [user-id    {:user/id (:user/id user)}
           difference (dissoc (g/generate User default-leaf-generator) :user/id)
           new-user   (merge user difference)]
-      (expect nil? (read-user user-id))
-      (user-compare user (create-user user))
-      (user-compare user (read-user user-id))
-      (user-compare new-user (update-user new-user))
-      (user-compare new-user (read-user user-id))
-      (user-compare new-user (delete-user user-id))
-      (expect nil? (read-user user-id)))))
+      (expect nil? (read-user db user-id))
+      (user-compare user (create-user db user))
+      (user-compare user (read-user db user-id))
+      (user-compare new-user (update-user db new-user))
+      (user-compare new-user (read-user db user-id))
+      (user-compare new-user (delete-user db user-id))
+      (expect nil? (read-user db user-id)))))

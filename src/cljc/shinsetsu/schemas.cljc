@@ -3,7 +3,9 @@
             [schema-generators.generators :as g]
             [valip.predicates :as p]
             [clojure.test.check.generators :as check-gen])
-  (:import [java.time OffsetDateTime ZoneOffset]))
+  (:import [java.time OffsetDateTime ZoneOffset]
+           [javax.sql DataSource]
+           [java.sql Connection]))
 
 (defn offset-dt?
   "Check if dt is:
@@ -40,6 +42,13 @@
                                    (.withOffsetSameInstant ZoneOffset/UTC))))})
 
 (def Username NonEmptyContinuousStr)
+
+(defn transactable?
+  [v]
+  (or (instance? DataSource v)
+      (instance? Connection v)))
+
+(def Transactable (s/pred transactable?))
 
 (def User
   {:user/id       s/Uuid

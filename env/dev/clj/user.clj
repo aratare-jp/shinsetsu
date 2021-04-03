@@ -5,14 +5,11 @@
     [clojure.pprint :refer [pprint]]
     [mount.core :as mount]
     [shinsetsu.core :refer [repl-server]]
-    [shinsetsu.db.core :refer :all]
-    [shinsetsu.config :refer [env]]
+    [shinsetsu.db.core :refer [db]]
     [clojure.tools.namespace.repl :refer [refresh]]
     [schema.core :as s]))
 
 (add-tap (bound-fn* pprint))
-
-(mount/start #'env #'db #'migratus-config)
 
 (s/set-fn-validation! true)
 

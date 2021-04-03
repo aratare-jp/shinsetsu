@@ -70,13 +70,13 @@
                  {:jvm-opts     ["-Dconf=dev-config.edn"]
                   :source-paths ["env/dev/clj"]
                   :dependencies [[org.clojure/tools.namespace "1.1.0"]
-                                 [ring/ring-mock "0.4.0"]
                                  [mvxcvi/puget "1.3.1"]]}]
    :server-test [:shared-test
-                 :server-dev
+                 :server
                  {:jvm-opts     ["-Dconf=test-config.edn"]
                   :source-paths ["env/test/clj"]
                   :test-paths   ["test/clj"]
+                  :dependencies [[ring/ring-mock "0.4.0"]]
                   :eftest       {:multithread? :vars}
                   :runner-opts  {:runner       :eftest
                                  :multithread? :vars
