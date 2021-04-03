@@ -31,6 +31,7 @@
    :host      host
    :port      port
    :user      username
+   :username  username
    :password  password})
 
 (defn get-migratus-config
@@ -52,6 +53,12 @@
         port            (get-in container [:mapped-ports 5432])
         migratus-config (get-migratus-config db-name host port)
         db              (get-db db-name host port)]
+    (println "-------------")
+    (println migratus-config)
+    (println "-------------")
+    (println (get-db-map db-name host port))
+    (println "-------------")
+
     {:db      db
      :fixture {:once (fn [f]
                        (migratus/migrate (log/spy :info migratus-config))

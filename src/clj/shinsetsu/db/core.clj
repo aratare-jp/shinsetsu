@@ -7,10 +7,10 @@
             [shinsetsu.db.ext])
   (:import [com.zaxxer.hikari HikariDataSource]))
 
-(defstate db
-  :start
-  (jdbc/with-options
-   (connection/->pool HikariDataSource (select-keys env [:jdbcUrl]))
-    jdbc/snake-kebab-opts)
-  :stop
-  (-> db :connectable .close))
+;(defstate db
+;  :start
+;  (jdbc/with-options
+;   (connection/->pool HikariDataSource (select-keys env [:jdbcUrl]))
+;    jdbc/snake-kebab-opts)
+;  :stop
+;  (-> db :connectable .close))

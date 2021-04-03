@@ -62,15 +62,15 @@
                                    [cheshire "5.10.0"]]
                   :target-path    "target/%s/"
                   :main           ^:skip-aot shinsetsu.core
-                  :clean-targets  ^{:protect false} [:target-path]
-                  :repl-options   {:init-ns user
-                                   :timeout 120000}}]
+                  :clean-targets  ^{:protect false} [:target-path]}]
    :server-dev  [:shared-dev
                  :server
                  {:jvm-opts     ["-Dconf=dev-config.edn"]
                   :source-paths ["env/dev/clj"]
                   :dependencies [[org.clojure/tools.namespace "1.1.0"]
-                                 [mvxcvi/puget "1.3.1"]]}]
+                                 [mvxcvi/puget "1.3.1"]]
+                  :repl-options {:init-ns user
+                                 :timeout 120000}}]
    :server-test [:shared-test
                  :server
                  {:jvm-opts     ["-Dconf=test-config.edn"]
