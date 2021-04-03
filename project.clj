@@ -78,9 +78,8 @@
                   :test-paths   ["test/clj"]
                   :dependencies [[ring/ring-mock "0.4.0"]]
                   :eftest       {:multithread? :vars}
-                  :runner-opts  {:runner       :eftest
-                                 :multithread? :vars
-                                 :codecov?     true}}]
+                  :runner-opts  {:runner   :eftest
+                                 :codecov? true}}]
    :server-prod [:shared-prod
                  :server
                  {:jvm-opts     ["-Dconf=prod-config.edn"]
