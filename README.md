@@ -1,31 +1,31 @@
-= Shinsetsu 新設
+# Shinsetsu 新設
 
-[quote,jisho.org]
-____
-Noun, Suru verb, No-adjective
-
-1. establishing; founding; setting up; organizing; establishment
-____
+> Noun, Suru verb, No-adjective
+>
+> 1. establishing; founding; setting up; organizing; establishment
 
 Shinsetsu is a browser plugin that takes the bookmark pain away from you.
 
-== Status
+## Status
 `Active development`
 
-== Installation
+[![Clojure CI](https://github.com/aratare-jp/shinsetsu/actions/workflows/clojure.yml/badge.svg)](https://github.com/aratare-jp/shinsetsu/actions/workflows/clojure.yml)
+[![codecov](https://codecov.io/gh/aratare-jp/shinsetsu/branch/main/graph/badge.svg?token=PAKAKHIBEI)](https://codecov.io/gh/aratare-jp/shinsetsu)
+
+## Installation
 
 TBC
 
-== Features
+## Features
 
-- One-stop command line interface for all operations
-- Standard bookmark operations (minus a few things)
-- Cross-browser bookmark sync
-- Tagging for easy searching & filtering
-- Securing with passwords
-- Self-hosted server for absolute data privacy
+- [ ] One-stop command line interface for all operations
+- [ ] Standard bookmark operations (minus a few things)
+- [ ] Cross-browser bookmark sync
+- [ ] Tagging for easy searching & filtering
+- [ ] Securing with passwords
+- [ ] Self-hosted server for absolute data privacy
 
-== Rationale
+## Rationale
 
 As we progress through the information age, our ability to organise information effectively seems to stay the same. For
 example, have you ever found a really nice website about cooking and thought "I'll just bookmark this website just in
@@ -64,12 +64,12 @@ bookmark in Firefox and access it in Chrome with ease.
 My goal, as stated, is to be able to use Shinsetsu to make actual good use of bookmarks. And I hope it will be able
 to bring joy to you as well.
 
-== Contribution
+## Contribution
 
 This project for the most part is for my personal use. If you've found any bugs or issues, or want to have
 additional features, please create an issue or PR.
 
-== License
+## License
 MIT License
 
 Copyright (c) 2020 Rex Truong
