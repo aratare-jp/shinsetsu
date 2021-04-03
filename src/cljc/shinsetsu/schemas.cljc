@@ -116,15 +116,6 @@
          {:tag/created OffsetDT
           :tag/updated OffsetDT}))
 
-(def TabTag
-  {:tab-tag/tab-id s/Uuid
-   :tab-tag/tag-id s/Uuid})
-
-(def TabTagDB
-  (merge TabTag
-         {:tab-tag/created OffsetDT
-          :tab-tag/updated OffsetDT}))
-
 (def BookmarkTag
   {:bookmark-tag/bookmark-id s/Uuid
    :bookmark-tag/tag-id      s/Uuid})

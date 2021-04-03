@@ -3,6 +3,7 @@
             [shinsetsu.db.user :refer :all]
             [shinsetsu.db.tab :refer :all]
             [shinsetsu.db.bookmark :refer :all]
+            [shinsetsu.db.bookmark-tag :refer :all]
             [shinsetsu.db.core :as db]
             [shinsetsu.config :refer [env]]
             [expectations.clojure.test :refer [defexpect expect more in]]

@@ -35,6 +35,20 @@ jobs:
       - name: Install Clojure dependencies
         run: lein deps
 
+      - name: Setup database
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql version: '11'
+          postgresql db: 'shinsetsu'
+          postgresql user: 'shinsetsu'
+          postgresql password: 'shinsetsu'
+
+      - name: Setup test config
+        run: |
+          touch test-config.edn
+          echo "{:jdbcUrl "jdbc:postgresql://localhost:5432/shinsetsu?username=shinsetsu&password=shinsetsu"}" \
+            > test-config.edn
+
       - name: Run server tests
         run: lein with-profile server-test cloverage --runner :eftest --codecov
 
