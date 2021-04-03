@@ -43,6 +43,20 @@ jobs:
           postgresql user: 'shinsetsu'
           postgresql password: 'shinsetsu'
 
+      - name: Test database connection
+        run: |
+          for i in {0..9}; do
+            pg_isready -d shinsetsu -h localhost -p 5432 -U shinsetsu
+            if [[ $? -eq 0 ]]; then
+              echo "Database available"
+              return
+            else
+              echo "Database unavailable"
+            fi
+            sleep 1
+          done
+          echo "Database unavailable"
+
       - name: Setup test config
         run: |
           touch test-config.edn
