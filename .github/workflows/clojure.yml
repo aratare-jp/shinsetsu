@@ -46,12 +46,11 @@ jobs:
       - name: Setup test config
         run: |
           touch test-config.edn
-          echo "{:jdbcUrl "jdbc:postgresql://localhost:5432/shinsetsu?username=shinsetsu&password=shinsetsu"}" \
-            > test-config.edn
+          echo "{:jdbcUrl "jdbc:postgresql://localhost:5432/shinsetsu?username=shinsetsu&password=shinsetsu"}" > test-config.edn
 
       - run: |
           pwd
-          echo test-config.edn
+          cat test-config.edn
 
       - name: Run server tests
         run: lein with-profile server-test cloverage --runner :eftest --codecov
