@@ -1,5 +1,7 @@
 (ns shinsetsu.db.ext
-  (:require [cheshire.core :refer [generate-string parse-string]])
+  (:require [cheshire.core :refer [generate-string parse-string]]
+            [next.jdbc.result-set]
+            [next.jdbc.date-time])
   (:import [java.time OffsetDateTime ZoneOffset]
            [java.sql PreparedStatement Array Date Time Timestamp]
            [clojure.lang IPersistentMap IPersistentVector]
