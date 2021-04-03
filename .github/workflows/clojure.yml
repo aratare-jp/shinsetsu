@@ -15,6 +15,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: shinsetsu
+          POSTGRES_USER: shinsetsu
+          POSTGRES_DB: shinsetsu
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -34,28 +50,6 @@ jobs:
 
       - name: Install Clojure dependencies
         run: lein with-profile server-test deps
-
-      - name: Setup database
-        uses: harmon758/postgresql-action@v1
-        with:
-          postgresql version: '11'
-          postgresql db: 'shinsetsu'
-          postgresql user: 'shinsetsu'
-          postgresql password: 'shinsetsu'
-
-      - name: Test database connection
-        run: |
-          for i in {0..9}; do
-            pg_isready -d shinsetsu -h localhost -p 5432 -U shinsetsu
-            if [[ $? -eq 0 ]]; then
-              echo "Database available"
-              return
-            else
-              echo "Database unavailable"
-            fi
-            sleep 1
-          done
-          echo "Database unavailable"
 
       - name: Setup test config
         run: |
