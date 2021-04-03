@@ -53,7 +53,7 @@ jobs:
           cat test-config.edn
 
       - name: Run server tests
-        run: lein with-profile server-test cloverage --runner :eftest --codecov
+        run: lein with-profile server-test cloverage
 
       - name: Upload code coverage to Codecov
         uses: codecov/codecov-action@v1

@@ -25,7 +25,8 @@
                  {:source-paths ["env/test/cljc"]
                   :dependencies [[eftest "0.5.9"]
                                  [tortue/spy "2.4.0"]
-                                 [expectations/clojure-test "1.2.1"]]
+                                 [expectations/clojure-test "1.2.1"]
+                                 [clj-test-containers "0.4.0"]]
                   :plugins      [[lein-eftest "0.5.9"]
                                  [lein-cloverage "1.2.1"]]}]
    :shared-prod [:shared
@@ -78,7 +79,8 @@
                   :test-paths   ["test/clj"]
                   :eftest       {:multithread? :vars}
                   :runner-opts  {:runner       :eftest
-                                 :multithread? :vars}}]
+                                 :multithread? :vars
+                                 :codecov?     true}}]
    :server-prod [:shared-prod
                  :server
                  {:jvm-opts     ["-Dconf=prod-config.edn"]
