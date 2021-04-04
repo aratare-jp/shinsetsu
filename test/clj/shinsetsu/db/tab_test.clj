@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [shinsetsu.db.user :refer :all]
             [shinsetsu.db.tab :refer :all]
-            [shinsetsu.db.utility :refer :all]
+            [shinsetsu.test-utility :refer :all]
             [shinsetsu.config :refer [env]]
             [expectations.clojure.test :refer [defexpect expect more in]]
             [schema-generators.generators :as g]

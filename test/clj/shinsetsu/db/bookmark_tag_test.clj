@@ -9,7 +9,7 @@
             [expectations.clojure.test :refer [defexpect expect more in]]
             [schema-generators.generators :as g]
             [shinsetsu.schemas :refer :all]
-            [shinsetsu.db.utility :refer :all]
+            [shinsetsu.test-utility :refer :all]
             [clojure.data :refer [diff]]))
 
 (def db-fixture (get-db-fixture "shinsetsu-bookmark-tag-db"))

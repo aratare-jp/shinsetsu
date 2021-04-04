@@ -6,6 +6,4 @@
             [puget.printer :refer [pprint]]))
 
 (def api-routes
-  ["/api" {:post {:middleware [[server/wrap-transit-params]
-                               [server/wrap-transit-response]]
-                  :handler    (parser-handler pathom-parser)}}])
+  ["/api" {:post {:handler (parser-handler pathom-parser)}}])

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "shadow-cljs server",
+    "compile-webpack": "webpack --entry ./target/index.js -o resources/public/js/libs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

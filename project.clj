@@ -59,7 +59,8 @@
                                    [org.postgresql/postgresql "42.2.19"]
                                    [com.zaxxer/HikariCP "4.0.3"]
                                    [com.fzakaria/slf4j-timbre "0.3.21"]
-                                   [cheshire "5.10.0"]]
+                                   [cheshire "5.10.0"]
+                                   [com.cognitect/transit-clj "1.0.324"]]
                   :target-path    "target/%s/"
                   :main           ^:skip-aot shinsetsu.core
                   :clean-targets  ^{:protect false} [:target-path]}]

@@ -28,7 +28,7 @@
 (s/defn create-session :- SessionDB
   [db :- Transactable
    data :- Session]
-  (log/info "Creating a current user with id" (:user/id data))
+  (log/info "Creating a current user with id" (:session/user-id data))
   (jdbc/execute-one! db (-> (helpers/insert-into :session)
                             (helpers/values [data])
                             (helpers/returning :*)

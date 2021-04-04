@@ -7,7 +7,7 @@
             [expectations.clojure.test :refer [defexpect expect more in]]
             [schema-generators.generators :as g]
             [shinsetsu.schemas :refer :all]
-            [shinsetsu.db.utility :refer :all]
+            [shinsetsu.test-utility :refer :all]
             [clojure.data :refer [diff]])
   (:import [java.util Arrays]))
 

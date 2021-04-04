@@ -8,7 +8,7 @@
     [reitit.ring.middleware.parameters :as parameters]
     [ring.middleware.reload :refer [wrap-reload]]
     [ring.middleware.keyword-params :refer [wrap-keyword-params]]
-    [ring.middleware.defaults :refer [wrap-defaults]]
+    [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
     [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
     [ring.middleware.gzip :refer [wrap-gzip]]
     [shinsetsu.routers.api :refer [api-routes]]
@@ -18,7 +18,9 @@
     [hiccup.page :as h.page]
     [taoensso.timbre :as timbre]
     [ring.util.response :as response]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [puget.printer :refer [pprint]]
+    [com.fulcrologic.fulcro.server.api-middleware :as server]))
 
 (defn generate-index [{:keys [anti-forgery-token]}]
   "Dynamically generate the index.html so we can embed CSRF nicely."
@@ -69,11 +71,15 @@
       (rr/create-default-handler))
     {:middleware [(if (:dev? env) wrap-reload)
                   wrap-session
+                  server/wrap-transit-params
+                  server/wrap-transit-response
                   ;; FIXME: Enable anti-forgery later.
-                  [wrap-defaults {:security {:anti-forgery         false
-                                             :xss-protection       {:enable? true :mode :block}
-                                             :frame-options        :sameorigin
-                                             :content-type-options :nosniff}}]
+                  ;[wrap-defaults (merge
+                  ;                 site-defaults
+                  ;                 {:security {:anti-forgery         false
+                  ;                             :xss-protection       {:enable? true :mode :block}
+                  ;                             :frame-options        :sameorigin
+                  ;                             :content-type-options :nosniff}})]
                   parameters/parameters-middleware
                   muuntaja/format-middleware
                   multipart/multipart-middleware

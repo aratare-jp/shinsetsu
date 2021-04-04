@@ -1,12 +1,14 @@
-(ns shinsetsu.db.utility
+(ns shinsetsu.test-utility
   (:require [clojure.test :refer :all]
             [clj-test-containers.core :as tc]
             [shinsetsu.db.ext]
             [next.jdbc :as jdbc]
             [next.jdbc.connection :as connection]
             [migratus.core :as migratus]
-            [taoensso.timbre :as log])
-  (:import [com.zaxxer.hikari HikariDataSource]))
+            [taoensso.timbre :as log]
+            [cognitect.transit :as transit])
+  (:import [com.zaxxer.hikari HikariDataSource]
+           [java.io ByteArrayInputStream ByteArrayOutputStream]))
 
 (def username "shinsetsu-test")
 (def password "shinsetsu-test")
@@ -55,9 +57,16 @@
         db              (get-db db-name host port)]
     {:db      db
      :fixture {:once (fn [f]
-                       (migratus/migrate (log/spy :info migratus-config))
+                       (migratus/migrate migratus-config)
                        (f)
                        (tc/stop! container))
                :each (fn [f]
                        (f)
-                       (migratus/migrate migratus-config))}}))
+                       (migratus/reset migratus-config))}}))
+
+(defn ->transit
+  [v]
+  (with-open [out (ByteArrayOutputStream. 4096)]
+    (let [writer (transit/writer out :json)]
+      (transit/write writer v)
+      (.toString out))))

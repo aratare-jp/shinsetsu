@@ -5,7 +5,7 @@
             [schema-generators.generators :as g]
             [shinsetsu.schemas :refer :all]
             [clojure.data :refer [diff]]
-            [shinsetsu.db.utility :refer :all])
+            [shinsetsu.test-utility :refer :all])
   (:import [java.util Arrays]))
 
 (def db-fixture (get-db-fixture "shinsetsu-user-db"))
