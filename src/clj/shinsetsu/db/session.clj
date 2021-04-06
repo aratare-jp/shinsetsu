@@ -39,6 +39,6 @@
    {:session/keys [user-id token]} :- Session]
   (log/info "Deleting current user with id" user-id)
   (jdbc/execute-one! db (-> (helpers/delete-from :session)
-                            (helpers/where [:= :id user-id] [:= :token token])
+                            (helpers/where [:= :user-id user-id] [:= :token token])
                             (helpers/returning :*)
                             (sql/format))))

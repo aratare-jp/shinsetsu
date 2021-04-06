@@ -5,6 +5,7 @@
     [taoensso.timbre :as log]
     [shinsetsu.resolvers]
     [shinsetsu.mutations]
+    [mount.core :refer [defstate]]
     [puget.printer :refer [pprint]]))
 
 (def resolvers [shinsetsu.resolvers/resolvers
@@ -13,13 +14,15 @@
 (defn process-error
   "Overriding the default Pathom error handler so we can get the attached data on the client side."
   [env err]
-  (.getData err))
+  (log/error "Error found" err)
+  (.printStackTrace err)
+  err)
 
 (def pathom-parser
   (p/parser {::p/env     {::p/reader                 [p/map-reader
                                                       pc/reader2
                                                       pc/open-ident-reader]
-                          ;::p/process-error          process-error
+                          ::p/process-error          process-error
                           ::pc/mutation-join-globals [:tempids]}
              ::p/mutate  pc/mutate
              ::p/plugins [(pc/connect-plugin {::pc/register resolvers})

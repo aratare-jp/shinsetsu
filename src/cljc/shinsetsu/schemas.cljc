@@ -46,7 +46,9 @@
 (defn transactable?
   [v]
   (or (instance? DataSource v)
-      (instance? Connection v)))
+      (instance? Connection v)
+      (instance? DataSource (:connectable v))
+      (instance? Connection (:connectable v))))
 
 (def Transactable (s/pred transactable?))
 
@@ -68,6 +70,7 @@
 
 (def Session
   {:session/user-id s/Uuid
+   :session/expired OffsetDT
    :session/token   NonEmptyContinuousStr})
 
 (def SessionDB

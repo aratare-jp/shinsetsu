@@ -77,7 +77,9 @@
                  {:jvm-opts     ["-Dconf=test-config.edn"]
                   :source-paths ["env/test/clj"]
                   :test-paths   ["test/clj"]
-                  :dependencies [[ring/ring-mock "0.4.0"]]}]
+                  :dependencies [[ring/ring-mock "0.4.0"]]
+                  :repl-options {:init-ns user
+                                 :timeout 120000}}]
    :server-prod [:shared-prod
                  :server
                  {:jvm-opts     ["-Dconf=prod-config.edn"]

@@ -5,12 +5,13 @@
             [shinsetsu.db.core :refer [db]]
             [shinsetsu.db.user :refer :all]
             [shinsetsu.db.session :refer :all]
-            [shinsetsu.config :refer [env]]
+            [shinsetsu.config :as config]
             [shinsetsu.schemas :refer :all]
             [buddy.sign.jws :as jws]
             [buddy.hashers :as hashers]
             [puget.printer :refer [pprint]]
-            [schema.core :as s]))
+            [schema.core :as s])
+  (:import [java.time OffsetDateTime]))
 
 (pc/defmutation login
   [env {:user/keys [username password]}]
@@ -19,18 +20,21 @@
   (s/validate NonEmptyContinuousStr username)
   (s/validate NonEmptyContinuousStr password)
   (log/info "Login with" username)
-  (let [secret  (:secret env)
-        user    (read-user-by-username db {:user/username username})
-        user-id (:user-id user)
-        token   (jws/sign user-id secret)]
-    (if (hashers/check password (:user/password user))
-      (do
-        (create-session db {:session/id    user-id
-                            :session/token token})
-        (augment-response
-          {:user/id user-id :user/valid? true}
-          (fn [ring-resp] (assoc ring-resp :session token))))
-      {:user/valid? false})))
+  (let [secret (:secret config/env)
+        user   (read-user-by-username db {:user/username username})]
+    (if user
+      (let [user-id (:user/id user)
+            token   (jws/sign (.toString user-id) secret)]
+        (if (hashers/check password (:user/password user))
+          (do
+            (create-session db {:session/user-id user-id
+                                :session/token   token
+                                :session/expired (-> (OffsetDateTime/now) (.plusMinutes 30))})
+            (augment-response
+              {:user/id user-id :user/valid? true}
+              (fn [ring-resp] (assoc ring-resp :session token))))
+          {:user/id :nobody :user/valid? false}))
+      {:user/id :nobody :user/valid? false})))
 
 (pc/defmutation logout
   [env {:user/keys [username password]}]
@@ -39,7 +43,7 @@
   (s/validate NonEmptyContinuousStr username)
   (s/validate NonEmptyContinuousStr password)
   (log/info "Logging out with" username)
-  (let [secret    (:secret env)
+  (let [secret    (:secret config/env)
         jws-token (-> env :request :session)
         user-id   (jws/unsign jws-token secret)
         tokens    (read-session db {:session/user-id user-id})]

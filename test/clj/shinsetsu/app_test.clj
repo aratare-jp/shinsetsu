@@ -32,9 +32,7 @@
           body     (->transit mut)]
       (let [res (app/app (-> (mock/request :post "/api" body)
                              (mock/content-type "application/transit+json")))]
-        (pprint "###################################")
         (pprint res)
-        (pprint "###################################")
         (expect 201 (:status res))))))
 
 (comment
