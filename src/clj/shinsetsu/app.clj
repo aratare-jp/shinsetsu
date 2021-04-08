@@ -74,12 +74,12 @@
                   server/wrap-transit-params
                   server/wrap-transit-response
                   ;; FIXME: Enable anti-forgery later.
-                  ;[wrap-defaults (merge
-                  ;                 site-defaults
-                  ;                 {:security {:anti-forgery         false
-                  ;                             :xss-protection       {:enable? true :mode :block}
-                  ;                             :frame-options        :sameorigin
-                  ;                             :content-type-options :nosniff}})]
+                  [wrap-defaults (merge
+                                   site-defaults
+                                   {:security {:anti-forgery         false
+                                               :xss-protection       {:enable? true :mode :block}
+                                               :frame-options        :sameorigin
+                                               :content-type-options :nosniff}})]
                   parameters/parameters-middleware
                   muuntaja/format-middleware
                   multipart/multipart-middleware

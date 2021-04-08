@@ -11,10 +11,10 @@
             [buddy.hashers :as hashers]
             [puget.printer :refer [pprint]]
             [schema.core :as s])
-  (:import [java.time OffsetDateTime]))
+  (:import [java.time OffsetDateTime ZoneOffset]))
 
 (pc/defmutation login
-  [env {:user/keys [username password]}]
+  [_ {:user/keys [username password]}]
   {::pc/params #{:user/username :user/password}
    ::pc/output [:user/id :user/valid?]}
   (s/validate NonEmptyContinuousStr username)
@@ -29,7 +29,9 @@
           (do
             (create-session db {:session/user-id user-id
                                 :session/token   token
-                                :session/expired (-> (OffsetDateTime/now) (.plusMinutes 30))})
+                                :session/expired (-> (OffsetDateTime/now)
+                                                     (.withOffsetSameInstant ZoneOffset/UTC)
+                                                     (.plusMinutes 30))})
             (augment-response
               {:user/id user-id :user/valid? true}
               (fn [ring-resp] (assoc ring-resp :session token))))

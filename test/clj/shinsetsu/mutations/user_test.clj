@@ -24,7 +24,7 @@
     (mount/stop #'shinsetsu.config/env #'shinsetsu.parser/pathom-parser)))
 
 (use-fixtures :once (get-in db-fixture [:fixture :once]))
-(use-fixtures :each (get-in db-fixture [:fixture :each]))
+(use-fixtures :each each-fixture)
 
 (defexpect user-test
   (with-redefs [shinsetsu.db.core/db tdb
@@ -37,8 +37,9 @@
                                                       :user/password ~password})]
           body     (->transit mut)]
       (create-user shinsetsu.db.core/db (update user :user/password hashers/derive))
-      (println (:secret env))
-      (expect nil? (pathom-parser {} mut)))))
+      (let [expected {'shinsetsu.mutations.user/login {:user/id     (:user/id user)
+                                                       :user/valid? true}}]
+        (expect expected (pathom-parser {} mut))))))
 
 (comment
   (do
@@ -47,5 +48,7 @@
   (do
     (require '[eftest.runner :as efr])
     (import [java.io ByteArrayInputStream ByteArrayOutputStream])
-    (require '[cognitect.transit :as transit]))
+    (require '[cognitect.transit :as transit])
+    (require '[clojure.tools.namespace.repl :refer [refresh]]))
+  (refresh)
   (efr/run-tests [#'shinsetsu.mutations.user-test/user-test]))

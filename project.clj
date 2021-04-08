@@ -77,7 +77,8 @@
                  {:jvm-opts     ["-Dconf=test-config.edn"]
                   :source-paths ["env/test/clj"]
                   :test-paths   ["test/clj"]
-                  :dependencies [[ring/ring-mock "0.4.0"]]
+                  :dependencies [[ring/ring-mock "0.4.0"]
+                                 [org.clojure/tools.namespace "1.1.0"]]
                   :repl-options {:init-ns user
                                  :timeout 120000}}]
    :server-prod [:shared-prod

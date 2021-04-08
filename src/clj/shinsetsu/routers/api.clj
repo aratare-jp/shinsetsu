@@ -1,9 +1,9 @@
 (ns shinsetsu.routers.api
   (:require [shinsetsu.middleware.parser :refer [parser-handler]]
             [shinsetsu.middleware.authentication :refer [wrap-auth]]
-            [shinsetsu.parser :refer [pathom-parser api-parser]]
-            [com.fulcrologic.fulcro.server.api-middleware :as server]
-            [puget.printer :refer [pprint]]))
+            [shinsetsu.parser :refer [pathom-parser]]
+            [mount.core :refer [defstate]]))
 
-(def api-routes
+(defstate api-routes
+  :start
   ["/api" {:post {:handler (parser-handler pathom-parser)}}])
