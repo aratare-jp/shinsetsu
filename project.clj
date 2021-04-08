@@ -85,7 +85,8 @@
                                  :multithread? :namespaces}
                   :runner       :eftest
                   :runner-opts  {:fail-fast?   true
-                                 :multithread? :namespaces}}]
+                                 :multithread? :namespaces
+                                 :codecov?     true}}]
    :server-prod [:shared-prod
                  :server
                  {:jvm-opts     ["-Dconf=prod-config.edn"]
