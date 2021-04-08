@@ -23,17 +23,17 @@
 (use-fixtures :once (get-in db-fixture [:fixture :once]))
 (use-fixtures :each each-fixture)
 
-(defexpect middleware
-  (with-redefs [shinsetsu.db.core/db tdb]
-    (let [username "hero@test.com"
-          password "awesome"
-          mut      `[(shinsetsu.mutations.user/login {:user/username ~username
-                                                      :user/password ~password})]
-          body     (->transit mut)]
-      (let [res (app/app (-> (mock/request :post "/api" body)
-                             (mock/content-type "application/transit+json")))]
-        (pprint res)
-        (expect 201 (:status res))))))
+#_(defexpect middleware
+    (with-redefs [shinsetsu.db.core/db tdb]
+      (let [username "hero@test.com"
+            password "awesome"
+            mut      `[(shinsetsu.mutations.user/login {:user/username ~username
+                                                        :user/password ~password})]
+            body     (->transit mut)]
+        (let [res (app/app (-> (mock/request :post "/api" body)
+                               (mock/content-type "application/transit+json")))]
+          (pprint res)
+          (expect 201 (:status res))))))
 
 (comment
   (require '[eftest.runner :as efr])

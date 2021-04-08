@@ -11,14 +11,14 @@
   [db :- Transactable
    {:session/keys [user-id]} :- {:session/user-id s/Uuid}]
   (log/info "Read session with user id" user-id)
-  (jdbc/execute-one! db (-> (helpers/select :*)
-                            (helpers/from [:session])
-                            (helpers/where [:= :user-id user-id])
-                            (sql/format))))
+  (jdbc/execute! db (-> (helpers/select :*)
+                        (helpers/from [:session])
+                        (helpers/where [:= :user-id user-id])
+                        (sql/format))))
 
-(s/defn check-session :- SessionDB
+(s/defn check-session :- (s/maybe SessionDB)
   [db :- Transactable
-   {:session/keys [user-id token]} :- Session]
+   {:session/keys [user-id token]} :- SessionNoExpire]
   (log/info "Read session with user id" user-id)
   (jdbc/execute-one! db (-> (helpers/select :*)
                             (helpers/from [:session])
@@ -34,9 +34,9 @@
                             (helpers/returning :*)
                             (sql/format))))
 
-(s/defn delete-session :- SessionDB
+(s/defn delete-session :- (s/maybe SessionDB)
   [db :- Transactable
-   {:session/keys [user-id token]} :- Session]
+   {:session/keys [user-id token]} :- SessionNoExpire]
   (log/info "Deleting current user with id" user-id)
   (jdbc/execute-one! db (-> (helpers/delete-from :session)
                             (helpers/where [:= :user-id user-id] [:= :token token])

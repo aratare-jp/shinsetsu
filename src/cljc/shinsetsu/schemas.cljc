@@ -73,6 +73,9 @@
    :session/expired OffsetDT
    :session/token   NonEmptyContinuousStr})
 
+(def SessionNoExpire
+  (dissoc Session :session/expired))
+
 (def SessionDB
   (merge Session
          {:session/created OffsetDT

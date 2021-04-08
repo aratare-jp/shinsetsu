@@ -11,7 +11,8 @@
             [buddy.hashers :as hashers]
             [puget.printer :refer [pprint]]
             [schema.core :as s])
-  (:import [java.time OffsetDateTime ZoneOffset]))
+  (:import [java.time OffsetDateTime ZoneOffset]
+           [java.util UUID]))
 
 (pc/defmutation login
   [_ {:user/keys [username password]}]
@@ -39,25 +40,20 @@
       {:user/id :nobody :user/valid? false})))
 
 (pc/defmutation logout
-  [env {:user/keys [username password]}]
-  {::pc/params #{:user/username :user/password}
-   ::pc/output [:user/id :user/valid?]}
-  (s/validate NonEmptyContinuousStr username)
-  (s/validate NonEmptyContinuousStr password)
-  (log/info "Logging out with" username)
+  [env _]
+  {::pc/output [:user/id :user/valid?]}
   (let [secret    (:secret config/env)
         jws-token (-> env :request :session)
-        user-id   (jws/unsign jws-token secret)
-        tokens    (read-session db {:session/user-id user-id})]
-    (if (some #(= % jws-token) tokens)
+        user-id   (UUID/fromString (new String (jws/unsign jws-token secret)))
+        token     (check-session db {:session/user-id user-id
+                                     :session/token   jws-token})]
+    (if token
       (do
-        (log/info "Retiring token" jws-token)
-        (delete-session db {:session/user-id user-id :session/token jws-token})
-        (augment-response
-          {:user/id :nobody :user/valid? false}
-          (fn [ring-resp] (assoc ring-resp :session {}))))
-      (do
-        (log/warn username "tried to log out with invalid token" jws-token)
-        {:user/id :nobody :user/valid? false}))))
+        (log/info "Retiring token" jws-token "of user" user-id)
+        (delete-session db {:session/user-id user-id :session/token jws-token}))
+      (log/warn user-id "tried to log out with invalid token" jws-token))
+    (augment-response
+      {:user/id :nobody :user/valid? false}
+      (fn [ring-resp] (assoc ring-resp :session {})))))
 
 (def mutations [login logout])

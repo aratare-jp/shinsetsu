@@ -4,6 +4,8 @@
             [buddy.hashers :as hashers]
             [shinsetsu.db.core :refer [db]]
             [shinsetsu.db.user :refer :all]
+            [shinsetsu.db.session :refer :all]
+            [com.fulcrologic.fulcro.server.api-middleware :refer [apply-response-augmentations]]
             [shinsetsu.schemas :refer :all]
             [puget.printer :refer [pprint]]
             [shinsetsu.config :refer [env]]
@@ -30,16 +32,29 @@
   (with-redefs [shinsetsu.db.core/db tdb
                 shinsetsu.config/env (merge shinsetsu.config/env
                                             {:secret (g/generate NonEmptyContinuousStr)})]
-    (let [user     (g/generate User default-leaf-generator)
-          username (:user/username user)
-          password (:user/password user)
-          mut      `[(shinsetsu.mutations.user/login {:user/username ~username
-                                                      :user/password ~password})]
-          body     (->transit mut)]
+    (let [user                   (g/generate User default-leaf-generator)
+          username               (:user/username user)
+          password               (:user/password user)
+          login-mut              `[(shinsetsu.mutations.user/login {:user/username ~username
+                                                                    :user/password ~password})]
+          logout-mut             `[(shinsetsu.mutations.user/logout nil)]
+          login-expected-result  {'shinsetsu.mutations.user/login {:user/id     (:user/id user)
+                                                                   :user/valid? true}}
+          logout-expected-result {'shinsetsu.mutations.user/logout {:user/id     :nobody
+                                                                    :user/valid? false}}]
       (create-user shinsetsu.db.core/db (update user :user/password hashers/derive))
-      (let [expected {'shinsetsu.mutations.user/login {:user/id     (:user/id user)
-                                                       :user/valid? true}}]
-        (expect expected (pathom-parser {} mut))))))
+      (let [login-result  (pathom-parser {} login-mut)
+            login-res-aug (apply-response-augmentations login-result)]
+        (expect login-expected-result login-result)
+        (expect (:session login-res-aug))
+        (expect (check-session db {:session/user-id (:user/id user)
+                                   :session/token   (:session login-res-aug)}))
+        (let [logout-result  (pathom-parser {:request {:session (:session login-res-aug)}} logout-mut)
+              logout-res-aug (apply-response-augmentations logout-result)]
+          (expect logout-expected-result logout-result)
+          (expect {} (:session logout-res-aug))
+          (expect nil? (check-session db {:session/user-id (:user/id user)
+                                          :session/token   (:session login-res-aug)})))))))
 
 (comment
   (do

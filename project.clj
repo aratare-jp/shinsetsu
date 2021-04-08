@@ -80,7 +80,12 @@
                   :dependencies [[ring/ring-mock "0.4.0"]
                                  [org.clojure/tools.namespace "1.1.0"]]
                   :repl-options {:init-ns user
-                                 :timeout 120000}}]
+                                 :timeout 120000}
+                  :eftest       {:fail-fast?   true
+                                 :multithread? :namespaces}
+                  :runner       :eftest
+                  :runner-opts  {:fail-fast?   true
+                                 :multithread? :namespaces}}]
    :server-prod [:shared-prod
                  :server
                  {:jvm-opts     ["-Dconf=prod-config.edn"]
