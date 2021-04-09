@@ -38,7 +38,7 @@ jobs:
       - name: Setup test config
         run: |
           touch test-config.edn
-          echo '{}' > test-config.edn
+          echo '{:stub "foo"}' > test-config.edn
 
       - name: Run server tests
         run: lein with-profile server-test cloverage
