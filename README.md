@@ -28,23 +28,25 @@ TBC
 ## Rationale
 
 As we progress through the information age, our ability to organise information effectively seems to stay the same. For
-example, have you ever found a really nice website about cooking and thought "I'll just bookmark this website just in
-case I need it in the future" and _never_ touched it again? I sure have. In fact, all the time. But, why?
+example, have you ever found a really nice website about cooking and thought
 
-Once bookmarked, that website will join the others in a folder somewhere, perhaps aptly named "cooking". Problem
-starts arising when there are just _too_ many bookmarks in the same place. Just scrolling through them and trying to
-find that one website you want is an already tiring exercise. Solution? Either you type in the address bar in hope to
-find it with the help of autocompletion, or you will need to summon up the bookmark manager. Regardless, chances are
-you can find it, but not without being distracted by all these unnecessary steps. Oh, and good luck trying to do so 
-with a _nested structure_ (i.e. bookmark folders within bookmark folders) that a majority of us, when feel the need
-to "organise" our bookmarks, seem to always fall back on.
+> I'll just bookmark this website just in case I need it in the future
+
+and _never_ touched it again? I sure have. In fact, all the time. But, why?
+
+Well, the answer is simple: that website has disappeared among _many_ other websites, all of which were the results of
+the "I'll just bookmark this website just in case" habit. Solution? Either (1) relying on autocompletion to find that
+website via the address bar (by the way, any browser will only display 10 matching bookmarks _at most_), or (2) summoning
+up the bookmark manager. Either way, chances are you can find it, but not without having to go through all these 
+unnecessary steps. Oh, and good luck trying to do so  with a _nested structure_ (i.e. bookmark folders within bookmark 
+folders) that a majority of us, when feel the need to "organise" our bookmarks, seem to always fall back on.
 
 As my bookmarks grow each day, and finding things has become such a chore that I truly need a better way to tame this
 beast. And so I started finding a solution that suits my need, or building one if I have to. I did the latter.
 
-Enter Shinsetsu, designed to be a replacement for the standard bookmark manager.
+Enter Shinsetsu - a standalone bookmark "stack" - designed to replace the stock standard bookmark managers.
 
-Shinsetsu was designed to be as seamless as possible, in the sense that if you need to find something, you can do so
+Shinsetsu aims to be as seamless as possible, in the sense that if you need to do something, you can do so
 _quickly_. You can find its features in the section above, but here's a quick sneakpeek:
 
 - Instead of having nested structure, Shinsetsu promotes _tabs_ and _tags_.
