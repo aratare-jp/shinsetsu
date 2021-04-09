@@ -41,7 +41,7 @@ jobs:
           echo '{:stub "foo"}' > test-config.edn
 
       - name: Run server tests
-        run: lein with-profile server-test cloverage
+        run: lein with-profile server-test cloverage --codecov
 
       - name: Upload code coverage to Codecov
         uses: codecov/codecov-action@v1
