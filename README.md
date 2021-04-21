@@ -23,7 +23,8 @@ TBC
 - [ ] Cross-browser bookmark sync
 - [ ] Tagging for easy searching & filtering
 - [ ] Securing with passwords
-- [ ] Self-hosted server for absolute data privacy
+- [ ] E2E encryption
+- [ ] Self-hosted server
 
 ## Rationale
 
