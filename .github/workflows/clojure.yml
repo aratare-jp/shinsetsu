@@ -16,6 +16,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - run: env
       - name: Checkout
         uses: actions/checkout@v2
 
