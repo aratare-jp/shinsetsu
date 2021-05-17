@@ -1,7 +1,9 @@
 (defproject shinsetsu "0.1.0-SNAPSHOT"
   :description "Bookmark enhancer"
   :url "http://github.com/aratare-tech/shinsetsu"
-  :dependencies [[org.clojure/clojure "1.10.1"]]
+  :dependencies [[org.clojure/clojure "1.10.3"]
+                 [com.github.liquidz/antq "RELEASE"]]
+  :aliases {"outdated" ["run" "-m" "antq.core"]}
   :profiles
   {
    ;; ------------------------------------------------------------------------------------------------------------------
@@ -11,10 +13,10 @@
    ;; ------------------------------------------------------------------------------------------------------------------
 
    :shared      {:source-paths ["src/cljc"]
-                 :dependencies [[com.fulcrologic/fulcro "3.4.12"]
-                                [com.fulcrologic/fulcro-rad "1.0.8"]
+                 :dependencies [[com.fulcrologic/fulcro "3.4.21"]
+                                [com.fulcrologic/fulcro-rad "1.0.9"]
                                 [com.wsscode/pathom "2.3.1"]
-                                [org.clojure/core.async "1.3.610"]
+                                [org.clojure/core.async "1.3.618"]
                                 [medley "1.3.0"]
                                 [prismatic/schema "1.1.12"]
                                 [prismatic/schema-generators "0.1.3"]
@@ -28,7 +30,7 @@
                                  [expectations/clojure-test "1.2.1"]
                                  [clj-test-containers "0.4.0"]]
                   :plugins      [[lein-eftest "0.5.9"]
-                                 [lein-cloverage "1.2.1"]]}]
+                                 [lein-cloverage "1.2.2"]]}]
    :shared-prod [:shared
                  {:source-paths ["env/prod/cljc"]}]
 
@@ -41,22 +43,22 @@
    :server      [:shared
                  {:source-paths   ["src/clj"]
                   :resource-paths ["resources"]
-                  :dependencies   [[org.clojure/tools.cli "1.0.194"]
+                  :dependencies   [[org.clojure/tools.cli "1.0.206"]
                                    [cprop "0.1.17"]
-                                   [http-kit "2.3.0"]
+                                   [http-kit "2.5.3"]
                                    [buddy "2.0.0"]
                                    [nrepl "0.8.3"]
-                                   [ring "1.8.2"]
-                                   [metosin/muuntaja "0.6.7"]
+                                   [ring "1.9.3"]
+                                   [metosin/muuntaja "0.6.8"]
                                    [ring/ring-defaults "0.3.2"]
-                                   [seancorfield/next.jdbc "1.1.646"]
-                                   [com.github.seancorfield/honeysql "2.0.0-alpha3"]
+                                   [seancorfield/next.jdbc "1.2.659"]
+                                   [com.github.seancorfield/honeysql "2.0.0-rc2"]
                                    [mount "0.1.16"]
-                                   [metosin/reitit "0.5.11"]
+                                   [metosin/reitit "0.5.13"]
                                    [bk/ring-gzip "0.3.0"]
                                    [migratus "1.3.5"]
                                    [valip "0.2.0"]
-                                   [org.postgresql/postgresql "42.2.19"]
+                                   [org.postgresql/postgresql "42.2.20"]
                                    [com.zaxxer/HikariCP "4.0.3"]
                                    [com.fzakaria/slf4j-timbre "0.3.21"]
                                    [cheshire "5.10.0"]
@@ -98,8 +100,8 @@
    ;; ------------------------------------------------------------------------------------------------------------------
 
    :client      {:source-paths ["src/cljs"]
-                 :dependencies [[org.clojure/clojurescript "1.10.773"]
-                                [thheller/shadow-cljs "2.11.11"]
+                 :dependencies [[org.clojure/clojurescript "1.10.844"]
+                                [thheller/shadow-cljs "2.13.0"]
                                 [venantius/accountant "0.2.5"]
                                 [pez/clerk "1.0.0"]
                                 [cljs-http "0.1.46"]
@@ -107,7 +109,7 @@
    :client-dev  [:shared-dev
                  :client
                  {:source-paths ["env/dev/cljs"]
-                  :dependencies [[binaryage/devtools "1.0.2"]]}]
+                  :dependencies [[binaryage/devtools "1.0.3"]]}]
    :client-test [:shared-test
                  :client-dev
                  {:source-paths ["env/test/cljs"]
