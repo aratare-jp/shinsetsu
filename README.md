@@ -36,9 +36,12 @@ example, have you ever found a really nice website about cooking and thought
 and _never_ touched it again? I sure have. In fact, all the time. But, why?
 
 Well, the answer is simple: that website has disappeared among _many_ other websites, all of which were the results of
-the "I'll just bookmark this website just in case" habit. Solution? Either (1) relying on autocompletion to find that
-website via the address bar (by the way, any browser will only display 10 matching bookmarks _at most_), or (2) summoning
-up the bookmark manager. Either way, chances are you can find it, but not without having to go through all these 
+the "I'll just bookmark this website just in case" habit. Solution? Either:
+
+1. Relying on autocompletion to find that website via the address bar (which is a hit-or-miss most of the time), or
+2. Summoning up the bookmark manager. 
+
+Either way, chances are you can find it, but not without having to go through all these 
 unnecessary steps. Oh, and good luck trying to do so  with a _nested structure_ (i.e. bookmark folders within bookmark 
 folders) that a majority of us, when feel the need to "organise" our bookmarks, seem to always fall back on.
 
