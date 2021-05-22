@@ -100,8 +100,8 @@
    ;; ------------------------------------------------------------------------------------------------------------------
 
    :client      {:source-paths ["src/cljs"]
-                 :dependencies [[org.clojure/clojurescript "1.10.844"]
-                                [thheller/shadow-cljs "2.13.0"]
+                 :dependencies [[org.clojure/clojurescript "1.10.866"]
+                                [thheller/shadow-cljs "2.14.0"]
                                 [venantius/accountant "0.2.5"]
                                 [pez/clerk "1.0.0"]
                                 [cljs-http "0.1.46"]
