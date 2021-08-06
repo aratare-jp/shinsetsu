@@ -22,8 +22,8 @@ TBC
 - [ ] Standard bookmark operations (minus a few things)
 - [ ] Cross-browser bookmark sync
 - [ ] Tagging for easy searching & filtering
+- [ ] Saved sessions for easy retrieval of tabs
 - [ ] Securing with passwords
-- [ ] E2E encryption
 - [ ] Self-hosted server
 
 ## Rationale
@@ -63,12 +63,31 @@ with "Italian" and "Pasta" tags. It's like searching for a book in a library: yo
 through the alphabetically labeled shelves (tags) within the section.
 - Secret sections in a library are cool, and so are protected tabs. You can assign passwords to tabs to protect
 sensitive data, such as work-related documentations.
+- Saved sessions allow you to open a certain set of tabs easily. And yes: it can also be password-protected.
 - Cross-browser synchronisation so no longer do you need to maintain separate accounts for different browsers. Add a
 bookmark in Firefox and access it in Chrome with ease.
 - And many more...
 
 My goal, as stated, is to be able to use Shinsetsu to make actual good use of bookmarks. And I hope it will be able
 to bring joy to you as well.
+
+# FAQ
+## Is it free?
+Yes.
+
+## Will it be free _forever_?
+I can guarantee the core functionality will **_always_** be free. If I happen to build some additional life-enhancing features in the future, then I'll make the decision then.
+
+## Is it safe?
+Yes. In addition to be password-protected, all the data is saved on your _own_ server. What's yours remain yours.
+
+## How easy is it to setup?
+Currently the project is in development so I can't tell you much _yet_. But I'm striving to make it as easy as possible.
+
+## Will it be cross-platform?
+Currently bookmarks are mostly used in browser environment, so probably not for the foreseeable future. Once the browser plugin is mature enough then _maybe_ I'll reconsider.
+
+
 
 ## Contribution
 
