@@ -87,14 +87,12 @@ Currently the project is in development so I can't tell you much _yet_. But I'm 
 ## Will it be cross-platform?
 Currently bookmarks are mostly used in browser environment, so probably not for the foreseeable future. Once the browser plugin is mature enough then _maybe_ I'll reconsider.
 
-
-
-## Contribution
+# Contribution
 
 This project for the most part is for my personal use. If you've found any bugs or issues, or want to have
 additional features, please create an issue or PR.
 
-## License
+# License
 MIT License
 
 Copyright (c) 2020 Rex Truong
