@@ -1,8 +1,14 @@
-{:path ["src"]
- :deps {org.clojure/clojure               {:mvn/version "1.10.3"}
-        org.clojure/tools.cli             {:mvn/version "1.0.206"}
-        com.github.seancorfield/next.jdbc {:mvn/version "1.2.761"}
-        com.github.seancorfield/honeysql  {:mvn/version "2.2.861"}}
+{:paths ["src/main" "resources"]
+ :deps  {org.clojure/clojure               {:mvn/version "1.10.3"}
+         org.clojure/tools.cli             {:mvn/version "1.0.206"}
+         com.github.seancorfield/next.jdbc {:mvn/version "1.2.761"}
+         com.github.seancorfield/honeysql  {:mvn/version "2.2.861"}
+         com.fulcrologic/fulcro            {:mvn/version "3.5.9"}}
  :aliases
- {:build {:deps       {io.github.seancorfield/build-clj {:git/tag "v0.6.7" :git/sha "22c2d09" :deps/root "slim"}}
+ {:dev   {:extra-paths ["src/dev"]
+          :extra-deps  {org.clojure/clojurescript {:mvn/version "1.10.914"}
+                        thheller/shadow-cljs      {:mvn/version "2.17.0"}
+                        binaryage/devtools        {:mvn/version "1.0.4"}
+                        cider/cider-nrepl         {:mvn/version "0.27.4"}}}
+  :build {:deps       {io.github.seancorfield/build-clj {:git/tag "v0.6.7" :git/sha "22c2d09" :deps/root "slim"}}
           :ns-default build}}}
