@@ -1,0 +1,8 @@
+{:path ["src"]
+ :deps {org.clojure/clojure               {:mvn/version "1.10.3"}
+        org.clojure/tools.cli             {:mvn/version "1.0.206"}
+        com.github.seancorfield/next.jdbc {:mvn/version "1.2.761"}
+        com.github.seancorfield/honeysql  {:mvn/version "2.2.861"}}
+ :aliases
+ {:build {:deps       {io.github.seancorfield/build-clj {:git/tag "v0.6.7" :git/sha "22c2d09" :deps/root "slim"}}
+          :ns-default build}}}
