@@ -1,38 +1,36 @@
 (ns app.ui
   (:require
-    [com.fulcrologic.fulcro.dom :as dom]
-    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]))
+    [app.mutations :as api]
+    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+    [com.fulcrologic.fulcro.dom :as dom]))
 
-(defsc Person [this {:person/keys [name age]}]
-  {:query         [:person/name :person/age]
-   :initial-state (fn [{:keys [name age] :as params}] {:person/name name :person/age age})}
+(defsc Person [this {:person/keys [id name age] :as props} {:keys [onDelete]}]
+  {:query [:person/id :person/name :person/age]
+   :ident (fn [] [:person/id (:person/id props)])}
   (dom/li
-    (dom/h5 (str name "(age: " age ")"))))
+    (dom/h5 (str name " (age: " age ")") (dom/button {:onClick #(onDelete id)} "X"))))
 
-(def ui-person (comp/factory Person {:keyfn :person/name}))
+(def ui-person (comp/factory Person {:keyfn :person/id}))
 
-(defsc PersonList [this {:keys [list/label list/people]}]
-  {:query [:list/label {:list/people (comp/get-query Person)}]
-   :initial-state
-   (fn [{:keys [label]}]
-     {:list/label  label
-      :list/people (if (= label "Friends")
-                     [(comp/get-initial-state Person {:name "Sally" :age 32})
-                      (comp/get-initial-state Person {:name "Joe" :age 22})]
-                     [(comp/get-initial-state Person {:name "Fred" :age 11})
-                      (comp/get-initial-state Person {:name "Bobby" :age 55})])})}
-  (dom/div
-    (dom/h4 label)
-    (dom/ul
-      (map ui-person people))))
+(defsc PersonList [this {:list/keys [id label people] :as props}]
+  {:query [:list/id :list/label {:list/people (comp/get-query Person)}]
+   :ident (fn [] [:list/id (:list/id props)])}
+  (let [delete-person (fn [person-id] (comp/transact! this [(api/delete-person {:list/id id :person/id person-id})]))]
+    (dom/div
+      (dom/h4 label)
+      (dom/ul
+        (map #(ui-person (comp/computed % {:onDelete delete-person})) people)))))
 
 (def ui-person-list (comp/factory PersonList))
 
 (defsc Root [this {:keys [friends enemies]}]
   {:query         [{:friends (comp/get-query PersonList)}
                    {:enemies (comp/get-query PersonList)}]
-   :initial-state (fn [params] {:friends (comp/get-initial-state PersonList {:label "Friends"})
-                                :enemies (comp/get-initial-state PersonList {:label "Enemies"})})}
+   :initial-state {}}
   (dom/div
-    (ui-person-list friends)
-    (ui-person-list enemies)))
+    (dom/h3 "Friends")
+    (when friends
+      (ui-person-list friends))
+    (dom/h3 "Enemies")
+    (when enemies
+      (ui-person-list enemies))))
