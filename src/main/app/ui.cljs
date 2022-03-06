@@ -5,7 +5,8 @@
     [com.fulcrologic.fulcro.dom :as dom :refer [div label input form button]]
     [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.dom.events :as evt]
-    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]))
+    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
+    [com.fulcrologic.fulcro.algorithms.form-state :as fs]))
 
 (defsc Main [this props]
   {:ident         (fn [] [:component/id :main])
@@ -17,10 +18,12 @@
 (def ui-main (comp/factory Main))
 
 (defsc Login [this {:ui/keys [username password] :as props}]
-  {:query         [:ui/username :ui/password]
+  {:query         [:ui/username :ui/password fs/form-config-join]
    :ident         (fn [] [:component/id :login])
    :initial-state {:ui/username "" :ui/password ""}
-   :route-segment ["login"]}
+   :route-segment ["login"]
+   :form-fields   #{:ui/username :ui/password}
+   :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config Login data-tree))}
   (let [on-username-changed (fn [e] (m/set-string! this :ui/username :event e))
         on-password-changed (fn [e] (m/set-string! this :ui/password :event e))
         on-submit           (fn [e]
@@ -29,8 +32,7 @@
                               (comp/transact! this [(api/login {:username username :password password})]))
         on-cancel           (fn [e]
                               (evt/prevent-default! e)
-                              (m/set-value! this :ui/username "")
-                              (m/set-value! this :ui/password ""))]
+                              (comp/transact! this [(api/clear-form {:ident (comp/get-ident this)})]))]
     (div :.row
          (div :.col
               (form
