@@ -17,6 +17,15 @@
 
 (def ui-main (comp/factory Main))
 
+(defn login-valid? [{:ui/keys [username password]} field]
+  (let [not-empty? (complement empty?)]
+    (case field
+      :ui/username (not-empty? username)
+      :user/password (not-empty? password)
+      false)))
+
+(def login-validator (fs/make-validator login-valid?))
+
 (defsc Login [this {:ui/keys [username password] :as props}]
   {:query         [:ui/username :ui/password fs/form-config-join]
    :ident         (fn [] [:component/id :login])
@@ -24,15 +33,18 @@
    :route-segment ["login"]
    :form-fields   #{:ui/username :ui/password}
    :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config Login data-tree))}
+  (js/console.log (login-validator props :ui/username))
   (let [on-username-changed (fn [e] (m/set-string! this :ui/username :event e))
         on-password-changed (fn [e] (m/set-string! this :ui/password :event e))
         on-submit           (fn [e]
                               (evt/prevent-default! e)
-                              ;; Send mutations here
-                              (comp/transact! this [(api/login {:username username :password password})]))
+                              (fs/mark-complete! {:field :ui/username})
+                              (fs/mark-complete! {:field :ui/password})
+                              (if (and (login-validator props :ui/username) (login-validator props :ui/password))
+                                ((comp/transact! this [(api/login {:username username :password password})]))))
         on-cancel           (fn [e]
                               (evt/prevent-default! e)
-                              (comp/transact! this [(api/clear-form {:ident (comp/get-ident this)})]))]
+                              (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})]))]
     (div :.row
          (div :.col
               (form
