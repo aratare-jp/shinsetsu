@@ -4,31 +4,23 @@
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.dom :as dom :refer [div label input form button]]
     [com.fulcrologic.fulcro.mutations :as m]
-    [com.fulcrologic.fulcro.dom.events :as evt]))
+    [com.fulcrologic.fulcro.dom.events :as evt]
+    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]))
 
-#_(defsc Person [this {:person/keys [id name age] :as props} {:keys [onDelete]}]
-    {:query [:person/id :person/name :person/age]
-     :ident (fn [] [:person/id (:person/id props)])}
-    (li
-      (h5 (str name " (age: " age ")") (button {:onClick #(onDelete id)} "X"))))
+(defsc Main [this props]
+  {:ident         (fn [] [:component/id :main])
+   :route-segment ["main"]
+   :query         []
+   :initial-state {}}
+  (div "Hello!"))
 
-#_(def ui-person (comp/factory Person {:keyfn :person/id}))
+(def ui-main (comp/factory Main))
 
-#_(defsc PersonList [this {:list/keys [id label people] :as props}]
-    {:query [:list/id :list/label {:list/people (comp/get-query Person)}]
-     :ident (fn [] [:list/id (:list/id props)])}
-    (let [delete-person (fn [person-id] (comp/transact! this [(api/delete-person {:list/id id :person/id person-id})]))]
-      (div
-        (h4 label)
-        (ul
-          (map #(ui-person (comp/computed % {:onDelete delete-person})) people)))))
-
-#_(def ui-person-list (comp/factory PersonList))
-
-(defsc LoginForm [this {:ui/keys [username password] :as props}]
+(defsc Login [this {:ui/keys [username password] :as props}]
   {:query         [:ui/username :ui/password]
-   :ident         (fn [] [:component :login])
-   :initial-state {:ui/username "" :ui/password ""}}
+   :ident         (fn [] [:component/id :login])
+   :initial-state {:ui/username "" :ui/password ""}
+   :route-segment ["login"]}
   (let [on-username-changed (fn [e] (m/set-string! this :ui/username :event e))
         on-password-changed (fn [e] (m/set-string! this :ui/password :event e))
         on-submit           (fn [e]
@@ -57,9 +49,18 @@
                      (button :.btn.btn-primary.btn-lg {:type "submit" :onClick on-submit} "Login")
                      (button :.btn.btn-secondary.btn-lg {:type "button" :onClick on-cancel} "Clear")))))))
 
-(def ui-login-form (comp/factory LoginForm))
+(def ui-login (comp/factory Login))
 
-(defsc Root [this {:keys [login-data] :as props}]
-  {:query         [{:login-data (comp/get-query LoginForm)}]
-   :initial-state (fn [p] {:login-data (comp/get-initial-state LoginForm)})}
-  (ui-login-form login-data))
+(defrouter RootRouter [_ {:keys [current-state]}]
+  {:router-targets [Login Main]}
+  (case current-state
+    :pending (div "Loading...")
+    :failed (div "Loading failed.")
+    (div "Unknown route")))
+
+(def ui-root-router (comp/factory RootRouter))
+
+(defsc Root [_ {:root/keys [router]}]
+  {:query         [:root/ready? {:root/router (comp/get-query RootRouter)}]
+   :initial-state {:root/router {}}}
+  (ui-root-router router))
