@@ -8,15 +8,12 @@
     [com.fulcrologic.fulcro.data-fetch :as df]))
 
 (defn ^:export init []
-  (merge/merge-component! app ui/LoginForm (comp/get-initial-state ui/LoginForm))
   (app/mount! app ui/Root "app")
+  (merge/merge-component! app ui/LoginForm (comp/get-initial-state ui/LoginForm))
   #_(df/load! app :friends ui/PersonList)
   (js/console.log "Loaded"))
 
 (defn ^:export refresh []
-  (merge/merge-component! app ui/LoginForm (comp/get-initial-state ui/LoginForm))
-  ;; re-mounting will cause forced UI refresh
   (app/mount! app ui/Root "app")
-  ;; 3.3.0+ Make sure dynamic queries are refreshed
   (comp/refresh-dynamic-queries! app)
   (js/console.log "Hot reload"))

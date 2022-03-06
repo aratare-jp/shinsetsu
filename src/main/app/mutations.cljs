@@ -11,10 +11,11 @@
           (swap! state merge/remove-ident* [:person/id person-id] [:list/id list-id :list/people]))
   (remote [env] true))
 
+(def login-token (atom nil))
+
 (defmutation login
   "Login with a username and password"
   [{:keys [username password]}]
-  (action [{:keys [state]}]
-          ;; TODO: Clearing should only be done when succeeded.
-          (swap! state update-in [:component :login] dissoc :ui/username)
-          (swap! state update-in [:component :login] dissoc :ui/password)))
+  (remote [env] true)
+  (ok-action [{:keys [result] :as env}] (swap! login-token #(-> result (get :body) vals first)))
+  (error-action [env] (js/alert "Oops seems like your credentials are not correct.")))
