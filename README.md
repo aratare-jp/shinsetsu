@@ -71,6 +71,13 @@ bookmark in Firefox and access it in Chrome with ease.
 My goal, as stated, is to be able to use Shinsetsu to make actual good use of bookmarks. And I hope it will be able
 to bring joy to you as well.
 
+# Progress (for tracking)
+
+- [ ] Login
+- [ ] Tab
+- [ ] Bookmark
+- [ ] Chrome plugin
+
 # FAQ
 ## Is it free?
 Yes.

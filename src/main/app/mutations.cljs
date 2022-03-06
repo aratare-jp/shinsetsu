@@ -10,3 +10,11 @@
   (action [{:keys [state]}]
           (swap! state merge/remove-ident* [:person/id person-id] [:list/id list-id :list/people]))
   (remote [env] true))
+
+(defmutation login
+  "Login with a username and password"
+  [{:keys [username password]}]
+  (action [{:keys [state]}]
+          ;; TODO: Clearing should only be done when succeeded.
+          (swap! state update-in [:component :login] dissoc :ui/username)
+          (swap! state update-in [:component :login] dissoc :ui/password)))
