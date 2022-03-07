@@ -1,4 +1,4 @@
-(ns app.resolvers
+(ns shinsetsu.resolvers
   (:require
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.connect :as pc]))

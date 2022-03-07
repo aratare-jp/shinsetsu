@@ -1,4 +1,4 @@
-(ns app.application
+(ns shinsetsu.application
   (:require
     [com.fulcrologic.fulcro.application :as app]
     [com.fulcrologic.fulcro.networking.http-remote :as http]))

@@ -1,6 +1,6 @@
-(ns app.server
+(ns shinsetsu.server
   (:require
-    [app.parser :refer [api-parser]]
+    [shinsetsu.parser :refer [api-parser]]
     [org.httpkit.server :as http]
     [com.fulcrologic.fulcro.server.api-middleware :as server]
     [ring.middleware.content-type :refer [wrap-content-type]]
