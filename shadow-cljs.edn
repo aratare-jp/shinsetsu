@@ -1,12 +1,11 @@
-{:lein     {:profile "+client-dev,+client-test"}
- :nrepl    {:port 9000}
+{:nrepl    {:port 9000}
+ :deps     {:aliases [:dev]}
  :dev-http {8000 "classpath:public"}
- :builds   {:main {:target           :browser
-                   :output-dir       "resources/public/js/main"
-                   :asset-path       "/js/main"
-                   :modules          {:main {:init-fn user/init}}
-                   :devtools         {:after-load shinsetsu.core/refresh
-                                      :preloads   [com.fulcrologic.fulcro.inspect.preload]}
-                   :compiler-options {:output-feature-set :es6}
-                   :js-options       {:js-provider    :external
-                                      :external-index "target/index.js"}}}}
+ :builds   {:main {:target     :browser
+                   :output-dir "resources/public/js/main"
+                   :asset-path "/js/main"
+                   :modules    {:main {:init-fn shinsetsu.client/init
+                                       :entries [shinsetsu.client]}}
+                   :devtools   {:after-load shinsetsu.client/refresh
+                                :preloads   [com.fulcrologic.fulcro.inspect.preload
+                                             com.fulcrologic.fulcro.inspect.dom-picker-preload]}}}}

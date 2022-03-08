@@ -1,38 +1,25 @@
 (ns shinsetsu.parser
   (:require
+    [shinsetsu.resolvers :as res]
+    [shinsetsu.mutations :as mut]
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.connect :as pc]
-    [taoensso.timbre :as log]
-    [shinsetsu.resolvers]
-    [shinsetsu.mutations]
-    [mount.core :refer [defstate]]
-    [puget.printer :refer [pprint]]))
+    [taoensso.timbre :as log]))
 
-(def resolvers [shinsetsu.resolvers/resolvers
-                shinsetsu.mutations/mutations])
+(def resolvers [res/resolvers mut/mutations])
 
-(defn process-error
-  "Overriding the default Pathom error handler so we can get the attached data on the client side."
-  [env err]
-  (tap> env)
-  (tap> err)
-  (log/error "Error found" err)
-  (.printStackTrace err)
-  err)
+(def pathom-parser
+  (p/parser {::p/env     {::p/reader                 [p/map-reader
+                                                      pc/reader2
+                                                      pc/ident-reader
+                                                      pc/index-reader]
+                          ::pc/mutation-join-globals [:tempids]}
+             ::p/mutate  pc/mutate
+             ::p/plugins [(pc/connect-plugin {::pc/register resolvers})
+                          p/error-handler-plugin
+                          ;; or p/elide-special-outputs-plugin
+                          (p/post-process-parser-plugin p/elide-not-found)]}))
 
-(defonce parser (atom nil))
-
-(defstate pathom-parser
-  :start
-  (reset! parser (p/parser {::p/env     {::p/reader                 [p/map-reader
-                                                                     pc/reader2
-                                                                     pc/open-ident-reader]
-                                         ::p/process-error          process-error
-                                         ::pc/mutation-join-globals [:tempids]}
-                            ::p/mutate  pc/mutate
-                            ::p/plugins [(pc/connect-plugin {::pc/register resolvers})
-                                         (p/env-plugin {})
-                                         (p/post-process-parser-plugin p/elide-not-found)
-                                         p/error-handler-plugin]}))
-  :stop
-  (reset! parser nil))
+(defn api-parser [query]
+  (log/info "Process" query)
+  (pathom-parser {} query))

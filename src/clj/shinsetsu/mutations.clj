@@ -1,7 +1,12 @@
 (ns shinsetsu.mutations
-  (:require [shinsetsu.mutations.user :as user]))
+  (:require
+    [com.wsscode.pathom.connect :as pc]
+    [taoensso.timbre :as log]))
 
-;; File used to aggregate all mutations within the serverside.
+(pc/defmutation login
+  [env {:keys [username password]}]
+  {::pc/sym `login}
+  (log/info "User with username" username "is attempting to login...")
+  {:token "hello-world!"})
 
-(def mutations (-> []
-                   (into user/mutations)))
+(def mutations [login])

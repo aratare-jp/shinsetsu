@@ -1,69 +1,59 @@
 (ns shinsetsu.ui.login
   (:require
-    [shinsetsu.ui.elastic-ui :as cm]
-    [shinsetsu.mutations.user :refer [login]]
-    [shinsetsu.application :refer [app]]
-    [com.fulcrologic.fulcro.dom :as dom]
-    [com.fulcrologic.fulcro.components :as comp :refer-macros [defsc]]
-    [com.fulcrologic.fulcro.routing.dynamic-routing :refer [change-route! route-immediate]]
+    [shinsetsu.mutations :as api]
+    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+    [com.fulcrologic.fulcro.dom :refer [div label input form button]]
+    [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.dom.events :as evt]
-    [com.fulcrologic.fulcro.mutations :as m]))
+    [com.fulcrologic.fulcro.algorithms.form-state :as fs]))
+
+(defn login-valid?
+  [{:ui/keys [username password]} field]
+  (let [not-empty? (complement empty?)]
+    (case field
+      :ui/username (not-empty? username)
+      :user/password (not-empty? password)
+      false)))
+
+(def login-validator (fs/make-validator login-valid?))
 
 (defsc Login
-  [this {:ui/keys [email password error? busy?] :as props}]
-  {:query         [:ui/email :ui/password :ui/error? :ui/busy?]
+  [this {:ui/keys [username password] :as props}]
+  {:query         [:ui/username :ui/password fs/form-config-join]
    :ident         (fn [] [:component/id :login])
+   :initial-state {:ui/username "" :ui/password ""}
    :route-segment ["login"]
-   :initial-state {:ui/email    ""
-                   :ui/password ""
-                   :ui/error?   false
-                   :ui/busy?    false}}
-  (cm/ui-page
-    {:className "full-height"}
-    (cm/ui-page-body
-      {:component "div"}
-      (cm/ui-page-content
-        {:verticalPosition   "center"
-         :horizontalPosition "center"
-         :paddingSize        "s"
-         :panelPaddingSize   "s"}
-        (cm/ui-page-content-header
-          nil
-          (cm/ui-page-content-header-section
-            nil
-            (cm/ui-title
-              nil
-              (dom/h1 "Login"))))
-        (cm/ui-page-content-body
-          nil
-          (cm/ui-form
-            {:component "form"
-             :error     "Incorrect username or password"
-             :isInvalid error?}
-            (cm/ui-form-row
-              {:label     "Username"
-               :fullWidth true}
-              (cm/ui-field-text
-                {:value     email
-                 :disabled  busy?
-                 :onChange  #(m/set-string! this :ui/email :event %)
-                 :isInvalid error?}))
-            (cm/ui-form-row
-              {:label     "Password"
-               :fullWidth true}
-              (cm/ui-field-text
-                {:type      "password"
-                 :value     password
-                 :disabled  busy?
-                 :onKeyDown (fn [evt]
-                              (when (evt/enter-key? evt)
-                                (comp/transact! this [(login {:user/email email :user/password password})])))
-                 :onChange  #(m/set-string! this :ui/password :event %)
-                 :isInvalid error?}))
-            (cm/ui-button
-              {:isLoading busy?
-               :disabled  busy?
-               :onClick   #(comp/transact! this [(login {:user/email email :user/password password})])}
-              "Login")))))))
+   :form-fields   #{:ui/username :ui/password}
+   :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config Login data-tree))}
+  (js/console.log (login-validator props :ui/username))
+  (let [on-username-changed (fn [e] (m/set-string! this :ui/username :event e))
+        on-password-changed (fn [e] (m/set-string! this :ui/password :event e))
+        on-submit           (fn [e]
+                              (evt/prevent-default! e)
+                              (fs/mark-complete! {:field :ui/username})
+                              (fs/mark-complete! {:field :ui/password})
+                              (if (and (= :valid (login-validator props :ui/username))
+                                       (= :valid (login-validator props :ui/password)))
+                                ((comp/transact! this [(api/login {:username username :password password})]))))
+        on-cancel           (fn [e]
+                              (evt/prevent-default! e)
+                              (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})]))]
+    (div :.row
+         (div :.col
+              (form
+                (div :.form-floating.mb-3
+                     (input :#username.form-control.form-control-lg {:value       username
+                                                                     :onChange    on-username-changed
+                                                                     :placeholder "Username"})
+                     (label :.form-label {:htmlFor "username"} "Username"))
+                (div :.form-floating.mb-3
+                     (input :#password.form-control.form-control-lg {:type        "password"
+                                                                     :value       password
+                                                                     :onChange    on-password-changed
+                                                                     :placeholder "Password"})
+                     (label :.form-label {:htmlFor "password"} "Password"))
+                (div :.btn-group {:role "group"}
+                     (button :.btn.btn-primary.btn-lg {:type "submit" :onClick on-submit} "Login")
+                     (button :.btn.btn-secondary.btn-lg {:type "button" :onClick on-cancel} "Clear")))))))
 
-(def ui-login-form (comp/factory Login))
+(def ui-login (comp/factory Login))
