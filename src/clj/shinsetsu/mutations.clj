@@ -4,9 +4,9 @@
     [taoensso.timbre :as log]))
 
 (pc/defmutation login
-                [env {:keys [username password]}]
-                {::pc/sym `login}
-                (log/info "User with username" username "is attempting to login...")
-                {:token "hello-world!"})
+  [env {:keys [username password]}]
+  {::pc/sym `login}
+  (log/info "User with username" username "is attempting to login...")
+  {:token "hello-world!"})
 
 (def mutations [login])

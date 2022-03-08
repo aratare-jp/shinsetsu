@@ -14,12 +14,11 @@
 
 (def middleware
   (-> not-found-handler
-      (server/wrap-api {:uri    "/api"
-                        :parser api-parser})
+      (server/wrap-api {:uri "/api" :parser api-parser})
       (server/wrap-transit-params)
       (server/wrap-transit-response)
       (wrap-resource "public")
-      wrap-content-type))
+      (wrap-content-type)))
 
 (defonce stop-fn (atom nil))
 

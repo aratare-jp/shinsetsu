@@ -1,12 +1,12 @@
 (ns shinsetsu.parser
   (:require
-    [shinsetsu.resolvers]
-    [shinsetsu.mutations]
+    [shinsetsu.resolvers :as res]
+    [shinsetsu.mutations :as mut]
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.connect :as pc]
     [taoensso.timbre :as log]))
 
-(def resolvers [shinsetsu.resolvers/resolvers shinsetsu.mutations/mutations])
+(def resolvers [res/resolvers mut/mutations])
 
 (def pathom-parser
   (p/parser {::p/env     {::p/reader                 [p/map-reader
