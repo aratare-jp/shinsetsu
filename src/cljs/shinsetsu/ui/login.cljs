@@ -12,7 +12,7 @@
   (let [not-empty? (complement empty?)]
     (case field
       :ui/username (not-empty? username)
-      :user/password (not-empty? password)
+      :ui/password (not-empty? password)
       false)))
 
 (def login-validator (fs/make-validator login-valid?))
@@ -25,16 +25,18 @@
    :route-segment ["login"]
    :form-fields   #{:ui/username :ui/password}
    :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config Login data-tree))}
-  (js/console.log (login-validator props :ui/username))
   (let [on-username-changed (fn [e] (m/set-string! this :ui/username :event e))
         on-password-changed (fn [e] (m/set-string! this :ui/password :event e))
-        on-submit           (fn [e]
+        on-blur             (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
+        username-invalid?   (= :invalid (login-validator props :ui/username))
+        password-invalid?   (= :invalid (login-validator props :ui/password))
+        form-invalid?       (or username-invalid? password-invalid?)
+        on-login            (fn [e]
                               (evt/prevent-default! e)
-                              (fs/mark-complete! {:field :ui/username})
-                              (fs/mark-complete! {:field :ui/password})
-                              (if (and (= :valid (login-validator props :ui/username))
-                                       (= :valid (login-validator props :ui/password)))
-                                ((comp/transact! this [(api/login {:username username :password password})]))))
+                              (comp/transact! this [(api/login {:user/username username :user/password password})]))
+        on-register         (fn [e]
+                              (evt/prevent-default! e)
+                              (comp/transact! this [(api/register {:user/username username :user/password password})]))
         on-cancel           (fn [e]
                               (evt/prevent-default! e)
                               (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})]))]
@@ -42,18 +44,36 @@
          (div :.col
               (form
                 (div :.form-floating.mb-3
-                     (input :#username.form-control.form-control-lg {:value       username
-                                                                     :onChange    on-username-changed
-                                                                     :placeholder "Username"})
+                     (input :#username.form-control.form-control-lg
+                            {:classes     [(if username-invalid? "is-invalid")]
+                             :value       username
+                             :onChange    on-username-changed
+                             :onBlur      #(on-blur :ui/username)
+                             :placeholder "Username"})
                      (label :.form-label {:htmlFor "username"} "Username"))
                 (div :.form-floating.mb-3
-                     (input :#password.form-control.form-control-lg {:type        "password"
-                                                                     :value       password
-                                                                     :onChange    on-password-changed
-                                                                     :placeholder "Password"})
+                     (input :#password.form-control.form-control-lg
+                            {:classes     [(if password-invalid? "is-invalid")]
+                             :type        "password"
+                             :value       password
+                             :onChange    on-password-changed
+                             :onBlur      #(on-blur :ui/password)
+                             :placeholder "Password"})
                      (label :.form-label {:htmlFor "password"} "Password"))
                 (div :.btn-group {:role "group"}
-                     (button :.btn.btn-primary.btn-lg {:type "submit" :onClick on-submit} "Login")
-                     (button :.btn.btn-secondary.btn-lg {:type "button" :onClick on-cancel} "Clear")))))))
+                     (button :.btn.btn-primary.btn-lg
+                             {:type     "submit"
+                              :onClick  on-login
+                              :disabled form-invalid?}
+                             "Login")
+                     (button :.btn.btn-success.btn-lg
+                             {:type     "submit"
+                              :onClick  on-register
+                              :disabled form-invalid?}
+                             "Register")
+                     (button :.btn.btn-secondary.btn-lg
+                             {:type    "button"
+                              :onClick on-cancel}
+                             "Clear")))))))
 
 (def ui-login (comp/factory Login))

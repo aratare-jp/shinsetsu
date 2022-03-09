@@ -6,7 +6,7 @@
 ;; Ensure we only refresh the source we care about. This is important
 ;; because `resources` is on our classpath and we don't want to
 ;; accidentally pull source from there when cljs builds cache files there.
-(set-refresh-dirs "src/dev" "src/main")
+(set-refresh-dirs "src/dev" "src/clj")
 
 (defn start []
   (server/start))

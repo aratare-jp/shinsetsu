@@ -10,12 +10,24 @@
 
 (defmutation login
   "Login with a username and password"
-  [{:keys [username password]}]
+  [{:user/keys [username password]}]
   (remote [env] true)
   (ok-action
     [{:keys [result] :as env}]
     (swap! login-token #(-> result (get :body) vals first))
-    (dr/change-route app ["main"]))
+    #_(dr/change-route app ["main"]))
+  (error-action
+    [env]
+    (js/alert "Oops seems like your credentials are not correct.")))
+
+(defmutation register
+  "Register with a username and password"
+  [{:user/keys [username password]}]
+  (remote [_] true)
+  (ok-action
+    [{:keys [result] :as env}]
+    (swap! login-token #(-> result (get :body) vals first))
+    #_(dr/change-route app ["main"]))
   (error-action
     [env]
     (js/alert "Oops seems like your credentials are not correct.")))
