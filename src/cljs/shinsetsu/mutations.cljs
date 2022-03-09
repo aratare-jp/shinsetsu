@@ -1,12 +1,10 @@
 (ns shinsetsu.mutations
   (:require
-    [shinsetsu.application :refer [app]]
+    [shinsetsu.application :refer [app login-token]]
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]))
-
-(def login-token (atom nil))
 
 (defmutation login
   "Login with a username and password"
