@@ -13,13 +13,19 @@
                                                       pc/reader2
                                                       pc/ident-reader
                                                       pc/index-reader]
-                          ::pc/mutation-join-globals [:tempids]}
+                          ::pc/mutation-join-globals [:tempids]
+                          ::pc/process-error
+                          (fn [_ err]
+                            (.printStackTrace err)
+                            (p/error-str err))}
              ::p/mutate  pc/mutate
              ::p/plugins [(pc/connect-plugin {::pc/register resolvers})
                           p/error-handler-plugin
-                          ;; or p/elide-special-outputs-plugin
                           (p/post-process-parser-plugin p/elide-not-found)]}))
 
 (defn api-parser [query]
   (log/info "Process" query)
   (pathom-parser {} query))
+
+(comment
+  (user/restart))

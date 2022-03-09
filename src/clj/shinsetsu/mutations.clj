@@ -23,17 +23,25 @@
         invalid-token {:token :invalid}]
     (if (and user (hashers/check password (:user/password user)))
       {:token (create-token user)}
-      invalid-token)))
+      (do
+        (log/warn "User with username" username "attempts to login with a wrong password")
+        invalid-token))))
 
 (defmutation register
   [_ {:user/keys [username] :as user}]
   {::pc/params #{:user/username :user/password}
    ::pc/output [:token]}
   (log/info "Someone is attempting to register with username" username)
-  (let [user (update user :user/password hashers/derive)]
-    (if-let [user (db/create-user user)]
-      {:token (create-token user)}
-      {:token :invalid})))
+  (let [invalid-token {:token :invalid}]
+    ;; Can have race condition when multiple user registers.
+    (if (db/fetch-user-by-username user)
+      (do
+        (log/warn "User with username" username "already exists")
+        invalid-token)
+      (let [user (update user :user/password hashers/derive)]
+        (if-let [user (db/create-user user)]
+          {:token (create-token user)}
+          invalid-token)))))
 
 (def mutations [login register])
 

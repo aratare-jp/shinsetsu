@@ -2,7 +2,8 @@
   (:require
     [next.jdbc :as jdbc]
     [honey.sql :as sql]
-    [honey.sql.helpers :as helpers]))
+    [honey.sql.helpers :as helpers]
+    [taoensso.timbre :as log]))
 
 (def db-spec
   {:dbtype   "postgresql"
@@ -14,17 +15,24 @@
 
 (defn create-user
   [user]
-  (jdbc/execute-one! ds (-> (helpers/insert-into :user)
-                            (helpers/values [user])
-                            (helpers/returning :*)
-                            (sql/format {:dialect :ansi}))))
+  (try
+    (jdbc/execute-one! ds (-> (helpers/insert-into :user)
+                              (helpers/values [user])
+                              (helpers/returning :*)
+                              (sql/format {:dialect :ansi})))
+    (catch Exception e
+      (log/error (.getStackTrace e)))))
 
 (defn fetch-user-by-username
   [{:user/keys [username]}]
-  (jdbc/execute-one! ds (-> (helpers/select :*)
-                            (helpers/from :user)
-                            (helpers/where [:= :user/username username])
-                            (sql/format {:dialect :ansi}))))
+  (log/info "Fetching user with username" username)
+  (try
+    (jdbc/execute-one! ds (-> (helpers/select :*)
+                              (helpers/from :user)
+                              (helpers/where [:= :user/username username])
+                              (sql/format {:dialect :ansi})))
+    (catch Exception e
+      (log/error (.getStackTrace e)))))
 
 (comment
   (user/restart)
