@@ -6,14 +6,23 @@
     [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
-    [com.fulcrologic.fulcro.algorithms.form-state :as fs]))
+    [com.fulcrologic.fulcro.algorithms.form-state :as fs]
+    [com.fulcrologic.fulcro.data-fetch :as df]))
+
+(defsc Child
+  [this {:tab/keys [id] :as tab}]
+  {:ident (fn [] [:tab/id (:tab/id tab)])
+   :query [:tab/id :tab/name :tab/created :tab/updated]}
+  (div tab))
+
+(def ui-child (comp/factory Child))
 
 (defsc Main
   [this props]
   {:ident         (fn [] [:component/id :main])
    :route-segment ["main"]
-   :query         []
+   :query         [{:tab/ids (comp/get-query Child)}]
    :initial-state {}}
-  (div "Hello!"))
+  (button {:onClick #(df/load! this :tab/ids Child {:remote :protected})} "Click!"))
 
 (def ui-main (comp/factory Main))

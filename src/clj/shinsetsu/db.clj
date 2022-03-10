@@ -43,10 +43,10 @@
     (catch Exception e
       (log/error e))))
 
-(defn fetch-tab-ids
+(defn fetch-tabs
   [user-id]
   (try
-    (jdbc/execute! ds (log/spy (-> (helpers/select :tab/id)
+    (jdbc/execute! ds (log/spy (-> (helpers/select :tab/id :tab/name :tab/created :tab/updated)
                                    (helpers/from :tab)
                                    (helpers/where [:= :tab/user-id user-id])
                                    (sql/format))))
@@ -70,5 +70,5 @@
   (require '[shinsetsu.db :as db])
   (as-> (db/fetch-user-by-username {:user/username "asdf"}) user
         (:user/id user)
-        (db/read-tab-ids user)
+        (db/fetch-tabs user)
         #_(db/create-tab {:tab/name "Foo" :tab/user-id user})))

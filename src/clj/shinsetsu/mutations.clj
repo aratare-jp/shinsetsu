@@ -12,7 +12,7 @@
 (defn create-token
   [user]
   (let [secret (:secret config/env)]
-    (jwt/sign {:id (.toString (:user/id user))} secret)))
+    (jwt/sign {:user/id (.toString (:user/id user))} secret)))
 
 (defmutation login
   [_ {:user/keys [username password] :as user}]
@@ -52,7 +52,8 @@
       (assoc :tab/user-id id)
       (db/create-tab)))
 
-(def mutations [login register])
+(def public-mutations [login register])
+(def protected-mutations [create-tab])
 
 (comment
   (user/restart)

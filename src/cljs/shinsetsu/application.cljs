@@ -9,14 +9,12 @@
   ([token] (wrap-auth-token identity token))
   ([handler token]
    (fn [req]
-     (if token
-       (handler (update req :headers assoc "Authorization" (str "Bearer" token)))
-       (handler req)))))
+     (handler (update req :headers assoc "Authorization" (str "Bearer " @token))))))
 
 (def req-middleware
-  (-> (wrap-auth-token @login-token)
+  (-> (wrap-auth-token login-token)
       (http/wrap-fulcro-request)))
 
 (defonce app (app/fulcro-app {:remotes
-                              {:auth   (http/fulcro-http-remote {:url "auth"})
-                               :remote (http/fulcro-http-remote {:request-middleware req-middleware})}}))
+                              {:auth      (http/fulcro-http-remote {:url "auth"})
+                               :protected (http/fulcro-http-remote {:request-middleware req-middleware})}}))

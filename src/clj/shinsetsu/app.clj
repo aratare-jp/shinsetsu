@@ -1,7 +1,7 @@
 (ns shinsetsu.app
   (:require
     [shinsetsu.auth :refer [wrap-auth]]
-    [shinsetsu.parser :refer [pathom-handler]]
+    [shinsetsu.parser :refer [public-parser-handler protected-parser-handler]]
     [com.fulcrologic.fulcro.server.api-middleware :as server]
     [ring.middleware.content-type :refer [wrap-content-type]]
     [ring.middleware.resource :refer [wrap-resource]]
@@ -12,9 +12,9 @@
   :start
   (ring/ring-handler
     (ring/router
-      ["/auth" {:post {:handler pathom-handler}}]
-      ["/api" {:post {:middleware [[wrap-auth]]
-                      :handler    pathom-handler}}])
+      [["/auth" {:post {:handler public-parser-handler}}]
+       ["/api" {:post {:middleware [[wrap-auth]]
+                       :handler    protected-parser-handler}}]])
     (ring/routes
       (ring/create-resource-handler {:path "/"})
       (ring/create-default-handler))
@@ -25,4 +25,5 @@
 
 (comment
   (user/restart)
+  (shinsetsu.app/app {:request-method :post :uri "/api" :headers {"Authorization" "Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6ImFjNWNjNTcxLTMwMjktNDQwOS1iMmY1LWU3YzY4YzRiOWE1ZiJ9.TMRqWfxmG0odlCZCJoKYtvXLDbtMJNT1h07cfYN7Ca0"}})
   (shinsetsu.app/app {:request-method :post :uri "/auth"}))
