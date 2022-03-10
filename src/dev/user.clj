@@ -9,14 +9,14 @@
 (set-refresh-dirs "src/dev" "src/clj")
 
 (defn start []
-  (server/start))
+  (server/start-app))
 
 (defn restart
   "Stop the server, reload all source code, then restart the server.
 
   See documentation of tools.namespace.repl for more information."
   []
-  (server/stop)
+  (server/stop-app)
   (refresh :after 'user/start))
 
 ;; These are here so we can run them from the editor with kb shortcuts.  See IntelliJ's "Send Top Form To REPL" in

@@ -9,7 +9,7 @@
 (defmutation login
   "Login with a username and password"
   [_]
-  (remote [_] true)
+  (auth [_] true)
   (ok-action
     [{:keys [result]}]
     (let [token (-> result (get-in [:body `login :token]))]
@@ -25,7 +25,7 @@
 (defmutation register
   "Register with a username and password"
   [_]
-  (remote [_] true)
+  (auth [_] true)
   (ok-action
     [{:keys [result]}]
     (let [token (-> result (get-in [:body `register :token]))]

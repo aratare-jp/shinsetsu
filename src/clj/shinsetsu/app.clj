@@ -17,8 +17,12 @@
                       :handler    pathom-handler}}])
     (ring/routes
       (ring/create-resource-handler {:path "/"})
-      (ring/default-options-handler))
+      (ring/create-default-handler))
     {:middleware [[wrap-content-type]
                   [wrap-resource "public"]
                   [server/wrap-transit-response]
                   [server/wrap-transit-params]]}))
+
+(comment
+  (user/restart)
+  (shinsetsu.app/app {:request-method :post :uri "/auth"}))

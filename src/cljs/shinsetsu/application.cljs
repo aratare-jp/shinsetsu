@@ -18,4 +18,5 @@
       (http/wrap-fulcro-request)))
 
 (defonce app (app/fulcro-app {:remotes
-                              {:remote (http/fulcro-http-remote {:request-middleware req-middleware})}}))
+                              {:auth   (http/fulcro-http-remote {:url "auth"})
+                               :remote (http/fulcro-http-remote {:request-middleware req-middleware})}}))

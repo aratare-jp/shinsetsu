@@ -25,8 +25,7 @@
                           p/error-handler-plugin
                           (p/post-process-parser-plugin p/elide-not-found)]}))
 
-(defn pathom-handler
-  [_]
+(def pathom-handler
   (fn [req]
     (let [params (or (:transit-params req) (:body-params req))]
       (handle-api-request params (partial pathom-parser {:request req})))))
