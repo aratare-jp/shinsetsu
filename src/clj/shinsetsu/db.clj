@@ -1,17 +1,16 @@
 (ns shinsetsu.db
   (:require
+    [shinsetsu.config :as config]
     [next.jdbc :as jdbc]
     [honey.sql :as sql]
+    [mount.core :refer [defstate]]
     [honey.sql.helpers :as helpers]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [spy.core :as spy]))
 
-(def db-spec
-  {:dbtype   "postgresql"
-   :dbname   "shinsetsu"
-   :user     "shinsetsudev"
-   :password "shinsetsu"})
-
-(def ds (jdbc/get-datasource db-spec))
+(defstate ds
+  :start
+  (jdbc/get-datasource (:db-spec config/env)))
 
 (defn create-user
   [user]
@@ -21,7 +20,7 @@
                               (helpers/returning :*)
                               (sql/format {:dialect :ansi})))
     (catch Exception e
-      (log/error (.getStackTrace e)))))
+      (log/error e))))
 
 (defn fetch-user-by-username
   [{:user/keys [username]}]
@@ -32,16 +31,44 @@
                               (helpers/where [:= :user/username username])
                               (sql/format {:dialect :ansi})))
     (catch Exception e
-      (log/error (.getStackTrace e)))))
+      (log/error e))))
+
+(defn create-tab
+  [tab]
+  (try
+    (jdbc/execute-one! ds (log/spy (-> (helpers/insert-into :tab)
+                                       (helpers/values [tab])
+                                       (helpers/returning :*)
+                                       (sql/format))))
+    (catch Exception e
+      (log/error e))))
+
+(defn fetch-tab-ids
+  [user-id]
+  (try
+    (jdbc/execute! ds (log/spy (-> (helpers/select :tab/id)
+                                   (helpers/from :tab)
+                                   (helpers/where [:= :tab/user-id user-id])
+                                   (sql/format))))
+    (catch Exception e
+      (log/error e))))
+
+(defn create-bookmark
+  [bookmark]
+  (try
+    (jdbc/execute-one! ds (-> (helpers/insert-into :bookmark)
+                              (helpers/values [bookmark])
+                              (helpers/returning :*)
+                              (sql/format)))
+    (catch Exception e
+      (log/error e))))
 
 (comment
   (user/restart)
+  (user/start)
   (clojure.repl/doc tap>)
-  (tap> 2)
-  (def mock-user [{:username "test1" :password "test2"}])
-  (-> (helpers/insert-into :user)
-      (helpers/values mock-user)
-      (helpers/returning :*)
-      sql/format)
-  (create-user mock-user)
-  (fetch-user-by-username {:user/username "foo"}))
+  (require '[shinsetsu.db :as db])
+  (as-> (db/fetch-user-by-username {:user/username "asdf"}) user
+        (:user/id user)
+        (db/read-tab-ids user)
+        #_(db/create-tab {:tab/name "Foo" :tab/user-id user})))

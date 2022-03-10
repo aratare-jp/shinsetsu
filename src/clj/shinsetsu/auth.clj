@@ -1,5 +1,6 @@
 (ns shinsetsu.auth
   (:require
+    [shinsetsu.config :as config]
     [buddy.sign.jwt :as jwt]
     [taoensso.timbre :as log]))
 
@@ -8,8 +9,7 @@
   (fn [req]
     (if-let [token (get-in req [:headers "Authorization"])]
       (do
-        (log/info (jwt/unsign token "my-secret"))
-        ;; TODO: Proper token validation
+        (log/info (jwt/unsign token (:secret config/env)))
         (handler req))
       {:status-code 401
        :message     "Invalid authentication"})))

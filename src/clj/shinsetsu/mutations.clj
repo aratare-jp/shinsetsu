@@ -1,5 +1,6 @@
 (ns shinsetsu.mutations
   (:require
+    [shinsetsu.config :as config]
     [shinsetsu.db :as db]
     [com.wsscode.pathom.connect :as pc :refer [defmutation]]
     [taoensso.timbre :as log]
@@ -10,7 +11,7 @@
 
 (defn create-token
   [user]
-  (let [secret "my-secret"]
+  (let [secret (:secret config/env)]
     (jwt/sign {:id (.toString (:user/id user))} secret)))
 
 (defmutation login
@@ -18,7 +19,6 @@
   {::pc/params #{:username :password}
    ::pc/output [:token]}
   (log/info "User with username" username "is attempting to login...")
-  ;; FIXME: Move secret into env variable
   (let [user          (db/fetch-user-by-username user)
         invalid-token {:token :invalid}]
     (if (and user (hashers/check password (:user/password user)))
@@ -42,6 +42,15 @@
         (if-let [user (db/create-user user)]
           {:token (create-token user)}
           invalid-token)))))
+
+(defmutation create-tab
+  [{{:user/keys [id username] :as user} :user} tab]
+  {::pc/params #{:tab/name :tab/password}
+   ::pc/output [:tab/name :tab/is-protected? :tab/created :tab/updated]}
+  (log/info "User with username" username "is attempting to create a new tab")
+  (-> tab
+      (assoc :tab/user-id id)
+      (db/create-tab)))
 
 (def mutations [login register])
 
