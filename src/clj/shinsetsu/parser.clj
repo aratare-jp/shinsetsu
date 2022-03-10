@@ -1,5 +1,7 @@
 (ns shinsetsu.parser
   (:require
+    [com.fulcrologic.fulcro.server.api-middleware :refer [handle-api-request]]
+    [mount.core :refer [defstate]]
     [shinsetsu.resolvers :as res]
     [shinsetsu.mutations :as mut]
     [com.wsscode.pathom.core :as p]
@@ -23,9 +25,11 @@
                           p/error-handler-plugin
                           (p/post-process-parser-plugin p/elide-not-found)]}))
 
-(defn api-parser [query]
-  (log/info "Process" query)
-  (pathom-parser {} query))
+(defn pathom-handler
+  [_]
+  (fn [req]
+    (let [params (or (:transit-params req) (:body-params req))]
+      (handle-api-request params (partial pathom-parser {:request req})))))
 
 (comment
   (user/restart))
