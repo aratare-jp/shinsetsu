@@ -44,3 +44,11 @@
   (action
     [{:keys [state]}]
     (swap! state fs/pristine->entity* ident)))
+
+(defmutation create-tab
+  "Create a new tab"
+  [_]
+  (protected [_] true)
+  (ok-action
+    [{:keys [result]}]
+    (js/console.log result)))

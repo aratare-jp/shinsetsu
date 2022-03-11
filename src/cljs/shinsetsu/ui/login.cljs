@@ -37,7 +37,7 @@
         on-register         (fn [e]
                               (evt/prevent-default! e)
                               (comp/transact! this [(api/register {:user/username username :user/password password})]))
-        on-cancel           (fn [e]
+        on-clear            (fn [e]
                               (evt/prevent-default! e)
                               (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})]))]
     (div :.row
@@ -73,7 +73,7 @@
                              "Register")
                      (button :.btn.btn-secondary.btn-lg
                              {:type    "button"
-                              :onClick on-cancel}
+                              :onClick on-clear}
                              "Clear")))))))
 
 (def ui-login (comp/factory Login))
