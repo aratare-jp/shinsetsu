@@ -7,9 +7,10 @@
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]))
 
 (defn ^:export init []
-  (app/mount! app Root "app")
+  (app/set-root! app Root {:initialize-state? true})
   (dr/initialize! app)
   (dr/change-route app ["login"])
+  (app/mount! app Root "app")
   (js/console.log "Loaded"))
 
 (defn ^:export refresh []
