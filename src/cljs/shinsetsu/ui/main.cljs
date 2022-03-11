@@ -12,26 +12,24 @@
     [clojure.string :as string]))
 
 (defn tab-valid?
-  [{:tab/keys [name]} field]
+  [{:ui/keys [name]} field]
   (let [not-empty? (complement empty?)]
     (case field
-      :tab/name (not-empty? name)
+      :ui/name (not-empty? name)
       false)))
 
 (def tab-validator (fs/make-validator tab-valid?))
 
 (defsc TabModal
-  [this {:tab/keys [id name] :as tab}]
-  {:ident         (fn [] [:tab/id (:tab/id tab)])
-   :query         [:tab/id :tab/name :tab/created :tab/updated fs/form-config-join]
-   :form-fields   #{:tab/name}
-   :initial-state (fn []
-                    {:tab/name ""
-                     :tab/id   (random-uuid)})
+  [this {:ui/keys [id name created updated] :as props}]
+  {:ident         (fn [] [:component/id ::tab-modal])
+   :query         [:ui/id :ui/name :ui/created :ui/updated fs/form-config-join]
+   :form-fields   #{:ui/name}
+   :initial-state {:ui/name ""}
    :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config TabModal data-tree))}
-  (let [on-name-changed (fn [e] (m/set-string! this :tab/name :event e))
+  (let [on-name-changed (fn [e] (m/set-string! this :ui/name :event e))
         on-blur         (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
-        name-invalid?   (= :invalid (tab-validator tab :tab/name))
+        name-invalid?   (= :invalid (tab-validator props :ui/name))
         tab-invalid?    name-invalid?
         on-tab-save     (fn [e]
                           (evt/prevent-default! e)
@@ -40,24 +38,23 @@
                           (evt/prevent-default! e)
                           (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})]))]
     (div :.modal.fade#tab-modal {:tabIndex -1}
-         (div :.modal-dialog
+         (div :.modal-dialog.modal-dialog-centered.modal-dialog-scrollable
               (div :.modal-content
                    (form
                      (div :.modal-header
-                          (h5 :.modal-title#tab-modal-label "Create new tab")
+                          (h5 :.modal-title#tab-modal-label (str (if id "Edit" "Create") " tab"))
                           (button :.btn-close {:type            "button"
                                                :data-bs-dismiss "modal"}))
                      (div :.modal-body
                           (div :.form-floating.mb-3
-                               (input :#username.form-control.form-control-lg
+                               (input :#tab-name.form-control.form-control-lg
                                       {:classes     [(if name-invalid? "is-invalid")]
                                        :value       name
                                        :onChange    on-name-changed
-                                       :onBlur      #(on-blur :ui/username)
-                                       :placeholder "Username"})
-                               (label :.form-label {:htmlFor "username"} "Username")))
+                                       :onBlur      #(on-blur :ui/name)
+                                       :placeholder "Name"})
+                               (label :.form-label {:htmlFor "tab-name"} "Name")))
                      (div :.modal-footer
-                          (button :.btn.btn-secondary.btn-lg {:data-bs-dismiss "modal"} "Close")
                           (button :.btn.btn-secondary.btn-lg {:onClick on-clear} "Clear")
                           (button :.btn.btn-primary.btn-lg {:type     "submit"
                                                             :onClick  on-tab-save
@@ -91,12 +88,14 @@
 (def ui-tab-body (comp/factory TabBody {:keyfn :tab/id}))
 
 (defsc Main
-  [this {tab-ids :tab/ids tab-modal :tab/modal :as props}]
+  [this {tab-ids :tab/ids tab-modal :ui/tab-modal :as props}]
   {:ident         (fn [] [:component/id ::main])
    :route-segment ["main"]
    :query         [{:tab/ids (comp/get-query TabHeader)}
-                   {:tab/modal (comp/get-query TabModal)}]
-   :initial-state {:tab/modal (comp/get-initial-state TabModal)}
+                   {:ui/tab-modal (comp/get-query TabModal)}]
+   :initial-state (fn [_]
+                    {:tab/ids      []
+                     :ui/tab-modal (comp/get-initial-state TabModal)})
    :will-enter    (fn [app _]
                     (dr/route-deferred
                       [:component/id ::main]

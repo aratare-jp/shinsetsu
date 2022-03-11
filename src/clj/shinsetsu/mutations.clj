@@ -44,13 +44,14 @@
           invalid-token)))))
 
 (defmutation create-tab
-  [{{:user/keys [id username] :as user} :user} tab]
+  [{{:user/keys [id]} :request :as env} tab]
   {::pc/params #{:tab/name :tab/password}
    ::pc/output [:tab/name :tab/is-protected? :tab/created :tab/updated]}
-  (log/info "User with username" username "is attempting to create a new tab")
+  (log/info "User with id" id "is attempting to create a new tab")
   (-> tab
       (assoc :tab/user-id id)
-      (db/create-tab)))
+      (db/create-tab)
+      (dissoc :tab/password)))
 
 (def public-mutations [login register])
 (def protected-mutations [create-tab])

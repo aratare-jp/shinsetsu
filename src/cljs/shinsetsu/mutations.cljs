@@ -4,7 +4,8 @@
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
-    [com.fulcrologic.fulcro.algorithms.merge :as merge]))
+    [com.fulcrologic.fulcro.algorithms.merge :as merge]
+    [com.fulcrologic.fulcro.components :as comp]))
 
 (defmutation login
   "Login with a username and password"
@@ -50,5 +51,13 @@
   [_]
   (protected [_] true)
   (ok-action
-    [{:keys [result]}]
-    (js/console.log result)))
+    [{{{tab `create-tab} :body} :result :as env}]
+    (let [TabHeader (comp/registry-key->class `shinsetsu.ui.main/TabHeader)
+          Main      (comp/registry-key->class `shinsetsu.ui.main/Main)]
+      (merge/merge-component! app TabHeader tab ))))
+
+(comment
+  (require '[shinsetsu.ui.main :refer [Main]])
+  (comp/get-ident Main)
+  (conj [:a] :b)
+  (keyword `shinsetsu.ui.main/Main))
