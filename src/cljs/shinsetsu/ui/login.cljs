@@ -20,7 +20,7 @@
 (defsc Login
   [this {:ui/keys [username password] :as props}]
   {:query         [:ui/username :ui/password fs/form-config-join]
-   :ident         (fn [] [:component/id :login])
+   :ident         (fn [] [:component/id ::login])
    :initial-state {:ui/username "" :ui/password ""}
    :route-segment ["login"]
    :form-fields   #{:ui/username :ui/password}
