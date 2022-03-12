@@ -10,7 +10,8 @@
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.data-fetch :as df]
     [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
-    [clojure.string :as string]))
+    [clojure.string :as string]
+    [taoensso.timbre :as log]))
 
 (defn tab-valid?
   [{:ui/keys [name]} field]
@@ -73,37 +74,56 @@
 
 (defsc TabBody
   [this {:tab/keys [id bookmarks] :as props}]
-  {:ident :tab/id
-   :query [:tab/id :tab/name {:tab/bookmarks (comp/get-query TabBookmark)}]}
-  (map ui-tab-bookmark bookmarks))
+  {:ident         :tab/id
+   :query         [:tab/id :tab/name {:tab/bookmarks (comp/get-query TabBookmark)}]
+   :route-segment [:tab :tab/id]
+   :will-enter    (fn [app {:tab/keys [id]}]
+                    (dr/route-deferred
+                      [:tab id]
+                      #(df/load! app [:tab/id id] TabBody {:target               (targeting/replace-at [:tab/id id :tab/bookmarks])
+                                                           :post-mutation        `dr/target-ready
+                                                           :post-mutation-params {:target [:tab id]}})))}
+  (div props)
+  #_(map ui-tab-bookmark bookmarks))
 
 (def ui-tab-body (comp/factory TabBody {:keyfn :tab/id}))
 
+(defrouter TabBodyRouter [this {:keys [current-state pending-path-segment] :as env}]
+  {:router-targets [TabBody]}
+  (js/console.log env)
+  (case current-state
+    :pending (dom/div "Loading...")
+    :failed (dom/div "Loading seems to have failed. Try another route.")
+    (dom/div "Unknown route")))
+
+(def ui-body-router (comp/factory TabBodyRouter))
+
 (defsc Main
-  [this {tab-ids :tab/ids :ui/keys [tab-modal selected-tab-idx] :as props}]
+  [this {tabs :tab/tabs :ui/keys [tab-modal selected-tab-idx] tab-body-router :root/tab-body-router :as props}]
   {:ident         (fn [] [:component/id ::main])
    :route-segment ["main"]
-   :query         [{:tab/ids (comp/get-query TabBody)}
+   :query         [{:tab/tabs (comp/get-query TabBody)}
                    {:ui/tab-modal (comp/get-query TabModal)}
-                   :ui/selected-tab-idx]
-   :initial-state (fn [_]
-                    {:tab/ids             []
-                     :ui/tab-modal        (comp/get-initial-state TabModal)
-                     :ui/selected-tab-idx 0})
+                   :ui/selected-tab-idx
+                   {:root/tab-body-router (comp/get-query TabBodyRouter)}]
+   :initial-state (fn [_] {:tab/tabs             []
+                           :ui/tab-modal         (comp/get-initial-state TabModal)
+                           :ui/selected-tab-idx  0
+                           :root/tab-body-router (comp/get-initial-state TabBodyRouter)})
    :will-enter    (fn [app _]
                     (dr/route-deferred
                       [:component/id ::main]
-                      #(df/load! app :tab/ids TabBody {:target               (targeting/append-to [:component/id ::main :tab/ids])
-                                                       :post-mutation        `dr/target-ready
-                                                       :post-mutation-params {:target [:component/id ::main]}})))}
-  (let [tab-ids (map-indexed (fn [i e] (if (= i 0) (assoc e :ui/is-first? true) e)) tab-ids)
-        tabs    (map-indexed (fn [i t] {:id         (:tab/id t)
-                                        :label      (:tab/name t)
-                                        :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
-                                        :isSelected (= i selected-tab-idx)}) tab-ids)]
+                      #(df/load! app :tab/tabs TabBody {:target               (targeting/append-to [:component/id ::main :tab/tabs])
+                                                        :post-mutation        `dr/target-ready
+                                                        :post-mutation-params {:target [:component/id ::main]}})))}
+  (let [tabs (map-indexed (fn [i t] {:id         (:tab/id t)
+                                     :label      (:tab/name t)
+                                     :onClick    #(do (m/set-integer! this :ui/selected-tab-idx :value i)
+                                                      (dr/change-route-relative! this this [:tab (:tab/id t)]))
+                                     :isSelected (= i selected-tab-idx)}) tabs)]
     (e/page-template {:pageHeader {:pageTitle      "Tabs"
                                    :rightSideItems [(e/button {:fill true} "Create new tab")]
                                    :tabs           tabs}}
-      (ui-tab-body (nth tab-ids selected-tab-idx)))))
+      (ui-body-router tab-body-router))))
 
 (def ui-main (comp/factory Main))
