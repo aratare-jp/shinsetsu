@@ -5,7 +5,8 @@
     [com.fulcrologic.fulcro.dom :refer [div label input form button]]
     [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.dom.events :as evt]
-    [com.fulcrologic.fulcro.algorithms.form-state :as fs]))
+    [com.fulcrologic.fulcro.algorithms.form-state :as fs]
+    [shinsetsu.ui.elastic :as e]))
 
 (defn login-valid?
   [{:ui/keys [username password]} field]
