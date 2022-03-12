@@ -52,9 +52,9 @@
   (protected [_] true)
   (ok-action
     [{{{tab `create-tab} :body} :result :as env}]
-    (let [TabHeader (comp/registry-key->class `shinsetsu.ui.main/TabHeader)
-          Main      (comp/registry-key->class `shinsetsu.ui.main/Main)]
-      (merge/merge-component! app TabHeader tab ))))
+    (let [TabBody (comp/registry-key->class `shinsetsu.ui.main/TabBody)
+          Main    (comp/registry-key->class `shinsetsu.ui.main/Main)]
+      (merge/merge-component! app TabBody tab))))
 
 (comment
   (require '[shinsetsu.ui.main :refer [Main]])

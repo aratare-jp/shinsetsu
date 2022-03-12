@@ -2,7 +2,7 @@
   (:require
     [shinsetsu.mutations :as api]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
-    [com.fulcrologic.fulcro.dom :refer [div label input form button]]
+    [com.fulcrologic.fulcro.dom :refer [div label input form button h1]]
     [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
@@ -32,6 +32,9 @@
         username-invalid?   (= :invalid (login-validator props :ui/username))
         password-invalid?   (= :invalid (login-validator props :ui/password))
         form-invalid?       (or username-invalid? password-invalid?)
+        username-unchecked? (= :unchecked (login-validator props :ui/username))
+        password-unchecked? (= :unchecked (login-validator props :ui/password))
+        form-unchecked?     (or username-unchecked? password-unchecked?)
         on-login            (fn [e]
                               (evt/prevent-default! e)
                               (comp/transact! this [(api/login {:user/username username :user/password password})]))
@@ -41,40 +44,38 @@
         on-clear            (fn [e]
                               (evt/prevent-default! e)
                               (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})]))]
-    (div :.row
-         (div :.col
-              (form
-                (div :.form-floating.mb-3
-                     (input :#username.form-control.form-control-lg
-                            {:classes     [(if username-invalid? "is-invalid")]
-                             :value       username
-                             :onChange    on-username-changed
-                             :onBlur      #(on-blur :ui/username)
-                             :placeholder "Username"})
-                     (label :.form-label {:htmlFor "username"} "Username"))
-                (div :.form-floating.mb-3
-                     (input :#password.form-control.form-control-lg
-                            {:classes     [(if password-invalid? "is-invalid")]
-                             :type        "password"
-                             :value       password
-                             :onChange    on-password-changed
-                             :onBlur      #(on-blur :ui/password)
-                             :placeholder "Password"})
-                     (label :.form-label {:htmlFor "password"} "Password"))
-                (div :.btn-group {:role "group"}
-                     (button :.btn.btn-primary.btn-lg
-                             {:type     "submit"
-                              :onClick  on-login
-                              :disabled form-invalid?}
-                             "Login")
-                     (button :.btn.btn-success.btn-lg
-                             {:type     "submit"
-                              :onClick  on-register
-                              :disabled form-invalid?}
-                             "Register")
-                     (button :.btn.btn-secondary.btn-lg
-                             {:type    "button"
-                              :onClick on-clear}
-                             "Clear")))))))
+    (e/page-template {:template "centeredBody"}
+      (e/empty-prompt {:title (h1 "Login")
+                       :body  (e/form {:component "form"}
+                                (e/form-row {:label "Username"}
+                                  (e/field-text {:name     "username"
+                                                 :value    username
+                                                 :onChange on-username-changed
+                                                 :onBlur   #(on-blur :ui/username)}))
+                                (e/form-row {:label "Password"}
+                                  (e/field-text {:name     "password"
+                                                 :value    password
+                                                 :type     "password"
+                                                 :onChange on-password-changed
+                                                 :onBlur   #(on-blur :ui/password)}))
+                                (e/spacer {})
+                                (e/flex-group {}
+                                  (e/flex-item {}
+                                    (e/button {:type     "submit"
+                                               :fill     true
+                                               :onClick  on-login
+                                               :disabled (or form-unchecked? form-invalid?)}
+                                      "Login"))
+                                  (e/flex-item {}
+                                    (e/button {:type     "submit"
+                                               :fill     true
+                                               :onClick  on-register
+                                               :disabled (or form-unchecked? form-invalid?)}
+                                      "Register"))
+                                  (e/flex-item {}
+                                    (e/button {:type    "button"
+                                               :fill    true
+                                               :onClick on-clear}
+                                      "Clear"))))}))))
 
 (def ui-login (comp/factory Login))

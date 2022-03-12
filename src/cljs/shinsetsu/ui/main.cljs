@@ -1,5 +1,6 @@
 (ns shinsetsu.ui.main
   (:require
+    [shinsetsu.ui.elastic :as e]
     [shinsetsu.mutations :as api]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.dom :as dom :refer [div label input form button h1 h2 nav h5]]
@@ -62,58 +63,47 @@
 
 (def ui-tab-modal (comp/factory TabModal))
 
-(defsc TabHeader
-  [this {:tab/keys [id name] :ui/keys [is-first?] :as tab}]
-  {:ident (fn [] [:tab/id (:tab/id tab)])
-   :query [:tab/id :tab/name :tab/created :tab/updated :ui/is-first?]}
-  (button :.nav-link {:id             (string/join "-" ["nav" name "tab"])
-                      :classes        [(if is-first? "active")]
-                      :data-bs-toggle "tab"
-                      :data-bs-target (string/join "-" ["#nav" name])
-                      :type           "button"
-                      :role           "tab"}
-          name))
+(defsc TabBookmark
+  [this {:bookmark/keys [id title url created updated tab-id] :as bookmark}]
+  {:ident (fn [] [:bookmark/id id])
+   :query [:bookmark/tab-id :bookmark/id :bookmark/title :bookmark/url :bookmark/created :bookmark/updated]}
+  (div title))
 
-(def ui-tab-header (comp/factory TabHeader {:keyfn :tab/id}))
+(def ui-tab-bookmark (comp/factory TabBookmark {:keyfn :bookmark/id}))
 
 (defsc TabBody
-  [this {:tab/keys [id name] :ui/keys [is-first?] :as tab}]
-  {:ident (fn [] [:tab/id (:tab/id tab)])
-   :query [:tab/id :tab/name :tab/created :tab/updated :ui/is-first?]}
-  (div :.tab-pane.fade {:id      (string/join "-" ["nav" name])
-                        :classes [(if is-first? "show") (if is-first? "active")]
-                        :role    "tabpanel"}
-       name))
+  [this {:tab/keys [id bookmarks] :as props}]
+  {:ident :tab/id
+   :query [:tab/id :tab/name {:tab/bookmarks (comp/get-query TabBookmark)}]}
+  (map ui-tab-bookmark bookmarks))
 
 (def ui-tab-body (comp/factory TabBody {:keyfn :tab/id}))
 
 (defsc Main
-  [this {tab-ids :tab/ids tab-modal :ui/tab-modal :as props}]
+  [this {tab-ids :tab/ids :ui/keys [tab-modal selected-tab-idx] :as props}]
   {:ident         (fn [] [:component/id ::main])
    :route-segment ["main"]
-   :query         [{:tab/ids (comp/get-query TabHeader)}
-                   {:ui/tab-modal (comp/get-query TabModal)}]
+   :query         [{:tab/ids (comp/get-query TabBody)}
+                   {:ui/tab-modal (comp/get-query TabModal)}
+                   :ui/selected-tab-idx]
    :initial-state (fn [_]
-                    {:tab/ids      []
-                     :ui/tab-modal (comp/get-initial-state TabModal)})
+                    {:tab/ids             []
+                     :ui/tab-modal        (comp/get-initial-state TabModal)
+                     :ui/selected-tab-idx 0})
    :will-enter    (fn [app _]
                     (dr/route-deferred
                       [:component/id ::main]
-                      #(df/load! app :tab/ids TabHeader {:remote               :protected
-                                                         :target               (targeting/append-to [:component/id ::main :tab/ids])
-                                                         :post-mutation        `dr/target-ready
-                                                         :post-mutation-params {:target [:component/id ::main]}})))}
-  (let [tab-ids (map-indexed (fn [i e] (if (= i 0) (assoc e :ui/is-first? true) e)) tab-ids)]
-    (div
-      (button :.btn.btn-primary {:type           "button"
-                                 :data-bs-toggle "modal"
-                                 :data-bs-target "#tab-modal"}
-              "Create tab")
-      (ui-tab-modal tab-modal)
-      (nav
-        (div :.nav.nav-tabs#nav-tab {:role "tablist"}
-             (map ui-tab-header tab-ids)))
-      (div :.tab-content#nav-tabContent
-           (map ui-tab-body tab-ids)))))
+                      #(df/load! app :tab/ids TabBody {:target               (targeting/append-to [:component/id ::main :tab/ids])
+                                                       :post-mutation        `dr/target-ready
+                                                       :post-mutation-params {:target [:component/id ::main]}})))}
+  (let [tab-ids (map-indexed (fn [i e] (if (= i 0) (assoc e :ui/is-first? true) e)) tab-ids)
+        tabs    (map-indexed (fn [i t] {:id         (:tab/id t)
+                                        :label      (:tab/name t)
+                                        :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
+                                        :isSelected (= i selected-tab-idx)}) tab-ids)]
+    (e/page-template {:pageHeader {:pageTitle      "Tabs"
+                                   :rightSideItems [(e/button {:fill true} "Create new tab")]
+                                   :tabs           tabs}}
+      (ui-tab-body (nth tab-ids selected-tab-idx)))))
 
 (def ui-main (comp/factory Main))

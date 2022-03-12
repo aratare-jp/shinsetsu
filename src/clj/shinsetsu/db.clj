@@ -44,7 +44,7 @@
       (log/error e))))
 
 (defn fetch-tabs
-  [user-id]
+  [{user-id :user/id}]
   (try
     (jdbc/execute! ds (-> (helpers/select :*)
                           (helpers/from :tab)
@@ -63,12 +63,31 @@
     (catch Exception e
       (log/error e))))
 
+(defn fetch-bookmarks
+  [{tab-id :tab/id user-id :user/id}]
+  (try
+    (jdbc/execute! ds (-> (helpers/select :*)
+                          (helpers/from :bookmark)
+                          (helpers/where [:= :bookmark/user-id user-id] [:= :bookmark/tab-id tab-id])
+                          (sql/format)))
+    (catch Exception e
+      (log/error e))))
+
 (comment
-  (user/restart)
   (user/start)
-  (clojure.repl/doc tap>)
+  (user/restart)
   (require '[shinsetsu.db :as db])
-  (as-> (db/fetch-user-by-username {:user/username "asdf"}) user
-        (:user/id user)
-        #_(db/fetch-tabs user)
-        (db/create-tab {:tab/name "Bay" :tab/user-id user})))
+  #_(let [user     (db/fetch-user-by-username {:user/username "asdf"})
+          user-id  (:user/id user)
+          tab      (db/fetch-tabs user-id)
+          bookmark (db/create-bookmark {:bookmark/title  "Foo"
+                                        :bookmark/url    "Bar"
+                                        :user/user-id    user-id
+                                        :bookmark/tab-id (java.util.UUID/fromString "376639bf-5af6-48ee-8d6f-1f1c5d0be0a3")})]
+      bookmark)
+  #_(let [user     (db/fetch-user-by-username {:user/username "asdf"})
+          user-id  (:user/id user)
+          tab      (db/fetch-tabs user-id)
+          bookmark (db/fetch-bookmarks {:user/id user-id
+                                        :tab/id  (java.util.UUID/fromString "376639bf-5af6-48ee-8d6f-1f1c5d0be0a3")})]
+      bookmark))
