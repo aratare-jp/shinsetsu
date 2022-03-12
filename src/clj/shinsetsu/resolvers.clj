@@ -6,11 +6,18 @@
     [taoensso.timbre :as log])
   (:import [java.util UUID]))
 
-(defresolver tab-resolver
+(defresolver tabs-resolver
   [{{user-id :user/id} :request :as env} _]
   {::pc/output [{:tab/tabs [:tab/id :tab/name :tab/created :tab/updated]}]}
   (log/info "Fetching all tabs from user" user-id)
   {:tab/tabs (db/fetch-tabs {:user/id user-id})})
+
+(defresolver tab-resolver
+  [{{user-id :user/id} :request :as env} {tab-id :tab/id}]
+  {::pc/input  #{:tab/id}
+   ::pc/output [:tab/id :tab/name :tab/created :tab/updated]}
+  (log/info "Fetching tab info from user" user-id)
+  (db/fetch-tab {:user/id user-id :tab/id tab-id}))
 
 (defresolver tab-bookmarks-resolver
   [{{user-id :user/id} :request :as env} {tab-id :tab/id}]
@@ -29,7 +36,7 @@
                                 :user/id user-id})))
 
 (def public-resolvers [])
-(def protected-resolvers [tab-resolver tab-bookmarks-resolver bookmark-resolver])
+(def protected-resolvers [tabs-resolver tab-resolver tab-bookmarks-resolver bookmark-resolver])
 
 (comment
   (require '[shinsetsu.db :as db])

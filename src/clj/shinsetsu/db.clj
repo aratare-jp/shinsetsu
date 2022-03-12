@@ -53,6 +53,17 @@
     (catch Exception e
       (log/error e))))
 
+(defn fetch-tab
+  [{tab-id :tab/id user-id :user/id}]
+  (try
+    (jdbc/execute-one! ds (-> (helpers/select :*)
+                              (helpers/from :tab)
+                              (helpers/where [:= :tab/user-id user-id] [:= :tab/id tab-id])
+                              (sql/format)))
+    (catch Exception e
+      (log/error e))))
+
+
 (defn create-bookmark
   [bookmark]
   (try

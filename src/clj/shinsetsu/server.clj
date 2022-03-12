@@ -44,6 +44,7 @@
   "Initialise everything and start the web app."
   ([] (start-app {}))
   ([args]
+   (start #'shinsetsu.config/env)
    (doseq [component (-> args
                          (cli/parse-opts cli-options)
                          start-with-args
@@ -52,7 +53,6 @@
    (.addShutdownHook (Runtime/getRuntime) (Thread. stop-app))))
 
 (defn -main [& args]
-  (start #'shinsetsu.config/env)
   (start-app args))
 
 (comment
