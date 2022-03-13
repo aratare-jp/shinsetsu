@@ -1,6 +1,6 @@
 (ns shinsetsu.app
   (:require
-    [shinsetsu.auth :refer [wrap-auth]]
+    [shinsetsu.middleware.auth :refer [wrap-auth]]
     [shinsetsu.parser :refer [public-parser-handler protected-parser-handler]]
     [com.fulcrologic.fulcro.server.api-middleware :as server]
     [ring.middleware.content-type :refer [wrap-content-type]]
@@ -25,5 +25,6 @@
 
 (comment
   (user/restart)
-  (shinsetsu.app/app {:request-method :post :uri "/api" :headers {"Authorization" "Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6ImFjNWNjNTcxLTMwMjktNDQwOS1iMmY1LWU3YzY4YzRiOWE1ZiJ9.TMRqWfxmG0odlCZCJoKYtvXLDbtMJNT1h07cfYN7Ca0"}})
-  (shinsetsu.app/app {:request-method :post :uri "/auth"}))
+  (shinsetsu.app/app {:request-method :post
+                      :uri            "/api"
+                      :headers        {"Authorization" "Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6ImFjNWNjNTcxLTMwMjktNDQwOS1iMmY1LWU3YzY4YzRiOWE1ZiJ9.TMRqWfxmG0odlCZCJoKYtvXLDbtMJNT1h07cfYN7Ca0"}}))

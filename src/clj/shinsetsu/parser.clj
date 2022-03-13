@@ -1,26 +1,34 @@
 (ns shinsetsu.parser
   (:require
-    [shinsetsu.config :as config]
     [com.fulcrologic.fulcro.server.api-middleware :refer [handle-api-request]]
     [mount.core :refer [defstate]]
-    [shinsetsu.resolvers :as res]
-    [shinsetsu.mutations :as mut]
+    [shinsetsu.resolvers.tab :as tab-resolver]
+    [shinsetsu.resolvers.bookmark :as bookmark-resolver]
+    [shinsetsu.mutations.auth :as auth-mutations]
+    [shinsetsu.mutations.tab :as tab-mutations]
+    [shinsetsu.mutations.bookmark :as bookmark-mutations]
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.connect :as pc]
-    [taoensso.timbre :as log]
-    [buddy.sign.jwt :as jwt]))
+    [taoensso.timbre :as log]))
 
-(def public-resolvers [res/public-resolvers mut/public-mutations])
-(def protected-resolvers [res/protected-resolvers mut/protected-mutations])
+(def public-resolvers
+  [auth-mutations/login
+   auth-mutations/register])
+
+(def protected-resolvers
+  [tab-resolver/tabs-resolver
+   tab-resolver/tab-resolver
+   tab-resolver/tab-bookmarks-resolver
+   bookmark-resolver/bookmark-resolver
+   tab-mutations/create-tab])
 
 (defn create-parser
   [resolvers]
   (p/parser {::p/env     {::p/reader                 [p/map-reader pc/reader2 pc/ident-reader pc/index-reader]
                           ::pc/mutation-join-globals [:tempids]
-                          ::pc/process-error
-                          (fn [_ err]
-                            (.printStackTrace err)
-                            (p/error-str err))}
+                          ::pc/process-error         (fn [env err]
+                                                       (log/error err)
+                                                       (p/error-str err))}
              ::p/mutate  pc/mutate
              ::p/plugins [(pc/connect-plugin {::pc/register resolvers})
                           p/error-handler-plugin
@@ -32,7 +40,6 @@
 (defn create-parser-handler
   [parser]
   (fn [req]
-    (log/info "Handling query.")
     (let [params (or (:transit-params req) (:body-params req))]
       (handle-api-request params (partial parser {:request req})))))
 

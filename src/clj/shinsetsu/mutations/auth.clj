@@ -1,7 +1,7 @@
-(ns shinsetsu.mutations
+(ns shinsetsu.mutations.auth
   (:require
     [shinsetsu.config :as config]
-    [shinsetsu.db :as db]
+    [shinsetsu.db.user :as db]
     [com.wsscode.pathom.connect :as pc :refer [defmutation]]
     [taoensso.timbre :as log]
     [buddy.sign.jwt :as jwt]
@@ -18,7 +18,7 @@
   [_ {:user/keys [username password] :as user}]
   {::pc/params #{:username :password}
    ::pc/output [:token]}
-  (log/info "User with username" username "is attempting to login...")
+  (log/info "User with username" username "is attempting to login")
   (let [user          (db/fetch-user-by-username user)
         invalid-token {:token :invalid}]
     (if (and user (hashers/check password (:user/password user)))
@@ -42,38 +42,3 @@
         (if-let [user (db/create-user user)]
           {:token (create-token user)}
           invalid-token)))))
-
-(defmutation create-tab
-  [{{:user/keys [id]} :request :as env} tab]
-  {::pc/params #{:tab/name :tab/password}
-   ::pc/output [:tab/name :tab/is-protected? :tab/created :tab/updated]}
-  (log/info "User with id" id "is attempting to create a new tab")
-  (-> tab
-      (assoc :tab/user-id id)
-      (db/create-tab)
-      (dissoc :tab/password)))
-
-(def public-mutations [login register])
-(def protected-mutations [create-tab])
-
-(comment
-  (user/restart)
-  (require '[buddy.sign.jwt :as jwt])
-  (jwt/sign {:id "blah"} "secret")
-  (def user {:user/username "foo" :user/password "bar"})
-  (def password "bar")
-  (db/fetch-user-by-username user)
-  (let [secret        "my-secret"
-        user          (db/fetch-user-by-username user)
-        invalid-token {:token :invalid}]
-    (print (:user/password user))
-    (if (and user (hashers/check password (:user/password user)))
-      {:token (jwt/sign {:id (.toString (:user/id user))} secret)}
-      invalid-token))
-  (let [user (update user :password hashers/derive)]
-    (print user)
-    (if (db/create-user [user])
-      {:token "hello-world!"}
-      {:token :invalid}))
-  (login nil {:username "fim" :password "fom"})
-  (db/fetch-user-by-username {:username "fim"}))
