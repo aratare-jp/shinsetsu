@@ -34,7 +34,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Install Clojure dependencies
-        run: clj -X:deps prep
+        run: clojure -X:deps prep
 
       - name: Run server tests
         run: bin/kaocha
