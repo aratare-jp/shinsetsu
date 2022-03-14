@@ -1,7 +1,7 @@
 (ns shinsetsu.db.tab-test
   (:require
     [clojure.test :refer :all]
-    [shinsetsu.db.test-utility :refer [db-setup db-cleanup]]
+    [shinsetsu.test-utility :refer [db-setup db-cleanup]]
     [expectations.clojure.test :refer [defexpect expect]]
     [shinsetsu.db.user :as user-db]
     [shinsetsu.db.tab :as tab-db]

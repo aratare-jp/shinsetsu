@@ -2,7 +2,7 @@
   (:require
     [clojure.test :refer :all]
     [expectations.clojure.test :refer [defexpect expect]]
-    [shinsetsu.db.test-utility :refer [db-setup db-cleanup]]
+    [shinsetsu.test-utility :refer [db-setup db-cleanup]]
     [shinsetsu.db.user :as user-db])
   (:import [org.postgresql.util PSQLException]))
 

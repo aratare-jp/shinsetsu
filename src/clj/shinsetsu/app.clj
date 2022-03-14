@@ -22,9 +22,3 @@
                   [wrap-resource "public"]
                   [server/wrap-transit-response]
                   [server/wrap-transit-params]]}))
-
-(comment
-  (user/restart)
-  (shinsetsu.app/app {:request-method :post
-                      :uri            "/api"
-                      :headers        {"Authorization" "Bearer eyJhbGciOiJIUzI1NiJ9.eyJpZCI6ImFjNWNjNTcxLTMwMjktNDQwOS1iMmY1LWU3YzY4YzRiOWE1ZiJ9.TMRqWfxmG0odlCZCJoKYtvXLDbtMJNT1h07cfYN7Ca0"}}))

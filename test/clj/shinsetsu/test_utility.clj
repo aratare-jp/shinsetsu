@@ -1,4 +1,4 @@
-(ns shinsetsu.db.test-utility
+(ns shinsetsu.test-utility
   (:require
     [clj-test-containers.core :as tc]
     [mount.core :as mount]
