@@ -1,2 +1,2 @@
 #!/usr/bin/env sh
-clojure -J-Dconf=./test-config.edn -M:dev:test -m kaocha.runner "$@"
+clojure -J-Dconf=test/resources/test-config.edn -M:dev:test -m kaocha.runner "$@"

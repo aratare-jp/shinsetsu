@@ -7,7 +7,8 @@
     [shinsetsu.db.db :refer [ds]]))
 
 (defn create-bookmark
-  [bookmark]
+  [{:bookmark/keys [tab-id user-id] :as bookmark}]
+  (log/info "Create new bookmark in tab" tab-id "for user" user-id)
   (jdbc/execute-one! ds (-> (helpers/insert-into :bookmark)
                             (helpers/values [bookmark])
                             (helpers/returning :*)
@@ -15,6 +16,7 @@
 
 (defn fetch-bookmarks
   [{tab-id :tab/id user-id :user/id}]
+  (log/info "Fetch all bookmarks in tab" tab-id "for user" user-id)
   (jdbc/execute! ds (-> (helpers/select :*)
                         (helpers/from :bookmark)
                         (helpers/where [:= :bookmark/user-id user-id] [:= :bookmark/tab-id tab-id])

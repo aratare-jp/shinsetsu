@@ -7,7 +7,8 @@
     [shinsetsu.db.db :refer [ds]]))
 
 (defn create-user
-  [user]
+  [{:user/keys [username] :as user}]
+  (log/info "Create a new user with username" username)
   (jdbc/execute-one! ds (-> (helpers/insert-into :user)
                             (helpers/values [user])
                             (helpers/returning :*)

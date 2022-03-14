@@ -4,7 +4,6 @@
 /checkouts
 pom.xml
 dev-config.edn
-dev-config.edn
 *.jar
 *.class
 /.lein-*

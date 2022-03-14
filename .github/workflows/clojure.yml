@@ -29,20 +29,15 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/project.clj') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/deps.edn') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
       - name: Install Clojure dependencies
-        run: lein with-profile server-test deps
-
-      - name: Setup test config
-        run: |
-          touch test-config.edn
-          echo '{:stub "foo"}' > test-config.edn
+        run: clj -X:deps prep
 
       - name: Run server tests
-        run: lein with-profile server-test cloverage --codecov
+        run: bin/kaocha
 
       - name: Upload code coverage to Codecov
         uses: codecov/codecov-action@v1

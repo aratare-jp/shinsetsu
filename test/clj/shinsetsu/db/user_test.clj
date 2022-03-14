@@ -20,7 +20,6 @@
     (expect (complement nil?) (:user/updated user))))
 
 (defexpect create-null-user PSQLException (user-db/create-user {}))
-
 (defexpect create-invalid-user PSQLException (user-db/create-user {:user/id nil :user/password nil}))
 
 (defexpect create-duplicated-user
@@ -37,9 +36,7 @@
       (expect user fetched-user))))
 
 (defexpect fetch-nonexistent-user-by-username nil? (user-db/fetch-user-by-username {:user/username "foo"}))
-
 (defexpect fetch-empty-user-by-username nil? (user-db/fetch-user-by-username {}))
-
 (defexpect fetch-null-user-by-username nil? (user-db/fetch-user-by-username {:user/username nil}))
 
 (comment
