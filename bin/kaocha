@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+clojure -J-Dconf=./test-config.edn -M:dev:test -m kaocha.runner "$@"
