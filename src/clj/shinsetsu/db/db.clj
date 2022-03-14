@@ -6,4 +6,6 @@
 
 (defstate ds
   :start
-  (jdbc/get-datasource (:db-spec config/env)))
+  (jdbc/with-options
+    (jdbc/get-datasource (:db-spec config/env))
+    jdbc/snake-kebab-opts))

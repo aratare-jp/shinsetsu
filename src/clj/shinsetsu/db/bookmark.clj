@@ -8,21 +8,14 @@
 
 (defn create-bookmark
   [bookmark]
-  (try
-    (jdbc/execute-one! ds (-> (helpers/insert-into :bookmark)
-                              (helpers/values [bookmark])
-                              (helpers/returning :*)
-                              (sql/format)))
-    (catch Exception e
-      (log/error e))))
+  (jdbc/execute-one! ds (-> (helpers/insert-into :bookmark)
+                            (helpers/values [bookmark])
+                            (helpers/returning :*)
+                            (sql/format))))
 
 (defn fetch-bookmarks
   [{tab-id :tab/id user-id :user/id}]
-  (try
-    (jdbc/execute! ds (-> (helpers/select :*)
-                          (helpers/from :bookmark)
-                          (helpers/where [:= :bookmark/user-id user-id] [:= :bookmark/tab-id tab-id])
-                          (sql/format)))
-    (catch Exception e
-      (log/error e))))
-
+  (jdbc/execute! ds (-> (helpers/select :*)
+                        (helpers/from :bookmark)
+                        (helpers/where [:= :bookmark/user-id user-id] [:= :bookmark/tab-id tab-id])
+                        (sql/format))))

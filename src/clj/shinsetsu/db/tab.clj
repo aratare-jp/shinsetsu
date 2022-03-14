@@ -8,30 +8,21 @@
 
 (defn create-tab
   [tab]
-  (try
-    (jdbc/execute-one! ds (-> (helpers/insert-into :tab)
-                              (helpers/values [tab])
-                              (helpers/returning :*)
-                              (sql/format)))
-    (catch Exception e
-      (log/error e))))
+  (jdbc/execute-one! ds (-> (helpers/insert-into :tab)
+                            (helpers/values [tab])
+                            (helpers/returning :*)
+                            (sql/format))))
 
 (defn fetch-tabs
   [{user-id :user/id}]
-  (try
-    (jdbc/execute! ds (-> (helpers/select :*)
-                          (helpers/from :tab)
-                          (helpers/where [:= :tab/user-id user-id])
-                          (sql/format)))
-    (catch Exception e
-      (log/error e))))
+  (jdbc/execute! ds (-> (helpers/select :*)
+                        (helpers/from :tab)
+                        (helpers/where [:= :tab/user-id user-id])
+                        (sql/format))))
 
 (defn fetch-tab
   [{tab-id :tab/id user-id :user/id}]
-  (try
-    (jdbc/execute-one! ds (-> (helpers/select :*)
-                              (helpers/from :tab)
-                              (helpers/where [:= :tab/user-id user-id] [:= :tab/id tab-id])
-                              (sql/format)))
-    (catch Exception e
-      (log/error e))))
+  (jdbc/execute-one! ds (-> (helpers/select :*)
+                            (helpers/from :tab)
+                            (helpers/where [:= :tab/user-id user-id] [:= :tab/id tab-id])
+                            (sql/format))))
