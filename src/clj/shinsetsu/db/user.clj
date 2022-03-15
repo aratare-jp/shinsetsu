@@ -21,3 +21,11 @@
                             (helpers/from :user)
                             (helpers/where [:= :user/username username])
                             (sql/format {:dialect :ansi}))))
+
+(defn fetch-user-by-id
+  [{:user/keys [id]}]
+  (log/info "Fetching user with id" id)
+  (jdbc/execute-one! ds (-> (helpers/select :*)
+                            (helpers/from :user)
+                            (helpers/where [:= :user/id id])
+                            (sql/format {:dialect :ansi}))))

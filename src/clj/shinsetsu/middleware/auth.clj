@@ -3,7 +3,8 @@
     [shinsetsu.config :as config]
     [buddy.sign.jwt :as jwt]
     [taoensso.timbre :as log]
-    [clojure.string :as string])
+    [clojure.string :as string]
+    [shinsetsu.db.user :as user-db])
   (:import [java.util UUID]))
 
 (defn wrap-auth
@@ -12,15 +13,22 @@
   (fn [req]
     (if-let [auth-raw-token (get-in req [:headers "authorization"])]
       (try
-        (let [token    (-> auth-raw-token (string/split #"^Bearer ") second)
+        (let [token    (-> auth-raw-token
+                           (string/split #"^Bearer ")
+                           (second))
               unsigned (-> token
                            (jwt/unsign (:secret config/env))
-                           (update :user/id #(UUID/fromString %)))]
-          (handler (merge req unsigned)))
+                           (update :user/id #(UUID/fromString %)))
+              user-id  (:user/id unsigned)]
+          (if (user-db/fetch-user-by-id {:user/id user-id})
+            (handler (merge req unsigned))
+            {:body {:error {:status-code 401 :reason :not-exist}}}))
         (catch Exception e
           (log/error e)
-          (ex-info "Invalid or missing token" {:status-code 401})))
-      (ex-info "Invalid or missing token" {:status-code 401}))))
+          {:body {:error {:status-code 401 :reason :invalid-token}}}))
+      {:body {:error {:status-code 401 :reason :missing-header}}})))
 
 (comment
+  (jwt/unsign "test" "foo")
+  (jwt/unsign nil "foo")
   (user/restart))

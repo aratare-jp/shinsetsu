@@ -4,7 +4,8 @@
     [expectations.clojure.test :refer [defexpect expect]]
     [shinsetsu.test-utility :refer [db-setup db-cleanup]]
     [shinsetsu.db.user :as user-db])
-  (:import [org.postgresql.util PSQLException]))
+  (:import [org.postgresql.util PSQLException]
+           [java.util UUID]))
 
 (use-fixtures :once db-setup)
 (use-fixtures :each db-cleanup)
@@ -38,6 +39,17 @@
 (defexpect fetch-nonexistent-user-by-username nil? (user-db/fetch-user-by-username {:user/username "foo"}))
 (defexpect fetch-empty-user-by-username nil? (user-db/fetch-user-by-username {}))
 (defexpect fetch-null-user-by-username nil? (user-db/fetch-user-by-username {:user/username nil}))
+
+(defexpect normal-fetch-user-by-id
+  (let [username "foo"
+        password "bar"
+        user     (user-db/create-user {:user/username username :user/password password})]
+    (let [fetched-user (user-db/fetch-user-by-id {:user/id (:user/id user)})]
+      (expect user fetched-user))))
+
+(defexpect fetch-nonexistent-user-by-id nil? (user-db/fetch-user-by-id {:user/id (UUID/randomUUID)}))
+(defexpect fetch-empty-user-by-id nil? (user-db/fetch-user-by-id {}))
+(defexpect fetch-null-user-by-id nil? (user-db/fetch-user-by-id {:user/id nil}))
 
 (comment
   (user/start)

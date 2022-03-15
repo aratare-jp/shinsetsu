@@ -41,10 +41,15 @@
                                               (jdbc/get-datasource db-spec)
                                               jdbc/snake-kebab-opts)})
     (f)
-    (mount/stop)
+    (mount/stop #'shinsetsu.db.db/ds)
     (tc/stop! container)))
 
 (defn db-cleanup
   [f]
-  (migratus/reset @migratus-config)
+  (loop [i 10]
+    (if (= i 0) true)
+    (if-not (nil? (migratus/reset @migratus-config))
+      (do
+        (log/info "Retrying migratus for the" i "th time")
+        (recur (dec 1)))))
   (f))
