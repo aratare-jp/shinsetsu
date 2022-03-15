@@ -9,9 +9,12 @@
 (defmutation create-tab
   [{{:user/keys [id]} :request :as env} tab]
   {::pc/params #{:tab/name :tab/password}
-   ::pc/output [:tab/name :tab/is-protected? :tab/created :tab/updated]}
+   ::pc/output [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated]}
   (log/info "User with id" id "is attempting to create a new tab")
-  (-> tab
-      (assoc :tab/user-id id)
-      (db/create-tab)
-      (dissoc :tab/password)))
+  (try
+    (-> tab
+        (assoc :tab/user-id id)
+        (db/create-tab)
+        (assoc :tab/is-protected? ((complement nil?) (:tab/password tab)))
+        (dissoc :tab/password))
+    (catch Exception e (throw (ex-info "Error while creating tab" {} e)))))

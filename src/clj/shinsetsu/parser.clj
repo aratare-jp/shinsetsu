@@ -27,7 +27,8 @@
   (p/parser {::p/env     {::p/reader                 [p/map-reader pc/reader2 pc/ident-reader pc/index-reader]
                           ::pc/mutation-join-globals [:tempids]
                           ::pc/process-error         (fn [env err]
-                                                       (log/error err)
+                                                       (log/spy env)
+                                                       (.printStackTrace err)
                                                        (p/error-str err))}
              ::p/mutate  pc/mutate
              ::p/plugins [(pc/connect-plugin {::pc/register resolvers})
