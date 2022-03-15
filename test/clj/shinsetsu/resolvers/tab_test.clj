@@ -22,12 +22,13 @@
 (use-fixtures :once db-setup)
 (use-fixtures :each db-cleanup user-setup)
 
-(def tab-join [:tab/id :tab/name :tab/password :tab/created :tab/updated])
+(def tab-join [:tab/id :tab/name :tab/password :tab/created :tab/updated :tab/is-protected?])
 
 (defn create-tab
   [tab-name tab-password user-id]
   (-> {:tab/name tab-name :tab/password tab-password :tab/user-id user-id}
       (tab-db/create-tab)
+      (assoc :tab/is-protected? ((complement nil?) tab-password))
       (dissoc :tab/user-id)
       (dissoc :tab/password)))
 
@@ -39,7 +40,7 @@
 
 (defexpect fetch-empty-tab
   (let [random-id (UUID/randomUUID)
-        expected  {[:tab/id random-id] {:tab/id random-id}}
+        expected  {[:tab/id random-id] {:tab/id random-id :tab/is-protected? false}}
         actual    (protected-parser {:request {:user/id @user-id}} [{[:tab/id random-id] tab-join}])]
     (expect expected actual)))
 
@@ -59,4 +60,4 @@
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.parser :refer [protected-parser]])
   (k/run 'shinsetsu.resolvers.tab-test)
-  (k/run #'shinsetsu.resolvers.tab-test/fetch-empty-tabs))
+  (k/run #'shinsetsu.resolvers.tab-test/normal-fetch-tab))

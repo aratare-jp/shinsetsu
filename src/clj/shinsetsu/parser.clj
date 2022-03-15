@@ -18,7 +18,7 @@
 (def protected-resolvers
   [tab-resolver/tabs-resolver
    tab-resolver/tab-resolver
-   tab-resolver/tab-bookmarks-resolver
+   bookmark-resolver/bookmarks-resolver
    bookmark-resolver/bookmark-resolver
    tab-mutations/create-tab])
 

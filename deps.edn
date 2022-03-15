@@ -3,7 +3,7 @@
          org.clojure/tools.cli             {:mvn/version "1.0.206"}
          com.github.seancorfield/next.jdbc {:mvn/version "1.2.772"}
          com.github.seancorfield/honeysql  {:mvn/version "2.2.868"}
-         com.fulcrologic/fulcro            {:mvn/version "3.5.13"}
+         com.fulcrologic/fulcro            {:mvn/version "3.5.15"}
          com.wsscode/pathom                {:mvn/version "2.4.0"}
          com.taoensso/timbre               {:mvn/version "5.1.2"}
          ring/ring-core                    {:mvn/version "1.9.5"}
