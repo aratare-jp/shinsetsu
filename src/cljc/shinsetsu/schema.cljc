@@ -8,7 +8,7 @@
 (def user-spec
   [:map
    {:closed true}
-   [:user/id :uuid]
+   [:user/id {:optional true} :uuid]
    [:user/username non-empty-string]
    [:user/password non-empty-string]
    [:user/created {:optional true} inst?]
