@@ -3,7 +3,6 @@
     [malli.core :as m]
     [malli.error :as me]))
 
-(def valid-id? (m/validator :uuid))
 (def non-empty-string (m/schema [:string {:min 1}]))
 
 (def user-spec
@@ -15,8 +14,6 @@
    [:user/created {:optional true} inst?]
    [:user/updated {:optional true} inst?]])
 
-(def valid-user? (m/validator user-spec))
-
 (def tab-spec
   [:map
    {:closed true}
@@ -27,7 +24,16 @@
    [:tab/updated {:optional true} inst?]
    [:tab/user-id :uuid]])
 
-(def valid-tab? (m/validator tab-spec))
+(def bookmark-spec
+  [:map
+   {:closed true}
+   [:bookmark/id {:optional true} :uuid]
+   [:bookmark/title non-empty-string]
+   [:bookmark/url non-empty-string]
+   [:bookmark/created {:optional true} inst?]
+   [:bookmark/updated {:optional true} inst?]
+   [:bookmark/tab-id :uuid]
+   [:bookmark/user-id :uuid]])
 
 (comment
   (m/explain inst? (java.time.Instant/now))
