@@ -46,10 +46,7 @@
 
 (defn db-cleanup
   [f]
-  (loop [i 10]
-    (if (= i 0) true)
-    (if-not (nil? (migratus/reset @migratus-config))
-      (do
-        (log/info "Retrying migratus for the" i "th time")
-        (recur (dec 1)))))
+  ;; Sleep here to wait for the db to get setup properly. Although this should be done in a loop.
+  (Thread/sleep 1000)
+  (migratus/reset @migratus-config)
   (f))

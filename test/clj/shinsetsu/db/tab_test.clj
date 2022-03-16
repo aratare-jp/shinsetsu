@@ -6,7 +6,8 @@
     [shinsetsu.db.user :as user-db]
     [shinsetsu.db.tab :as tab-db]
     [taoensso.timbre :as log])
-  (:import [org.postgresql.util PSQLException]))
+  (:import [java.util UUID]
+           [clojure.lang ExceptionInfo]))
 
 (def user (atom nil))
 (def user-id (atom nil))
@@ -40,8 +41,35 @@
     (expect (complement nil?) (:tab/updated tab))
     (expect @user-id (:tab/user-id tab))))
 
-(defexpect fail-create-tab-with-no-name (expect PSQLException (tab-db/create-tab {})))
-(defexpect fail-create-tab-with-no-owner PSQLException (tab-db/create-tab {:tab/name "foo"}))
+(defexpect fail-create-tab-with-no-name
+  (try
+    (tab-db/create-tab {:tab/user-id (UUID/randomUUID)})
+    (expect false)
+    (catch Exception e
+      (let [message (ex-message e)
+            data    (ex-data e)]
+        (expect "Invalid tab" message)
+        (expect {:error-type :invalid-input :details {:tab/name ["missing required key"]}} data)))))
+
+(defexpect fail-create-tab-with-empty-name
+  (try
+    (tab-db/create-tab {:tab/name "" :tab/user-id (UUID/randomUUID)})
+    (expect false)
+    (catch Exception e
+      (let [message (ex-message e)
+            data    (ex-data e)]
+        (expect "Invalid tab" message)
+        (expect {:error-type :invalid-input :details {:tab/name ["should be at least 1 characters"]}} data)))))
+
+(defexpect fail-create-tab-with-no-owner
+  (try
+    (tab-db/create-tab {:tab/name "foo"})
+    (expect false)
+    (catch Exception e
+      (let [message (ex-message e)
+            data    (ex-data e)]
+        (expect "Invalid tab" message)
+        (expect {:error-type :invalid-input :details {:tab/user-id ["missing required key"]}} data)))))
 
 (defexpect normal-fetch-tabs
   (let [tab1-name    "foo"
@@ -52,7 +80,27 @@
     (expect [tab1 tab2] fetched-tabs)))
 
 (defexpect normal-fetch-empty-tabs [] (tab-db/fetch-tabs {:user/id @user-id}))
-(defexpect normal-fetch-tabs-from-nonexistent-user [] (tab-db/fetch-tabs {}))
+(defexpect normal-fetch-tabs-from-nonexistent-user [] (tab-db/fetch-tabs {:user/id (UUID/randomUUID)}))
+
+(defexpect fail-fetch-tabs-without-user-id
+  (try
+    (tab-db/fetch-tabs {})
+    (expect false)
+    (catch Exception e
+      (let [message (ex-message e)
+            data    (ex-data e)]
+        (expect "Invalid user ID" message)
+        (expect {:error-type :invalid-input :details {:user/id ["missing required key"]}} data)))))
+
+(defexpect fail-fetch-tabs-with-wrong-user-id
+  (try
+    (tab-db/fetch-tabs {:user/id "boo"})
+    (expect false)
+    (catch Exception e
+      (let [message (ex-message e)
+            data    (ex-data e)]
+        (expect "Invalid user ID" message)
+        (expect {:error-type :invalid-input :details {:user/id ["should be a uuid"]}} data)))))
 
 (defexpect normal-fetch-tab
   (let [tab-name     "hello"
@@ -62,9 +110,51 @@
         fetched-tab  (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})]
     (expect tab fetched-tab)))
 
-(defexpect fetch-nonexistent-tab nil? (tab-db/fetch-tab {}))
+(defexpect normal-fetch-nonexistent-tab
+  (let [fetched-tab (tab-db/fetch-tab {:tab/id (UUID/randomUUID) :user/id @user-id})]
+    (expect nil fetched-tab)))
+
+(defexpect fail-fetch-tab-with-no-tab-id
+  (try
+    (tab-db/fetch-tab {:user/id (UUID/randomUUID)})
+    (expect false)
+    (catch Exception e
+      (let [message (ex-message e)
+            data    (ex-data e)]
+        (expect "Invalid user or tab ID" message)
+        (expect {:error-type :invalid-input :details {:tab/id ["missing required key"]}} data)))))
+
+(defexpect fail-fetch-tab-with-wrong-tab-id
+  (try
+    (tab-db/fetch-tab {:tab/id "not real" :user/id (UUID/randomUUID)})
+    (expect false)
+    (catch ExceptionInfo e
+      (let [message (ex-message e)
+            data    (ex-data e)]
+        (expect "Invalid user or tab ID" message)
+        (expect {:error-type :invalid-input :details {:tab/id ["should be a uuid"]}} data)))))
+
+(defexpect fail-fetch-tab-with-no-user-id
+  (try
+    (tab-db/fetch-tab {:tab/id (UUID/randomUUID)})
+    (expect false)
+    (catch Exception e
+      (let [message (ex-message e)
+            data    (ex-data e)]
+        (expect "Invalid user or tab ID" message)
+        (expect {:error-type :invalid-input :details {:user/id ["missing required key"]}} data)))))
+
+(defexpect fail-fetch-tab-with-wrong-user-id
+  (try
+    (tab-db/fetch-tab {:user/id "not real" :tab/id (UUID/randomUUID)})
+    (expect false)
+    (catch ExceptionInfo e
+      (let [message (ex-message e)
+            data    (ex-data e)]
+        (expect "Invalid user or tab ID" message)
+        (expect {:error-type :invalid-input :details {:user/id ["should be a uuid"]}} data)))))
 
 (comment
   (require '[kaocha.repl :as k])
-  (k/run #'shinsetsu.db.tab-test/fetch-nonexistent-tab)
+  (k/run #'shinsetsu.db.tab-test/normal-fetch-tab)
   (k/run 'shinsetsu.db.tab-test))

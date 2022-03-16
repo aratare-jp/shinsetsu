@@ -42,12 +42,14 @@
                      (dissoc :tab/user-id))]
     (expect expected actual)))
 
-#_(defexpect fail-create-empty-tab
-    (let [query    [{`(tab-mut/create-tab {}) tab-join}]
-          result   (protected-parser {:request {:user/id @user-id}} query)
-          actual   result
-          expected {:error true}]
-      (expect expected actual)))
+(defexpect fail-create-empty-tab
+  (let [query    [{`(tab-mut/create-tab {}) tab-join}]
+        result   (protected-parser {:request {:user/id @user-id}} query)
+        actual   result
+        expected {`tab-mut/create-tab {:error         true
+                                       :error-message "Error while creating tab"
+                                       :error-type    :invalid-input}}]
+    (expect expected actual)))
 
 (comment
   (let [a 1]

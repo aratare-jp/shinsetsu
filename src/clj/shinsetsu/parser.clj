@@ -22,17 +22,21 @@
    bookmark-resolver/bookmark-resolver
    tab-mutations/create-tab])
 
+(defn process-error
+  [env err]
+  (log/error err)
+  (let [data    (ex-data err)
+        message (ex-message err)]
+    (merge {:error true :error-message message} data)))
+
 (defn create-parser
   [resolvers]
-  (p/parser {::p/env     {::p/reader                 [p/map-reader pc/reader2 pc/ident-reader pc/index-reader]
-                          ::pc/mutation-join-globals [:tempids]
-                          ::pc/process-error         (fn [env err]
-                                                       (log/spy env)
-                                                       (.printStackTrace err)
-                                                       (p/error-str err))}
+  (p/parser {::p/env     {::p/reader        [p/map-reader pc/reader2 pc/ident-reader pc/index-reader]
+                          ::p/process-error process-error}
              ::p/mutate  pc/mutate
              ::p/plugins [(pc/connect-plugin {::pc/register resolvers})
                           p/error-handler-plugin
+                          p/trace-plugin
                           (p/post-process-parser-plugin p/elide-not-found)]}))
 
 (def public-parser (create-parser public-resolvers))

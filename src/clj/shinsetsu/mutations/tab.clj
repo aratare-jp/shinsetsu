@@ -17,4 +17,5 @@
         (db/create-tab)
         (assoc :tab/is-protected? ((complement nil?) (:tab/password tab)))
         (dissoc :tab/password))
-    (catch Exception e (throw (ex-info "Error while creating tab" {} e)))))
+    (catch Exception e
+      (throw (ex-info "Error while creating tab" {:error-type :invalid-input} e)))))
