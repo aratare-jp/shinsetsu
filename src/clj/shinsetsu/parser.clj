@@ -24,7 +24,6 @@
 
 (defn process-error
   [env err]
-  (log/error err)
   (let [data    (ex-data err)
         message (ex-message err)]
     (merge {:error true :error-message message} data)))

@@ -6,7 +6,8 @@
     [shinsetsu.parser :refer [protected-parser]]
     [shinsetsu.mutations.tab :as tab-mut]
     [shinsetsu.db.user :as user-db]
-    [shinsetsu.db.tab :as tab-db]))
+    [shinsetsu.db.tab :as tab-db]
+    [taoensso.timbre :as log]))
 
 (def user-id (atom nil))
 
@@ -21,7 +22,7 @@
 (use-fixtures :once db-setup)
 (use-fixtures :each db-cleanup user-setup)
 
-(def tab-join [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated :tab/is-protected?])
+(def tab-join [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated])
 
 (defn create-tab
   [tab-name tab-password user-id]
@@ -42,13 +43,45 @@
                      (dissoc :tab/user-id))]
     (expect expected actual)))
 
-(defexpect fail-create-empty-tab
+(defexpect normal-create-tab-without-password
+  (let [query    [{`(tab-mut/create-tab {:tab/name "foo"}) tab-join}]
+        result   (protected-parser {:request {:user/id @user-id}} query)
+        actual   (get result `tab-mut/create-tab)
+        tab-id   (:tab/id actual)
+        expected (-> (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})
+                     (assoc :tab/is-protected? false)
+                     (dissoc :tab/password)
+                     (dissoc :tab/user-id))]
+    (expect expected actual)))
+
+(defexpect fail-create-tab-without-name
   (let [query    [{`(tab-mut/create-tab {}) tab-join}]
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   result
         expected {`tab-mut/create-tab {:error         true
-                                       :error-message "Error while creating tab"
-                                       :error-type    :invalid-input}}]
+                                       :error-message "Invalid tab"
+                                       :error-type    :invalid-input
+                                       :error-data    {:tab/name ["missing required key"]}}}]
+    (expect expected actual)))
+
+(defexpect fail-create-tab-with-invalid-name
+  (let [query    [{`(tab-mut/create-tab {:tab/name ""}) tab-join}]
+        result   (protected-parser {:request {:user/id @user-id}} query)
+        actual   result
+        expected {`tab-mut/create-tab {:error         true
+                                       :error-message "Invalid tab"
+                                       :error-type    :invalid-input
+                                       :error-data    {:tab/name ["should be at least 1 characters"]}}}]
+    (expect expected actual)))
+
+(defexpect fail-create-tab-with-invalid-password
+  (let [query    [{`(tab-mut/create-tab {:tab/name "foo" :tab/password ""}) tab-join}]
+        result   (protected-parser {:request {:user/id @user-id}} query)
+        actual   result
+        expected {`tab-mut/create-tab {:error         true
+                                       :error-message "Invalid tab"
+                                       :error-type    :invalid-input
+                                       :error-data    {:tab/password ["should be at least 1 characters"]}}}]
     (expect expected actual)))
 
 (comment
@@ -56,6 +89,8 @@
     '~a)
   `tab-mut/create-tab
   (require '[kaocha.repl :as k])
+  (require '[shinsetsu.mutations.tab-test])
   `(tab-mut/create-tab {:tab/name "foo"})
   '(~`tab-mut/create-tab {:tab 1})
-  (k/run #'shinsetsu.mutations.tab-test/fail-create-empty-tab))
+  (k/run 'shinsetsu.mutations.tab-test)
+  (k/run #'shinsetsu.mutations.tab-test/normal-create-tab-without-password))

@@ -11,11 +11,8 @@
   {::pc/params #{:tab/name :tab/password}
    ::pc/output [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated]}
   (log/info "User with id" id "is attempting to create a new tab")
-  (try
-    (-> tab
-        (assoc :tab/user-id id)
-        (db/create-tab)
-        (assoc :tab/is-protected? ((complement nil?) (:tab/password tab)))
-        (dissoc :tab/password))
-    (catch Exception e
-      (throw (ex-info "Error while creating tab" {:error-type :invalid-input} e)))))
+  (-> tab
+      (assoc :tab/user-id id)
+      (db/create-tab)
+      (assoc :tab/is-protected? ((complement nil?) (:tab/password tab)))
+      (dissoc :tab/password)))

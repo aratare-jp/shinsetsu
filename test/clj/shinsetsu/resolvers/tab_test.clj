@@ -6,7 +6,8 @@
     [shinsetsu.db.user :as user-db]
     [shinsetsu.db.tab :as tab-db]
     [shinsetsu.parser :refer [protected-parser]]
-    [taoensso.timbre :as log])
+    [taoensso.timbre :as log]
+    [com.wsscode.pathom.core :as pc])
   (:import [java.util UUID]))
 
 (def user-id (atom nil))
@@ -38,10 +39,46 @@
         fetched-tab (protected-parser {:request {:user/id @user-id}} [{[:tab/id tab-id] tab-join}])]
     (expect {[:tab/id tab-id] tab} fetched-tab)))
 
-(defexpect fetch-empty-tab
+(defexpect normal-fetch-empty-tab
   (let [random-id (UUID/randomUUID)
-        expected  {[:tab/id random-id] {:tab/id random-id :tab/is-protected? false}}
+        expected  {[:tab/id random-id] {:tab/id random-id}}
         actual    (protected-parser {:request {:user/id @user-id}} [{[:tab/id random-id] tab-join}])]
+    (expect expected actual)))
+
+(defexpect fail-fetch-invalid-tab
+  (let [random-id   "foo"
+        inner-error {:error         true
+                     :error-type    :invalid-input
+                     :error-message "Invalid user or tab ID"
+                     :error-data    {:tab/id ["should be a uuid"]}}
+        expected    {[:tab/id random-id] {:tab/id            random-id
+                                          :tab/name          ::pc/reader-error
+                                          :tab/is-protected? ::pc/reader-error
+                                          :tab/created       ::pc/reader-error
+                                          :tab/updated       ::pc/reader-error}
+                     ::pc/errors         {[[:tab/id random-id] :tab/name]          inner-error
+                                          [[:tab/id random-id] :tab/is-protected?] inner-error
+                                          [[:tab/id random-id] :tab/created]       inner-error
+                                          [[:tab/id random-id] :tab/updated]       inner-error}}
+        actual      (protected-parser {:request {:user/id @user-id}} [{[:tab/id random-id] tab-join}])]
+    (expect expected actual)))
+
+(defexpect fail-fetch-null-tab
+  (let [random-id   nil
+        inner-error {:error         true
+                     :error-type    :invalid-input
+                     :error-message "Invalid user or tab ID"
+                     :error-data    {:tab/id ["should be a uuid"]}}
+        expected    {[:tab/id random-id] {:tab/id            random-id
+                                          :tab/name          ::pc/reader-error
+                                          :tab/is-protected? ::pc/reader-error
+                                          :tab/created       ::pc/reader-error
+                                          :tab/updated       ::pc/reader-error}
+                     ::pc/errors         {[[:tab/id random-id] :tab/name]          inner-error
+                                          [[:tab/id random-id] :tab/is-protected?] inner-error
+                                          [[:tab/id random-id] :tab/created]       inner-error
+                                          [[:tab/id random-id] :tab/updated]       inner-error}}
+        actual      (protected-parser {:request {:user/id @user-id}} [{[:tab/id random-id] tab-join}])]
     (expect expected actual)))
 
 (defexpect normal-fetch-tabs
@@ -51,7 +88,7 @@
         actual   (protected-parser {:request {:user/id @user-id}} [{:tab/tabs tab-join}])]
     (expect expected actual)))
 
-(defexpect fetch-empty-tabs
+(defexpect normal-fetch-empty-tabs
   (let [expected {:tab/tabs []}
         actual   (protected-parser {:request {:user/id @user-id}} [{:tab/tabs tab-join}])]
     (expect expected actual)))
@@ -60,4 +97,4 @@
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.parser :refer [protected-parser]])
   (k/run 'shinsetsu.resolvers.tab-test)
-  (k/run #'shinsetsu.resolvers.tab-test/normal-fetch-tab))
+  (k/run #'shinsetsu.resolvers.tab-test/fail-fetch-null-tab))

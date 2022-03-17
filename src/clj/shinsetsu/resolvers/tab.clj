@@ -24,4 +24,5 @@
   {::pc/input  #{:tab/id}
    ::pc/output [:tab/id :tab/name :tab/created :tab/updated :tab/is-protected?]}
   (log/info "User" user-id "requested tab" tab-id)
-  (remove-password (tab-db/fetch-tab {:user/id user-id :tab/id tab-id})))
+  (if-let [tab (tab-db/fetch-tab {:user/id user-id :tab/id tab-id})]
+    (remove-password tab)))
