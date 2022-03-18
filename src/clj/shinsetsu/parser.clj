@@ -4,19 +4,21 @@
     [mount.core :refer [defstate]]
     [shinsetsu.resolvers.tab :as tab-resolver]
     [shinsetsu.resolvers.bookmark :as bookmark-resolver]
-    [shinsetsu.mutations.auth :as auth-mutations]
+    [shinsetsu.mutations.user :as user-mutations]
     [shinsetsu.mutations.tab :as tab-mutations]
     [shinsetsu.mutations.bookmark :as bookmark-mutations]
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.connect :as pc]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log])
+  (:import [clojure.lang ExceptionInfo]))
 
 (def public-resolvers
-  [auth-mutations/login
-   auth-mutations/register])
+  [user-mutations/login
+   user-mutations/register])
 
 (def protected-resolvers
-  [tab-resolver/tabs-resolver
+  [user-mutations/patch-user
+   tab-resolver/tabs-resolver
    tab-resolver/tab-resolver
    bookmark-resolver/bookmarks-resolver
    bookmark-resolver/bookmark-resolver
@@ -24,9 +26,12 @@
 
 (defn process-error
   [env err]
-  (let [data    (ex-data err)
-        message (ex-message err)]
-    (merge {:error true :error-message message} data)))
+  (log/error err)
+  (if (instance? ExceptionInfo err)
+    (let [data    (ex-data err)
+          message (ex-message err)]
+      (merge {:error true :error-message message} data))
+    {:error true :error-message "Internal Server Error" :error-type :internal-server-error}))
 
 (defn create-parser
   [resolvers]

@@ -1,4 +1,4 @@
-(ns shinsetsu.mutations.auth
+(ns shinsetsu.mutations.user
   (:require
     [shinsetsu.config :as config]
     [shinsetsu.db.user :as db]
@@ -21,22 +21,24 @@
   [_ {:user/keys [username password] :as input}]
   {::pc/params #{:user/username :user/password}
    ::pc/output [:user/token]}
-  (if-let [err (m/explain [:map {:closed true} [:user/username s/non-empty-string] [:user/password s/non-empty-string]] input)]
+  (if-let [err (m/explain s/user-spec input)]
     (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "User with username" username "is attempting to login")
       (let [user (db/fetch-user-by-username {:user/username username})]
         (if (and user (hashers/check password (:user/password user)))
-          {:user/token (create-token user)}
+          (do
+            (log/info "Credentials correct. Logging in user with ID" (:user/id user))
+            {:user/token (create-token user)})
           (do
             (log/warn "User with username" username "attempts to login with a wrong password")
             (throw (ex-info "Wrong password" {:error-type :wrong-password}))))))))
 
 (defmutation register
-  [_ {:user/keys [username password] :as input}]
+  [_ {:user/keys [username] :as input}]
   {::pc/params #{:user/username :user/password}
    ::pc/output [:user/token]}
-  (if-let [err (m/explain [:map {:closed true} [:user/username s/non-empty-string] [:user/password s/non-empty-string]] input)]
+  (if-let [err (m/explain s/user-spec input)]
     (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Someone is attempting to register with username" username)
@@ -46,4 +48,23 @@
           (log/warn "User with username" username "already exists")
           (throw (ex-info "User already exists" {:error-type :duplicate-user})))
         (let [user (-> (update input :user/password hashers/derive) (db/create-user))]
+          (log/info "User registered successfully with new ID" (:user/id user))
           {:user/token (create-token user)})))))
+
+(defmutation patch-user
+  [{{user-id :user/id} :request} {:user/keys [password] :as patch-data}]
+  {::pc/params #{:user/username :user/password}
+   ::pc/output [:user/id]}
+  (if (empty? patch-data)
+    {:user/id user-id}
+    (let [patch-data (merge patch-data {:user/id user-id})]
+      (if-let [err (m/explain s/user-update-spec patch-data)]
+        (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
+        (do
+          (log/info "User with ID" user-id "is attempting to update their info")
+          (-> (if password
+                (update patch-data :user/password hashers/derive)
+                patch-data)
+              (db/patch-user))
+          (log/info "User with ID" user-id "patched successfully")
+          {:user/id user-id})))))
