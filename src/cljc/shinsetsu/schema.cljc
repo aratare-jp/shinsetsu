@@ -8,30 +8,28 @@
 (def user-spec
   [:map
    {:closed true}
-   [:user/id {:optional true} :uuid]
    [:user/username non-empty-string]
-   [:user/password non-empty-string]
-   [:user/created {:optional true} inst?]
-   [:user/updated {:optional true} inst?]])
+   [:user/password non-empty-string]])
+
+(def user-update-spec
+  [:map
+   {:closed true}
+   [:user/id :uuid]
+   [:user/username {:optional true} non-empty-string]
+   [:user/password {:optional true} non-empty-string]])
 
 (def tab-spec
   [:map
    {:closed true}
-   [:tab/id {:optional true} :uuid]
    [:tab/name non-empty-string]
    [:tab/password {:optional true} non-empty-string]
-   [:tab/created {:optional true} inst?]
-   [:tab/updated {:optional true} inst?]
    [:tab/user-id :uuid]])
 
 (def bookmark-spec
   [:map
    {:closed true}
-   [:bookmark/id {:optional true} :uuid]
    [:bookmark/title non-empty-string]
    [:bookmark/url non-empty-string]
-   [:bookmark/created {:optional true} inst?]
-   [:bookmark/updated {:optional true} inst?]
    [:bookmark/tab-id :uuid]
    [:bookmark/user-id :uuid]])
 

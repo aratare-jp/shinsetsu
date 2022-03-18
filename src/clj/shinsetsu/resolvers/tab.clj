@@ -5,7 +5,7 @@
     [shinsetsu.db.bookmark :as bookmark-db]
     [taoensso.timbre :as log]))
 
-(defn remove-password
+(defn augment-tab
   [tab]
   (-> tab
       (assoc :tab/is-protected? ((complement nil?) (:tab/password tab)))
@@ -14,9 +14,9 @@
 (defresolver tabs-resolver
   "Fetch all the tabs that belong to a user."
   [{{user-id :user/id} :request} _]
-  {::pc/output [{:tab/tabs [:tab/id :tab/name :tab/created :tab/updated :tab/is-protected?]}]}
+  {::pc/output [{:user/tabs [:tab/id :tab/name :tab/created :tab/updated :tab/is-protected?]}]}
   (log/info "User" user-id "requested all tabs")
-  {:tab/tabs (map remove-password (tab-db/fetch-tabs {:user/id user-id}))})
+  {:user/tabs (map augment-tab (tab-db/fetch-tabs {:user/id user-id}))})
 
 (defresolver tab-resolver
   "Fetch a specific tab that belongs to a user"
@@ -25,4 +25,4 @@
    ::pc/output [:tab/id :tab/name :tab/created :tab/updated :tab/is-protected?]}
   (log/info "User" user-id "requested tab" tab-id)
   (if-let [tab (tab-db/fetch-tab {:user/id user-id :tab/id tab-id})]
-    (remove-password tab)))
+    (augment-tab tab)))

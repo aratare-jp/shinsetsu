@@ -13,12 +13,8 @@
   (fn [req]
     (if-let [auth-raw-token (get-in req [:headers "authorization"])]
       (try
-        (let [token    (-> auth-raw-token
-                           (string/split #"^Bearer ")
-                           (second))
-              unsigned (-> token
-                           (jwt/unsign (:secret config/env))
-                           (update :user/id #(UUID/fromString %)))
+        (let [token    (-> auth-raw-token (string/split #"^Bearer ") (second))
+              unsigned (-> token (jwt/unsign (:secret config/env)) (update :user/id #(UUID/fromString %)))
               user-id  (:user/id unsigned)]
           (if (user-db/fetch-user-by-id {:user/id user-id})
             (handler (merge req unsigned))

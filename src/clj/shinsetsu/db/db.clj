@@ -2,6 +2,7 @@
   (:require
     [mount.core :refer [defstate]]
     [next.jdbc :as jdbc]
+    [next.jdbc.date-time]
     [shinsetsu.config :as config]))
 
 (defstate ds

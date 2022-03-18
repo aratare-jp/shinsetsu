@@ -84,13 +84,13 @@
 (defexpect normal-fetch-tabs
   (let [tab1     (create-tab "foo" "bar" @user-id)
         tab2     (create-tab "foo" "bar" @user-id)
-        expected {:tab/tabs [tab1 tab2]}
-        actual   (protected-parser {:request {:user/id @user-id}} [{:tab/tabs tab-join}])]
+        expected {:user/tabs [tab1 tab2]}
+        actual   (protected-parser {:request {:user/id @user-id}} [{:user/tabs tab-join}])]
     (expect expected actual)))
 
 (defexpect normal-fetch-empty-tabs
-  (let [expected {:tab/tabs []}
-        actual   (protected-parser {:request {:user/id @user-id}} [{:tab/tabs tab-join}])]
+  (let [expected {:user/tabs []}
+        actual   (protected-parser {:request {:user/id @user-id}} [{:user/tabs tab-join}])]
     (expect expected actual)))
 
 (comment

@@ -17,8 +17,8 @@
     (expect username (:user/username user))
     (expect password (:user/password user))
     (expect uuid? (:user/id user))
-    (expect (complement nil?) (:user/created user))
-    (expect (complement nil?) (:user/updated user))))
+    (expect inst? (:user/created user))
+    (expect inst? (:user/updated user))))
 
 (defexpect fail-create-user-without-username-and-password
   (try
@@ -91,6 +91,70 @@
         password "bar"]
     (user-db/create-user {:user/username username :user/password password})
     (expect PSQLException (user-db/create-user {:user/username username :user/password password}))))
+
+(defexpect normal-patch-user-with-new-username
+  (let [password     "bar"
+        user         (user-db/create-user {:user/username "foo" :user/password password})
+        new-username "baz"
+        patched-user (user-db/patch-user {:user/id (:user/id user) :user/username new-username})]
+    (expect new-username (:user/username patched-user))
+    (expect password (:user/password patched-user))
+    (expect uuid? (:user/id patched-user))
+    (expect inst? (:user/created patched-user))
+    (expect inst? (:user/updated patched-user))
+    (expect #(.after % (:user/updated user)) (:user/updated patched-user))))
+
+(defexpect normal-patch-user-with-new-password
+  (let [username     "bar"
+        user         (user-db/create-user {:user/username username :user/password "bar"})
+        new-password "baz"
+        patched-user (user-db/patch-user {:user/id (:user/id user) :user/password new-password})]
+    (expect username (:user/username patched-user))
+    (expect new-password (:user/password patched-user))
+    (expect uuid? (:user/id patched-user))
+    (expect inst? (:user/created patched-user))
+    (expect inst? (:user/updated patched-user))
+    (expect #(.after % (:user/updated user)) (:user/updated patched-user))))
+
+(defexpect normal-patch-user-with-new-username-and-password
+  (let [user         (user-db/create-user {:user/username "foo" :user/password "bar"})
+        new-username "fim"
+        new-password "baz"
+        patched-user (user-db/patch-user {:user/id (:user/id user) :user/username new-username :user/password new-password})]
+    (expect new-username (:user/username patched-user))
+    (expect new-password (:user/password patched-user))
+    (expect uuid? (:user/id patched-user))
+    (expect inst? (:user/created patched-user))
+    (expect inst? (:user/updated patched-user))
+    (expect #(.after % (:user/updated user)) (:user/updated patched-user))))
+
+(defexpect normal-patch-user-without-new-username-and-password
+  (let [user         (user-db/create-user {:user/username "foo" :user/password "bar"})
+        patched-user (user-db/patch-user {:user/id (:user/id user)})]
+    (expect (:user/username user) (:user/username patched-user))
+    (expect (:user/password user) (:user/password patched-user))
+    (expect (:user/id user) (:user/id patched-user))
+    (expect (:user/created user) (:user/created patched-user))
+    (expect inst? (:user/updated patched-user))
+    (expect #(.after % (:user/updated user)) (:user/updated patched-user))))
+
+(defexpect fail-patch-user-with-invalid-username
+  (try
+    (user-db/patch-user {:user/id (UUID/randomUUID) :user/username ""})
+    (catch Exception e
+      (let [data    (ex-data e)
+            message (ex-message e)]
+        (expect "Invalid user" message)
+        (expect {:error-type :invalid-input :error-data {:user/username ["should be at least 1 characters"]}} data)))))
+
+(defexpect fail-patch-user-with-invalid-password
+  (try
+    (user-db/patch-user {:user/id (UUID/randomUUID) :user/password ""})
+    (catch Exception e
+      (let [data    (ex-data e)
+            message (ex-message e)]
+        (expect "Invalid user" message)
+        (expect {:error-type :invalid-input :error-data {:user/password ["should be at least 1 characters"]}} data)))))
 
 (defexpect normal-fetch-user-by-username
   (let [username "foo"

@@ -7,7 +7,8 @@
     [shinsetsu.db.db :refer [ds]]
     [shinsetsu.schema :as s]
     [malli.core :as m]
-    [malli.error :as me]))
+    [malli.error :as me])
+  (:import [java.time Instant]))
 
 (defn create-user
   [{:user/keys [username] :as user}]
@@ -19,6 +20,19 @@
                                 (helpers/values [user])
                                 (helpers/returning :*)
                                 (sql/format {:dialect :ansi}))))))
+
+(defn patch-user
+  [{:user/keys [id username] :as user}]
+  (if-let [err (m/explain s/user-update-spec user)]
+    (throw (ex-info "Invalid user" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (let [user (assoc user :user/updated (Instant/now))]
+      (do
+        (log/info "Patching user with ID" id)
+        (jdbc/execute-one! ds (-> (helpers/update :user)
+                                  (helpers/set user)
+                                  (helpers/where [:= :user/id id])
+                                  (helpers/returning :*)
+                                  (sql/format {:dialect :ansi})))))))
 
 (defn fetch-user-by-username
   [{:user/keys [username] :as input}]
