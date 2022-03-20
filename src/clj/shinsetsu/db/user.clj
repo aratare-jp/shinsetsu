@@ -22,7 +22,7 @@
                                 (sql/format {:dialect :ansi}))))))
 
 (defn patch-user
-  [{:user/keys [id username] :as user}]
+  [{:user/keys [id] :as user}]
   (if-let [err (m/explain s/user-update-spec user)]
     (throw (ex-info "Invalid user" {:error-type :invalid-input :error-data (me/humanize err)}))
     (let [user (assoc user :user/updated (Instant/now))]

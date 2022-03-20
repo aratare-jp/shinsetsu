@@ -20,6 +20,40 @@
                                 (helpers/returning :*)
                                 (sql/format))))))
 
+(defn patch-bookmark
+  [{:bookmark/keys [id user-id] :as bookmark}]
+  (if-let [err (m/explain s/bookmark-update-spec bookmark)]
+    (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (do
+      (log/info "Update bookmark" id "for user" user-id)
+      (jdbc/execute-one! ds (-> (helpers/update :bookmark)
+                                (helpers/set [bookmark])
+                                (helpers/where [:= :bookmark/id id] [:= :bookmark/user-id user-id])
+                                (helpers/returning :*)
+                                (sql/format))))))
+
+(defn delete-bookmark
+  [{:bookmark/keys [id user-id] :as bookmark}]
+  (if-let [err (m/explain s/bookmark-delete-spec bookmark)]
+    (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (do
+      (log/info "Delete bookmark" id "for user" user-id)
+      (jdbc/execute-one! ds (-> (helpers/delete-from :bookmark)
+                                (helpers/where [:= :bookmark/id id] [:= :bookmark/user-id user-id])
+                                (helpers/returning :*)
+                                (sql/format))))))
+
+(defn delete-bookmarks
+  [bookmarks user-id]
+  (if-let [err (m/explain [:cat [:vector :uuid] :uuid] [bookmarks user-id])]
+    (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (let [ids (map :bookmark/id bookmarks)]
+      (log/info "Delete bookmarks" ids "from user" user-id)
+      (jdbc/execute! ds (-> (helpers/delete-from :bookmark)
+                            (helpers/where [:in :bookmark/id bookmarks] [:= :bookmark/user-id user-id])
+                            (helpers/returning :*)
+                            (sql/format))))))
+
 (defn fetch-bookmark
   [{bookmark-id :bookmark/id user-id :user/id :as input}]
   (if-let [err (m/explain [:map {:closed true} [:bookmark/id :uuid] [:user/id :uuid]] input)]

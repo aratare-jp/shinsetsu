@@ -7,7 +7,8 @@
     [shinsetsu.mutations.tab :as tab-mut]
     [shinsetsu.db.user :as user-db]
     [shinsetsu.db.tab :as tab-db]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [buddy.hashers :as hashers]))
 
 (def user-id (atom nil))
 
@@ -84,13 +85,53 @@
                                        :error-data    {:tab/password ["should be at least 1 characters"]}}}]
     (expect expected actual)))
 
+(defexpect normal-patch-tab-with-new-username-and-password
+  (let [tab              (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+        tab-id           (log/spy (:tab/id tab))
+        new-tab-name     "fim"
+        new-tab-password "baz"
+        query            [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/name ~new-tab-name :tab/password ~new-tab-password}) tab-join}]
+        result           (protected-parser {:request {:user/id @user-id}} query)
+        patched-tab      (get result `tab-mut/patch-tab)
+        fetched-tab      (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})]
+    (expect tab-id (:tab/id patched-tab))
+    (expect new-tab-name (:tab/name patched-tab))
+    (expect #(hashers/check new-tab-password %) (:tab/password fetched-tab))
+    (expect (:tab/is-protected? patched-tab))
+    (expect inst? (:tab/created patched-tab))
+    (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))))
+
+(defexpect normal-patch-tab-with-new-username
+  (let [tab          (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+        tab-id       (log/spy (:tab/id tab))
+        new-tab-name "fim"
+        query        [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/name ~new-tab-name}) tab-join}]
+        result       (protected-parser {:request {:user/id @user-id}} query)
+        patched-tab  (get result `tab-mut/patch-tab)]
+    (expect tab-id (:tab/id patched-tab))
+    (expect new-tab-name (:tab/name patched-tab))
+    (expect (:tab/is-protected? patched-tab))
+    (expect inst? (:tab/created patched-tab))
+    (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))))
+
+(defexpect normal-patch-tab-with-new-password
+  (let [tab              (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+        tab-id           (log/spy (:tab/id tab))
+        new-tab-password "fim"
+        query            [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/password ~new-tab-password}) tab-join}]
+        result           (protected-parser {:request {:user/id @user-id}} query)
+        patched-tab      (get result `tab-mut/patch-tab)
+        fetched-tab      (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})]
+    (expect tab-id (:tab/id patched-tab))
+    (expect (:tab/name tab) (:tab/name patched-tab))
+    (expect #(hashers/check new-tab-password %) (:tab/password fetched-tab))
+    (expect (:tab/is-protected? patched-tab))
+    (expect inst? (:tab/created patched-tab))
+    (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))))
+
 (comment
-  (let [a 1]
-    '~a)
-  `tab-mut/create-tab
   (require '[kaocha.repl :as k])
-  (require '[shinsetsu.mutations.tab-test])
-  `(tab-mut/create-tab {:tab/name "foo"})
-  '(~`tab-mut/create-tab {:tab 1})
-  (k/run 'shinsetsu.mutations.tab-test)
-  (k/run #'shinsetsu.mutations.tab-test/normal-create-tab-without-password))
+  (require '[malli.core :as m])
+  (m/validate [:map [:a :int] [:b {:optional true} [:maybe :int]]] {:a 3 :b 3})
+  (k/run 'shinsetsu.mutations.user-test)
+  (k/run #'shinsetsu.mutations.tab-test/normal-patch-tab-with-new-password))

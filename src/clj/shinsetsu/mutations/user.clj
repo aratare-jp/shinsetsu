@@ -17,6 +17,12 @@
   (let [secret (:secret config/env)]
     (jwt/sign {:user/id (.toString (:user/id user))} secret)))
 
+(defn hash-password
+  [user]
+  (if-let [password (:user/password user)]
+    (merge user {:user/password (hashers/derive password)})
+    user))
+
 (defmutation login
   [_ {:user/keys [username password] :as input}]
   {::pc/params #{:user/username :user/password}
@@ -47,12 +53,12 @@
         (do
           (log/warn "User with username" username "already exists")
           (throw (ex-info "User already exists" {:error-type :duplicate-user})))
-        (let [user (-> (update input :user/password hashers/derive) (db/create-user))]
+        (let [user (-> input hash-password db/create-user)]
           (log/info "User registered successfully with new ID" (:user/id user))
           {:user/token (create-token user)})))))
 
 (defmutation patch-user
-  [{{user-id :user/id} :request} {:user/keys [password] :as patch-data}]
+  [{{user-id :user/id} :request} patch-data]
   {::pc/params #{:user/username :user/password}
    ::pc/output [:user/id]}
   (if (empty? patch-data)
@@ -62,9 +68,6 @@
         (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
         (do
           (log/info "User with ID" user-id "is attempting to update their info")
-          (-> (if password
-                (update patch-data :user/password hashers/derive)
-                patch-data)
-              (db/patch-user))
-          (log/info "User with ID" user-id "patched successfully")
-          {:user/id user-id})))))
+          (let [patched-user (-> patch-data hash-password db/patch-user (dissoc :user/password))]
+            (log/info "User with ID" user-id "patched successfully")
+            patched-user))))))

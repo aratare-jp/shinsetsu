@@ -25,12 +25,43 @@
    [:tab/password {:optional true} non-empty-string]
    [:tab/user-id :uuid]])
 
+(def tab-update-spec
+  [:map
+   {:closed true}
+   [:tab/id :uuid]
+   [:tab/name {:optional true} non-empty-string]
+   [:tab/password {:optional true} non-empty-string]
+   [:tab/user-id :uuid]])
+
+(def tab-delete-spec
+  [:map
+   {:closed true}
+   [:tab/id :uuid]
+   [:tab/user-id :uuid]])
+
 (def bookmark-spec
   [:map
    {:closed true}
    [:bookmark/title non-empty-string]
    [:bookmark/url non-empty-string]
+   [:bookmark/image {:optional true} non-empty-string]
    [:bookmark/tab-id :uuid]
+   [:bookmark/user-id :uuid]])
+
+(def bookmark-update-spec
+  [:map
+   {:closed true}
+   [:bookmark/id :uuid]
+   [:bookmark/title {:optional true} non-empty-string]
+   [:bookmark/url {:optional true} non-empty-string]
+   [:bookmark/image {:optional true} non-empty-string]
+   [:bookmark/tab-id {:optional true} :uuid]
+   [:bookmark/user-id :uuid]])
+
+(def bookmark-delete-spec
+  [:map
+   {:closed true}
+   [:bookmark/id :uuid]
    [:bookmark/user-id :uuid]])
 
 (comment

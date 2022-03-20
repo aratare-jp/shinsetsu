@@ -20,9 +20,11 @@
   [user-mutations/patch-user
    tab-resolver/tabs-resolver
    tab-resolver/tab-resolver
+   tab-mutations/create-tab
+   tab-mutations/patch-tab
+   tab-mutations/delete-tab
    bookmark-resolver/bookmarks-resolver
-   bookmark-resolver/bookmark-resolver
-   tab-mutations/create-tab])
+   bookmark-resolver/bookmark-resolver])
 
 (defn process-error
   [env err]
