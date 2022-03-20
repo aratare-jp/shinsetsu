@@ -23,6 +23,7 @@
    {:closed true}
    [:tab/name non-empty-string]
    [:tab/password {:optional true} non-empty-string]
+   [:tab/is-protected? {:optional true} :boolean]
    [:tab/user-id :uuid]])
 
 (def tab-update-spec
@@ -31,6 +32,7 @@
    [:tab/id :uuid]
    [:tab/name {:optional true} non-empty-string]
    [:tab/password {:optional true} non-empty-string]
+   [:tab/is-protected? {:optional true} :boolean]
    [:tab/user-id :uuid]])
 
 (def tab-delete-spec

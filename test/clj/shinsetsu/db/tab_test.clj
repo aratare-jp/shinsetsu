@@ -24,24 +24,42 @@
 (use-fixtures :once db-setup)
 (use-fixtures :each db-cleanup user-setup)
 
-(defexpect normal-create-tab
+(defexpect normal-create-tab-without-protection
   (let [tab-name     "hello"
         tab-password "world"
-        tab          (tab-db/create-tab {:tab/name tab-name :tab/password tab-password :tab/user-id @user-id})]
-    (expect (complement nil?) (:tab/id tab))
+        tab          (tab-db/create-tab {:tab/name     tab-name
+                                         :tab/password tab-password
+                                         :tab/user-id  @user-id})]
+    (expect uuid? (:tab/id tab))
     (expect tab-name (:tab/name tab))
     (expect tab-password (:tab/password tab))
-    (expect (complement nil?) (:tab/created tab))
-    (expect (complement nil?) (:tab/updated tab))
+    (expect false (:tab/is-protected? tab))
+    (expect inst? (:tab/created tab))
+    (expect inst? (:tab/updated tab))
+    (expect @user-id (:tab/user-id tab))))
+
+(defexpect normal-create-tab-with-protection
+  (let [tab-name     "hello"
+        tab-password "world"
+        tab          (tab-db/create-tab {:tab/name          tab-name
+                                         :tab/password      tab-password
+                                         :tab/is-protected? true
+                                         :tab/user-id       @user-id})]
+    (expect uuid? (:tab/id tab))
+    (expect tab-name (:tab/name tab))
+    (expect tab-password (:tab/password tab))
+    (expect true (:tab/is-protected? tab))
+    (expect inst? (:tab/created tab))
+    (expect inst? (:tab/updated tab))
     (expect @user-id (:tab/user-id tab))))
 
 (defexpect normal-create-tab-without-password
   (let [tab-name "hello"
         tab      (tab-db/create-tab {:tab/name tab-name :tab/user-id @user-id})]
-    (expect (complement nil?) (:tab/id tab))
+    (expect uuid? (:tab/id tab))
     (expect tab-name (:tab/name tab))
-    (expect (complement nil?) (:tab/created tab))
-    (expect (complement nil?) (:tab/updated tab))
+    (expect inst? (:tab/created tab))
+    (expect inst? (:tab/updated tab))
     (expect @user-id (:tab/user-id tab))))
 
 (defexpect fail-create-tab-without-name
@@ -128,6 +146,21 @@
     (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))
     (expect @user-id (:tab/user-id patched-tab))))
 
+(defexpect normal-patch-tab-with-protected
+  (let [name        "foo"
+        tab         (tab-db/create-tab {:tab/name name :tab/password "bar" :tab/user-id @user-id})
+        tab-id      (:tab/id tab)
+        patched-tab (tab-db/patch-tab {:tab/id            tab-id
+                                       :tab/is-protected? true
+                                       :tab/user-id       @user-id})]
+    (expect (:tab/id tab) (:tab/id patched-tab))
+    (expect name (:tab/name patched-tab))
+    (expect true (:tab/is-protected? patched-tab))
+    (expect (:tab/password tab) (:tab/password patched-tab))
+    (expect (:tab/created tab) (:tab/created patched-tab))
+    (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))
+    (expect @user-id (:tab/user-id patched-tab))))
+
 (defexpect normal-patch-tab-without-new-name-and-password
   (let [tab         (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
         tab-id      (:tab/id tab)
@@ -163,6 +196,18 @@
         (expect "Invalid tab" message)
         (expect {:error-type :invalid-input :error-data {:tab/password ["should be at least 1 characters"]}} data)))))
 
+(defexpect fail-patch-tab-with-invalid-protection
+  (try
+    (let [tab    (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+          tab-id (:tab/id tab)]
+      (tab-db/patch-tab {:tab/id tab-id :tab/user-id @user-id :tab/is-protected? "foo"})
+      (expect false))
+    (catch Exception e
+      (let [data    (ex-data e)
+            message (ex-message e)]
+        (expect "Invalid tab" message)
+        (expect {:error-type :invalid-input :error-data {:tab/is-protected? ["should be a boolean"]}} data)))))
+
 (defexpect normal-delete-tab-with-no-bookmarks
   (let [tab         (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
         tab-id      (:tab/id tab)
@@ -173,8 +218,14 @@
 (defexpect normal-delete-tab-with-bookmarks
   (let [tab         (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
         tab-id      (:tab/id tab)
-        bookmark1   (bookmark-db/create-bookmark {:bookmark/title "foo" :bookmark/url "blah" :bookmark/tab-id tab-id :bookmark/user-id @user-id})
-        bookmark2   (bookmark-db/create-bookmark {:bookmark/title "fim" :bookmark/url "bloo" :bookmark/tab-id tab-id :bookmark/user-id @user-id})
+        bookmark1   (bookmark-db/create-bookmark {:bookmark/title   "foo"
+                                                  :bookmark/url     "blah"
+                                                  :bookmark/tab-id  tab-id
+                                                  :bookmark/user-id @user-id})
+        bookmark2   (bookmark-db/create-bookmark {:bookmark/title   "fim"
+                                                  :bookmark/url     "bloo"
+                                                  :bookmark/tab-id  tab-id
+                                                  :bookmark/user-id @user-id})
         deleted-tab (tab-db/delete-tab {:tab/id tab-id :tab/user-id @user-id})]
     (expect tab deleted-tab)
     (expect nil (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id}))

@@ -20,7 +20,7 @@
       (jdbc/execute-one! ds (-> (helpers/insert-into :tab)
                                 (helpers/values [tab])
                                 (helpers/returning :*)
-                                (sql/format))))))
+                                (sql/format :dialect :ansi))))))
 
 (defn patch-tab
   [{:tab/keys [id user-id] :as tab}]
@@ -33,7 +33,7 @@
                                   (helpers/set tab)
                                   (helpers/where [:= :tab/id id] [:= :tab/user-id user-id])
                                   (helpers/returning :*)
-                                  (sql/format)))))))
+                                  (sql/format :dialect :ansi)))))))
 
 (defn delete-tab
   [{:tab/keys [id user-id] :as tab}]
@@ -44,7 +44,7 @@
       (jdbc/execute-one! ds (-> (helpers/delete-from :tab)
                                 (helpers/where [:= :tab/id id] [:= :tab/user-id user-id])
                                 (helpers/returning :*)
-                                (sql/format))))))
+                                (sql/format :dialect :ansi))))))
 
 (defn fetch-tabs
   [{user-id :user/id :as input}]
@@ -55,7 +55,7 @@
       (jdbc/execute! ds (-> (helpers/select :*)
                             (helpers/from :tab)
                             (helpers/where [:= :tab/user-id user-id])
-                            (sql/format))))))
+                            (sql/format :dialect :ansi))))))
 
 (defn fetch-tab
   [{tab-id :tab/id user-id :user/id :as input}]
@@ -66,4 +66,4 @@
       (jdbc/execute-one! ds (-> (helpers/select :*)
                                 (helpers/from :tab)
                                 (helpers/where [:= :tab/user-id user-id] [:= :tab/id tab-id])
-                                (sql/format))))))
+                                (sql/format :dialect :ansi))))))

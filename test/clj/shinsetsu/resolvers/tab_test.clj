@@ -26,15 +26,14 @@
 (def tab-join [:tab/id :tab/name :tab/password :tab/created :tab/updated :tab/is-protected?])
 
 (defn create-tab
-  [tab-name tab-password user-id]
-  (-> {:tab/name tab-name :tab/password tab-password :tab/user-id user-id}
+  [tab]
+  (-> tab
       (tab-db/create-tab)
-      (assoc :tab/is-protected? ((complement nil?) tab-password))
       (dissoc :tab/user-id)
       (dissoc :tab/password)))
 
 (defexpect normal-fetch-tab
-  (let [tab         (create-tab "foo" "bar" @user-id)
+  (let [tab         (create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id :tab/is-protected? true})
         tab-id      (:tab/id tab)
         fetched-tab (protected-parser {:request {:user/id @user-id}} [{[:tab/id tab-id] tab-join}])]
     (expect {[:tab/id tab-id] tab} fetched-tab)))
@@ -82,9 +81,10 @@
     (expect expected actual)))
 
 (defexpect normal-fetch-tabs
-  (let [tab1     (create-tab "foo" "bar" @user-id)
-        tab2     (create-tab "foo" "bar" @user-id)
-        expected {:user/tabs [tab1 tab2]}
+  (let [tab1     (create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+        tab2     (create-tab {:tab/name "foo1" :tab/password "bar2" :tab/user-id @user-id :tab/is-protected? true})
+        tab3     (create-tab {:tab/name "foo1" :tab/password "bar2" :tab/user-id @user-id :tab/is-protected? false})
+        expected {:user/tabs [tab1 tab2 tab3]}
         actual   (protected-parser {:request {:user/id @user-id}} [{:user/tabs tab-join}])]
     (expect expected actual)))
 
@@ -97,4 +97,4 @@
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.parser :refer [protected-parser]])
   (k/run 'shinsetsu.resolvers.tab-test)
-  (k/run #'shinsetsu.resolvers.tab-test/fail-fetch-null-tab))
+  (k/run #'shinsetsu.resolvers.tab-test/normal-fetch-tabs))

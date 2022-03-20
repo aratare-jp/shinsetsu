@@ -10,11 +10,7 @@
 
 ;; TODO: SPEC THESE SUCKERS!
 
-(defn augment-tab
-  [tab]
-  (-> tab
-      (assoc :tab/is-protected? (boolean (:tab/password tab)))
-      (dissoc :tab/password)))
+(defn trim-tab [tab] (-> tab (dissoc :tab/password) (dissoc :tab/user-id)))
 
 (defn hash-password
   [tab]
@@ -31,7 +27,7 @@
       (throw (ex-info "Invalid tab" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User" user-id "is attempting to create a new tab")
-        (let [tab (-> tab hash-password db/create-tab augment-tab)]
+        (let [tab (-> tab hash-password db/create-tab trim-tab)]
           (log/info "User" user-id "created tab" (:tab/id tab) "successfully")
           tab)))))
 
@@ -46,7 +42,7 @@
         (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
         (do
           (log/info "User" user-id "is attempting to update tab" id "info")
-          (let [patched-tab (-> patch-data hash-password db/patch-tab augment-tab)]
+          (let [patched-tab (-> patch-data hash-password db/patch-tab trim-tab)]
             (log/info "User" user-id "patched tab" id "successfully")
             patched-tab))))))
 
@@ -59,6 +55,6 @@
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with ID" user-id "is attempting to delete tab" id "info")
-        (let [deleted-tab (-> input db/delete-tab augment-tab)]
+        (let [deleted-tab (-> input db/delete-tab trim-tab)]
           (log/info "User with ID" user-id "deleted tab" id "successfully")
           deleted-tab)))))

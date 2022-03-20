@@ -2,21 +2,14 @@
   (:require
     [com.wsscode.pathom.connect :as pc :refer [defresolver]]
     [shinsetsu.db.tab :as tab-db]
-    [shinsetsu.db.bookmark :as bookmark-db]
     [taoensso.timbre :as log]))
-
-(defn augment-tab
-  [tab]
-  (-> tab
-      (assoc :tab/is-protected? ((complement nil?) (:tab/password tab)))
-      (dissoc :tab/password)))
 
 (defresolver tabs-resolver
   "Fetch all the tabs that belong to a user."
   [{{user-id :user/id} :request} _]
   {::pc/output [{:user/tabs [:tab/id :tab/name :tab/created :tab/updated :tab/is-protected?]}]}
   (log/info "User" user-id "requested all tabs")
-  {:user/tabs (map augment-tab (tab-db/fetch-tabs {:user/id user-id}))})
+  {:user/tabs (map #(dissoc % :tab/password) (tab-db/fetch-tabs {:user/id user-id}))})
 
 (defresolver tab-resolver
   "Fetch a specific tab that belongs to a user"
@@ -25,4 +18,4 @@
    ::pc/output [:tab/id :tab/name :tab/created :tab/updated :tab/is-protected?]}
   (log/info "User" user-id "requested tab" tab-id)
   (if-let [tab (tab-db/fetch-tab {:user/id user-id :tab/id tab-id})]
-    (augment-tab tab)))
+    (dissoc tab :tab/password)))
