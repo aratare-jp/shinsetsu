@@ -6,31 +6,47 @@
     [taoensso.timbre :as log]
     [shinsetsu.db.db :refer [ds]]
     [shinsetsu.schema :as s]
+    [shinsetsu.db.tab :as tab-db]
     [malli.core :as m]
-    [malli.error :as me]))
+    [malli.error :as me])
+  (:import [java.time Instant]
+           [org.postgresql.util PSQLException]))
 
 (defn create-bookmark
   [{:bookmark/keys [tab-id user-id] :as bookmark}]
   (if-let [err (m/explain s/bookmark-spec bookmark)]
     (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
-    (do
+    (try
       (log/info "Create new bookmark in tab" tab-id "for user" user-id)
       (jdbc/execute-one! ds (-> (helpers/insert-into :bookmark)
                                 (helpers/values [bookmark])
                                 (helpers/returning :*)
-                                (sql/format))))))
+                                (sql/format)))
+      (catch PSQLException e
+        (log/error e)
+        (case (.getSQLState e)
+          "23503" (throw (ex-info "Nonexistent tab" {:error-type :invalid-input
+                                                     :error-data {:bookmark/tab-id ["nonexistent"]}}))
+          (throw (ex-info "Unknown error" {:error-type :unknown} e)))))))
 
 (defn patch-bookmark
   [{:bookmark/keys [id user-id] :as bookmark}]
   (if-let [err (m/explain s/bookmark-update-spec bookmark)]
     (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
-    (do
+    (let [bookmark (assoc bookmark :bookmark/updated (Instant/now))]
       (log/info "Update bookmark" id "for user" user-id)
-      (jdbc/execute-one! ds (-> (helpers/update :bookmark)
-                                (helpers/set [bookmark])
-                                (helpers/where [:= :bookmark/id id] [:= :bookmark/user-id user-id])
-                                (helpers/returning :*)
-                                (sql/format))))))
+      (try
+        (jdbc/execute-one! ds (-> (helpers/update :bookmark)
+                                  (helpers/set bookmark)
+                                  (helpers/where [:= :bookmark/id id] [:= :bookmark/user-id user-id])
+                                  (helpers/returning :*)
+                                  (sql/format)))
+        (catch PSQLException e
+          (log/error e)
+          (case (.getSQLState e)
+            "23503" (throw (ex-info "Nonexistent tab" {:error-type :invalid-input
+                                                       :error-data {:bookmark/tab-id ["nonexistent"]}}))
+            (throw (ex-info "Unknown error" {:error-type :unknown} e))))))))
 
 (defn delete-bookmark
   [{:bookmark/keys [id user-id] :as bookmark}]
@@ -43,16 +59,16 @@
                                 (helpers/returning :*)
                                 (sql/format))))))
 
-(defn delete-bookmarks
-  [bookmarks user-id]
-  (if-let [err (m/explain [:cat [:vector :uuid] :uuid] [bookmarks user-id])]
-    (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
-    (let [ids (map :bookmark/id bookmarks)]
-      (log/info "Delete bookmarks" ids "from user" user-id)
-      (jdbc/execute! ds (-> (helpers/delete-from :bookmark)
-                            (helpers/where [:in :bookmark/id bookmarks] [:= :bookmark/user-id user-id])
-                            (helpers/returning :*)
-                            (sql/format))))))
+#_(defn delete-bookmarks
+    [bookmarks user-id]
+    (if-let [err (m/explain [:cat [:vector :uuid] :uuid] [bookmarks user-id])]
+      (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
+      (let [ids (map :bookmark/id bookmarks)]
+        (log/info "Delete bookmarks" ids "from user" user-id)
+        (jdbc/execute! ds (-> (helpers/delete-from :bookmark)
+                              (helpers/where [:in :bookmark/id bookmarks] [:= :bookmark/user-id user-id])
+                              (helpers/returning :*)
+                              (sql/format))))))
 
 (defn fetch-bookmark
   [{bookmark-id :bookmark/id user-id :user/id :as input}]

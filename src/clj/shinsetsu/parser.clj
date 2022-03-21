@@ -24,7 +24,10 @@
    tab-mutations/patch-tab
    tab-mutations/delete-tab
    bookmark-resolver/bookmarks-resolver
-   bookmark-resolver/bookmark-resolver])
+   bookmark-resolver/bookmark-resolver
+   bookmark-mutations/create-bookmark
+   bookmark-mutations/patch-bookmark
+   bookmark-mutations/delete-bookmark])
 
 (defn process-error
   [env err]

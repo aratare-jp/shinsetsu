@@ -13,9 +13,38 @@
   [{{user-id :user/id} :request :as env} bookmark]
   {::pc/params #{:bookmark/title :bookmark/url :bookmark/image :bookmark/user-id :bookmark/tab-id}
    ::pc/output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/created :bookmark/updated]}
-  (let [bookmark (assoc bookmark :user/id user-id)]
+  (let [bookmark (assoc bookmark :bookmark/user-id user-id)]
     (if-let [err (m/explain s/bookmark-spec bookmark)]
       (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with id" user-id "is attempting to create a new bookmark")
-        (db/create-bookmark bookmark)))))
+        (let [bookmark    (db/create-bookmark bookmark)
+              bookmark-id (:bookmark/id bookmark)]
+          (log/info "User with ID" user-id "created bookmark" bookmark-id "successfully")
+          bookmark)))))
+
+(defmutation patch-bookmark
+  [{{user-id :user/id} :request :as env} {:bookmark/keys [id] :as bookmark}]
+  {::pc/params #{:bookmark/title :bookmark/url :bookmark/image :bookmark/user-id :bookmark/tab-id}
+   ::pc/output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/created :bookmark/updated]}
+  (let [bookmark (assoc bookmark :bookmark/user-id user-id)]
+    (if-let [err (m/explain s/bookmark-update-spec bookmark)]
+      (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
+      (do
+        (log/info "User with id" user-id "is attempting to patch bookmark" id)
+        (let [bookmark (db/patch-bookmark bookmark)]
+          (log/info "User with ID" user-id "patched bookmark" id "successfully")
+          bookmark)))))
+
+(defmutation delete-bookmark
+  [{{user-id :user/id} :request :as env} {:bookmark/keys [id] :as bookmark}]
+  {::pc/params #{:bookmark/id}
+   ::pc/output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/created :bookmark/updated]}
+  (let [bookmark (assoc bookmark :bookmark/user-id user-id)]
+    (if-let [err (m/explain s/bookmark-delete-spec bookmark)]
+      (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
+      (do
+        (log/info "User with id" user-id "is attempting to delete bookmark" id)
+        (let [bookmark (db/delete-bookmark bookmark)]
+          (log/info "User with ID" user-id "deleted bookmark" id "successfully")
+          bookmark)))))

@@ -9,21 +9,25 @@
     [shinsetsu.schema :as s]
     [malli.core :as m]
     [malli.error :as em]
-    [malli.error :as me])
-  (:import [org.postgresql.util PSQLException]
-           [java.util UUID]))
+    [malli.error :as me]
+    [taoensso.timbre :as log])
+  (:import [java.util UUID]))
 
 (def user (atom nil))
 (def user-id (atom nil))
-(def tab (atom nil))
-(def tab-id (atom nil))
+(def tab1 (atom nil))
+(def tab1-id (atom nil))
+(def tab2 (atom nil))
+(def tab2-id (atom nil))
 
 (defn user-tab-setup
   [f]
   (reset! user (user-db/create-user {:user/username "foo" :user/password "bar"}))
   (reset! user-id (:user/id @user))
-  (reset! tab (tab-db/create-tab {:tab/name "baz" :tab/user-id @user-id}))
-  (reset! tab-id (:tab/id @tab))
+  (reset! tab1 (tab-db/create-tab {:tab/name "foo" :tab/user-id @user-id}))
+  (reset! tab1-id (:tab/id @tab1))
+  (reset! tab2 (tab-db/create-tab {:tab/name "baz" :tab/user-id @user-id}))
+  (reset! tab2-id (:tab/id @tab2))
   (f))
 
 (use-fixtures :once db-setup)
@@ -34,20 +38,20 @@
         bookmark-url   "world"
         bookmark       (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
                                                      :bookmark/url     bookmark-url
-                                                     :bookmark/tab-id  @tab-id
+                                                     :bookmark/tab-id  @tab1-id
                                                      :bookmark/user-id @user-id})]
-    (expect (complement nil?) (:bookmark/id bookmark))
+    (expect uuid? (:bookmark/id bookmark))
     (expect bookmark-title (:bookmark/title bookmark))
     (expect bookmark-url (:bookmark/url bookmark))
-    (expect (complement nil?) (:bookmark/created bookmark))
-    (expect (complement nil?) (:bookmark/updated bookmark))
-    (expect @tab-id (:bookmark/tab-id bookmark))
+    (expect inst? (:bookmark/created bookmark))
+    (expect inst? (:bookmark/updated bookmark))
+    (expect @tab1-id (:bookmark/tab-id bookmark))
     (expect @user-id (:bookmark/user-id bookmark))))
 
 (defexpect fail-create-bookmark-without-title
   (try
     (bookmark-db/create-bookmark {:bookmark/url     "foo"
-                                  :bookmark/tab-id  @tab-id
+                                  :bookmark/tab-id  @tab1-id
                                   :bookmark/user-id @user-id})
     (expect false)
     (catch Exception e
@@ -60,7 +64,7 @@
   (try
     (bookmark-db/create-bookmark {:bookmark/title   ""
                                   :bookmark/url     "foo"
-                                  :bookmark/tab-id  @tab-id
+                                  :bookmark/tab-id  @tab1-id
                                   :bookmark/user-id @user-id})
     (expect false)
     (catch Exception e
@@ -72,7 +76,7 @@
 (defexpect fail-create-bookmark-without-url
   (try
     (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                  :bookmark/tab-id  @tab-id
+                                  :bookmark/tab-id  @tab1-id
                                   :bookmark/user-id @user-id})
     (expect false)
     (catch Exception e
@@ -85,7 +89,7 @@
   (try
     (bookmark-db/create-bookmark {:bookmark/title   "foo"
                                   :bookmark/url     ""
-                                  :bookmark/tab-id  @tab-id
+                                  :bookmark/tab-id  @tab1-id
                                   :bookmark/user-id @user-id})
     (expect false)
     (catch Exception e
@@ -123,7 +127,7 @@
   (try
     (bookmark-db/create-bookmark {:bookmark/title  "foo"
                                   :bookmark/url    "bar"
-                                  :bookmark/tab-id @tab-id})
+                                  :bookmark/tab-id @tab1-id})
     (expect false)
     (catch Exception e
       (let [data    (ex-data e)
@@ -144,10 +148,209 @@
         (expect "Invalid bookmark" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["should be a uuid"]}} data)))))
 
+(defexpect normal-patch-bookmark-with-new-title-and-url-and-tab
+  (let [bookmark-title     "hello"
+        bookmark-url       "world"
+        new-bookmark-title "foo"
+        new-bookmark-url   "bar"
+        bookmark           (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
+                                                         :bookmark/url     bookmark-url
+                                                         :bookmark/tab-id  @tab1-id
+                                                         :bookmark/user-id @user-id})
+        bookmark-id        (:bookmark/id bookmark)
+        patched-bookmark   (bookmark-db/patch-bookmark {:bookmark/id      bookmark-id
+                                                        :bookmark/user-id @user-id
+                                                        :bookmark/title   new-bookmark-title
+                                                        :bookmark/url     new-bookmark-url
+                                                        :bookmark/tab-id  @tab2-id})]
+    (expect uuid? (:bookmark/id patched-bookmark))
+    (expect new-bookmark-title (:bookmark/title patched-bookmark))
+    (expect new-bookmark-url (:bookmark/url patched-bookmark))
+    (expect inst? (:bookmark/created patched-bookmark))
+    (expect inst? (:bookmark/updated patched-bookmark))
+    (expect #(.after % (:bookmark/updated bookmark)) (:bookmark/updated patched-bookmark))
+    (expect @tab2-id (:bookmark/tab-id patched-bookmark))
+    (expect @user-id (:bookmark/user-id patched-bookmark))))
+
+(defexpect normal-patch-bookmark-with-new-title
+  (let [bookmark-title     "hello"
+        bookmark-url       "world"
+        new-bookmark-title "foo"
+        bookmark           (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
+                                                         :bookmark/url     bookmark-url
+                                                         :bookmark/tab-id  @tab1-id
+                                                         :bookmark/user-id @user-id})
+        bookmark-id        (:bookmark/id bookmark)
+        patched-bookmark   (bookmark-db/patch-bookmark {:bookmark/id      bookmark-id
+                                                        :bookmark/user-id @user-id
+                                                        :bookmark/title   new-bookmark-title})]
+    (expect uuid? (:bookmark/id patched-bookmark))
+    (expect new-bookmark-title (:bookmark/title patched-bookmark))
+    (expect bookmark-url (:bookmark/url patched-bookmark))
+    (expect inst? (:bookmark/created patched-bookmark))
+    (expect inst? (:bookmark/updated patched-bookmark))
+    (expect #(.after % (:bookmark/updated bookmark)) (:bookmark/updated patched-bookmark))
+    (expect @tab1-id (:bookmark/tab-id patched-bookmark))
+    (expect @user-id (:bookmark/user-id patched-bookmark))))
+
+(defexpect normal-patch-bookmark-with-new-url
+  (let [bookmark-title   "hello"
+        bookmark-url     "world"
+        new-bookmark-url "foo"
+        bookmark         (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
+                                                       :bookmark/url     bookmark-url
+                                                       :bookmark/tab-id  @tab1-id
+                                                       :bookmark/user-id @user-id})
+        bookmark-id      (:bookmark/id bookmark)
+        patched-bookmark (bookmark-db/patch-bookmark {:bookmark/id      bookmark-id
+                                                      :bookmark/user-id @user-id
+                                                      :bookmark/url     new-bookmark-url})]
+    (expect uuid? (:bookmark/id patched-bookmark))
+    (expect bookmark-title (:bookmark/title patched-bookmark))
+    (expect new-bookmark-url (:bookmark/url patched-bookmark))
+    (expect inst? (:bookmark/created patched-bookmark))
+    (expect inst? (:bookmark/updated patched-bookmark))
+    (expect #(.after % (:bookmark/updated bookmark)) (:bookmark/updated patched-bookmark))
+    (expect @tab1-id (:bookmark/tab-id patched-bookmark))
+    (expect @user-id (:bookmark/user-id patched-bookmark))))
+
+(defexpect normal-patch-bookmark-with-new-tab
+  (let [bookmark-title   "hello"
+        bookmark-url     "world"
+        bookmark         (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
+                                                       :bookmark/url     bookmark-url
+                                                       :bookmark/tab-id  @tab1-id
+                                                       :bookmark/user-id @user-id})
+        bookmark-id      (:bookmark/id bookmark)
+        patched-bookmark (bookmark-db/patch-bookmark {:bookmark/id      bookmark-id
+                                                      :bookmark/user-id @user-id
+                                                      :bookmark/tab-id  @tab2-id})]
+    (expect uuid? (:bookmark/id patched-bookmark))
+    (expect bookmark-title (:bookmark/title patched-bookmark))
+    (expect bookmark-url (:bookmark/url patched-bookmark))
+    (expect inst? (:bookmark/created patched-bookmark))
+    (expect inst? (:bookmark/updated patched-bookmark))
+    (expect #(.after % (:bookmark/updated bookmark)) (:bookmark/updated patched-bookmark))
+    (expect @tab2-id (:bookmark/tab-id patched-bookmark))
+    (expect @user-id (:bookmark/user-id patched-bookmark))))
+
+(defexpect fail-patch-bookmark-with-invalid-title
+  (try
+    (let [bookmark-title     "hello"
+          bookmark-url       "world"
+          new-bookmark-title ""
+          bookmark           (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
+                                                           :bookmark/url     bookmark-url
+                                                           :bookmark/tab-id  @tab1-id
+                                                           :bookmark/user-id @user-id})
+          bookmark-id        (:bookmark/id bookmark)]
+      (bookmark-db/patch-bookmark {:bookmark/id      bookmark-id
+                                   :bookmark/user-id @user-id
+                                   :bookmark/title   new-bookmark-title})
+      (expect false))
+    (catch Exception e
+      (let [data    (ex-data e)
+            message (ex-message e)]
+        (expect "Invalid bookmark" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/title ["should be at least 1 characters"]}} data)))))
+
+(defexpect fail-patch-bookmark-with-invalid-url
+  (try
+    (let [bookmark-title   "foo"
+          bookmark-url     "bar"
+          new-bookmark-url ""
+          bookmark         (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
+                                                         :bookmark/url     bookmark-url
+                                                         :bookmark/tab-id  @tab1-id
+                                                         :bookmark/user-id @user-id})
+          bookmark-id      (:bookmark/id bookmark)]
+      (bookmark-db/patch-bookmark {:bookmark/id      bookmark-id
+                                   :bookmark/user-id @user-id
+                                   :bookmark/url     new-bookmark-url})
+      (expect false))
+    (catch Exception e
+      (let [data    (ex-data e)
+            message (ex-message e)]
+        (expect "Invalid bookmark" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/url ["should be at least 1 characters"]}} data)))))
+
+(defexpect fail-patch-bookmark-with-invalid-tab
+  (try
+    (let [bookmark-title "foo"
+          bookmark-url   "bar"
+          new-tab-id     "boo"
+          bookmark       (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
+                                                       :bookmark/url     bookmark-url
+                                                       :bookmark/tab-id  @tab1-id
+                                                       :bookmark/user-id @user-id})
+          bookmark-id    (:bookmark/id bookmark)]
+      (bookmark-db/patch-bookmark {:bookmark/id      bookmark-id
+                                   :bookmark/user-id @user-id
+                                   :bookmark/tab-id  new-tab-id})
+      (expect false))
+    (catch Exception e
+      (let [data    (ex-data e)
+            message (ex-message e)]
+        (expect "Invalid bookmark" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["should be a uuid"]}} data)))))
+
+(defexpect fail-patch-bookmark-with-nonexistent-tab
+  (try
+    (let [bookmark-title "foo"
+          bookmark-url   "bar"
+          new-tab-id     (UUID/randomUUID)
+          bookmark       (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
+                                                       :bookmark/url     bookmark-url
+                                                       :bookmark/tab-id  @tab1-id
+                                                       :bookmark/user-id @user-id})
+          bookmark-id    (:bookmark/id bookmark)]
+      (bookmark-db/patch-bookmark {:bookmark/id      bookmark-id
+                                   :bookmark/user-id @user-id
+                                   :bookmark/tab-id  new-tab-id})
+      (expect false))
+    (catch Exception e
+      (let [data    (ex-data e)
+            message (ex-message e)]
+        (expect "Nonexistent tab" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["nonexistent"]}} data)))))
+
+(defexpect normal-delete-bookmark
+  (let [bookmark         (bookmark-db/create-bookmark {:bookmark/title   "foo"
+                                                       :bookmark/url     "bar"
+                                                       :bookmark/tab-id  @tab1-id
+                                                       :bookmark/user-id @user-id})
+        bookmark-id      (:bookmark/id bookmark)
+        deleted-bookmark (bookmark-db/delete-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})
+        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
+    (expect nil fetched-bookmark)
+    (expect (:bookmark/id bookmark) (:bookmark/id deleted-bookmark))
+    (expect (:bookmark/title bookmark) (:bookmark/title deleted-bookmark))
+    (expect (:bookmark/url bookmark) (:bookmark/url deleted-bookmark))
+    (expect (:bookmark/created bookmark) (:bookmark/created deleted-bookmark))
+    (expect (:bookmark/updated bookmark) (:bookmark/updated deleted-bookmark))))
+
+(defexpect normal-delete-nonexistent-bookmark
+  (let [deleted-bookmark (bookmark-db/delete-bookmark {:bookmark/id (UUID/randomUUID) :bookmark/user-id @user-id})]
+    (expect nil deleted-bookmark)))
+
+(defexpect fail-delete-bookmark-with-invalid-id
+  (try
+    (bookmark-db/delete-bookmark {:bookmark/id "foo" :bookmark/user-id @user-id})
+    (expect false)
+    (catch Exception e
+      (let [data    (ex-data e)
+            message (ex-message e)]
+        (expect "Invalid bookmark" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/id ["should be a uuid"]}} data)))))
+
+(comment
+  (require '[kaocha.repl :as k])
+  (k/run #'shinsetsu.db.bookmark-test/fail-delete-bookmark-with-invalid-id))
+
 (defexpect normal-fetch-bookmark
   (let [bookmark         (bookmark-db/create-bookmark {:bookmark/title   "foo"
                                                        :bookmark/url     "bar"
-                                                       :bookmark/tab-id  @tab-id
+                                                       :bookmark/tab-id  @tab1-id
                                                        :bookmark/user-id @user-id})
         fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id (:bookmark/id bookmark)
                                                       :user/id     @user-id})]
@@ -199,16 +402,16 @@
         bookmark2-url     "world"
         bookmark1         (bookmark-db/create-bookmark {:bookmark/title   bookmark1-title
                                                         :bookmark/url     bookmark1-url
-                                                        :bookmark/tab-id  @tab-id
+                                                        :bookmark/tab-id  @tab1-id
                                                         :bookmark/user-id @user-id})
         bookmark2         (bookmark-db/create-bookmark {:bookmark/title   bookmark2-title
                                                         :bookmark/url     bookmark2-url
-                                                        :bookmark/tab-id  @tab-id
+                                                        :bookmark/tab-id  @tab1-id
                                                         :bookmark/user-id @user-id})
-        fetched-bookmarks (bookmark-db/fetch-bookmarks {:user/id @user-id :tab/id @tab-id})]
+        fetched-bookmarks (bookmark-db/fetch-bookmarks {:user/id @user-id :tab/id @tab1-id})]
     (expect [bookmark1 bookmark2] fetched-bookmarks)))
 
-(defexpect fetch-empty-bookmarks [] (bookmark-db/fetch-bookmarks {:tab/id @tab-id :user/id @user-id}))
+(defexpect fetch-empty-bookmarks [] (bookmark-db/fetch-bookmarks {:tab/id @tab1-id :user/id @user-id}))
 
 (defexpect fail-fetch-bookmarks-without-user-and-tab
   (try
@@ -226,7 +429,7 @@
 
 (defexpect fail-fetch-bookmarks-without-user
   (try
-    (bookmark-db/fetch-bookmarks {:tab/id @tab-id})
+    (bookmark-db/fetch-bookmarks {:tab/id @tab1-id})
     (expect false)
     (catch Exception e
       (let [data    (ex-data e)
@@ -236,7 +439,7 @@
 
 (defexpect fail-fetch-bookmarks-with-invalid-user
   (try
-    (bookmark-db/fetch-bookmarks {:tab/id @tab-id :user/id "foo"})
+    (bookmark-db/fetch-bookmarks {:tab/id @tab1-id :user/id "foo"})
     (expect false)
     (catch Exception e
       (let [data    (ex-data e)

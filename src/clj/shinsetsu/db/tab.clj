@@ -1,7 +1,6 @@
 (ns shinsetsu.db.tab
   (:require
     [shinsetsu.db.db :refer [ds]]
-    [shinsetsu.db.bookmark :as bookmark-db]
     [next.jdbc :as jdbc]
     [honey.sql.helpers :as helpers]
     [honey.sql :as sql]
@@ -9,7 +8,8 @@
     [shinsetsu.schema :as s]
     [malli.error :as me]
     [malli.core :as m])
-  (:import [java.time Instant]))
+  (:import [java.time Instant]
+           [org.postgresql.util PSQLException]))
 
 (defn create-tab
   [{:tab/keys [user-id] :as tab}]
@@ -27,13 +27,12 @@
   (if-let [err (m/explain s/tab-update-spec tab)]
     (throw (ex-info "Invalid tab" {:error-type :invalid-input :error-data (me/humanize err)}))
     (let [tab (assoc tab :tab/updated (Instant/now))]
-      (do
-        (log/info "Patching tab with ID" id)
-        (jdbc/execute-one! ds (-> (helpers/update :tab)
-                                  (helpers/set tab)
-                                  (helpers/where [:= :tab/id id] [:= :tab/user-id user-id])
-                                  (helpers/returning :*)
-                                  (sql/format :dialect :ansi)))))))
+      (log/info "Patching tab with ID" id)
+      (jdbc/execute-one! ds (-> (helpers/update :tab)
+                                (helpers/set tab)
+                                (helpers/where [:= :tab/id id] [:= :tab/user-id user-id])
+                                (helpers/returning :*)
+                                (sql/format :dialect :ansi))))))
 
 (defn delete-tab
   [{:tab/keys [id user-id] :as tab}]
