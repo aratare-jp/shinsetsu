@@ -35,16 +35,14 @@
   [{{user-id :user/id} :request} {:tab/keys [id] :as patch-data}]
   {::pc/params #{:tab/name :tab/password}
    ::pc/output [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated]}
-  (if (empty? patch-data)
-    {:user/id user-id}
-    (let [patch-data (merge patch-data {:tab/user-id user-id})]
-      (if-let [err (m/explain s/tab-update-spec patch-data)]
-        (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
-        (do
-          (log/info "User" user-id "is attempting to update tab" id "info")
-          (let [patched-tab (-> patch-data hash-password db/patch-tab trim-tab)]
-            (log/info "User" user-id "patched tab" id "successfully")
-            patched-tab))))))
+  (let [patch-data (merge patch-data {:tab/user-id user-id})]
+    (if-let [err (m/explain s/tab-update-spec patch-data)]
+      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
+      (do
+        (log/info "User" user-id "is attempting to update tab" id "info")
+        (let [patched-tab (-> patch-data hash-password db/patch-tab trim-tab)]
+          (log/info "User" user-id "patched tab" id "successfully")
+          patched-tab)))))
 
 (defmutation delete-tab
   [{{user-id :user/id} :request} {:tab/keys [id] :as input}]

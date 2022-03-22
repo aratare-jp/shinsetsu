@@ -8,8 +8,7 @@
     [shinsetsu.schema :as s]
     [malli.core :as m]
     [malli.error :as me])
-  (:import [java.time Instant]
-           [org.postgresql.util PSQLException]))
+  (:import [java.time Instant]))
 
 (defn create-tag
   [{:tag/keys [user-id] :as tag}]

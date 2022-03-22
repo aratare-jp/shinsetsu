@@ -4,9 +4,11 @@
     [mount.core :refer [defstate]]
     [shinsetsu.resolvers.tab :as tab-resolver]
     [shinsetsu.resolvers.bookmark :as bookmark-resolver]
+    [shinsetsu.resolvers.tag :as tag-resolver]
     [shinsetsu.mutations.user :as user-mutations]
     [shinsetsu.mutations.tab :as tab-mutations]
     [shinsetsu.mutations.bookmark :as bookmark-mutations]
+    [shinsetsu.mutations.tag :as tag-mutations]
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.connect :as pc]
     [taoensso.timbre :as log])
@@ -27,7 +29,12 @@
    bookmark-resolver/bookmark-resolver
    bookmark-mutations/create-bookmark
    bookmark-mutations/patch-bookmark
-   bookmark-mutations/delete-bookmark])
+   bookmark-mutations/delete-bookmark
+   tag-resolver/tag-resolver
+   tag-resolver/tags-resolver
+   tag-mutations/create-tag
+   tag-mutations/patch-tag
+   tag-mutations/delete-tag])
 
 (defn process-error
   [env err]
