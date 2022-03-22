@@ -6,6 +6,7 @@
     [shinsetsu.db.user :as user-db]
     [shinsetsu.db.bookmark :as bookmark-db]
     [shinsetsu.db.tab :as tab-db]
+    [shinsetsu.db.tag :as tag-db]
     [shinsetsu.parser :refer [protected-parser]]
     [taoensso.timbre :as log]
     [com.wsscode.pathom.core :as pc])
@@ -101,8 +102,50 @@
         actual   (protected-parser {:request {:user/id @user-id}} [{[:tab/id @tab-id] [{:tab/bookmarks bookmark-join}]}])]
     (expect expected actual)))
 
+(defexpect fail-fetch-invalid-bookmarks
+  (let [random-id   "foo"
+        inner-error {:error         true
+                     :error-type    :invalid-input
+                     :error-message "Invalid tab or user ID"
+                     :error-data    {:tab/id ["should be a uuid"]}}
+        expected    {[:tab/id random-id] {:tab/bookmarks ::pc/reader-error}
+                     ::pc/errors         {[[:tab/id random-id] :tab/bookmarks] inner-error}}
+        actual      (protected-parser {:request {:user/id @user-id}} [{[:tab/id random-id] [:tab/bookmarks]}])]
+    (expect expected actual)))
+
+(defexpect normal-fetch-bookmark-tags
+  (let [bookmark    (create-bookmark "foo" "bar" @tab-id @user-id)
+        bookmark-id (:bookmark/id bookmark)
+        tag1        (tag-db/create-tag {:tag/name "foo" :tag/colour "#ffffff" :tag/user-id @user-id})
+        tag1-id     (:tag/id tag1)
+        tag2        (tag-db/create-tag {:tag/name "foo" :tag/colour "#ffffff" :tag/user-id @user-id})
+        tag2-id     (:tag/id tag2)
+        _           (bookmark-db/create-bookmark-tag {:bookmark/id bookmark-id :tag/id tag1-id :user/id @user-id})
+        _           (bookmark-db/create-bookmark-tag {:bookmark/id bookmark-id :tag/id tag2-id :user/id @user-id})
+        expected    {[:bookmark/id bookmark-id] {:bookmark/tags [{:tag/id tag1-id} {:tag/id tag2-id}]}}
+        actual      (protected-parser {:request {:user/id @user-id}} [{[:bookmark/id bookmark-id] [:bookmark/tags]}])]
+    (expect expected actual)))
+
+(defexpect normal-fetch-empty-bookmark-tags
+  (let [bookmark    (create-bookmark "foo" "bar" @tab-id @user-id)
+        bookmark-id (:bookmark/id bookmark)
+        expected    {[:bookmark/id bookmark-id] {:bookmark/tags []}}
+        actual      (protected-parser {:request {:user/id @user-id}} [{[:bookmark/id bookmark-id] [:bookmark/tags]}])]
+    (expect expected actual)))
+
+(defexpect fail-fetch-invalid-bookmark-tags
+  (let [random-id   "foo"
+        inner-error {:error         true
+                     :error-type    :invalid-input
+                     :error-message "Invalid bookmark or user ID"
+                     :error-data    {:bookmark/id ["should be a uuid"]}}
+        expected    {[:bookmark/id random-id] {:bookmark/tags ::pc/reader-error}
+                     ::pc/errors              {[[:bookmark/id random-id] :bookmark/tags] inner-error}}
+        actual      (protected-parser {:request {:user/id @user-id}} [{[:bookmark/id random-id] [:bookmark/tags]}])]
+    (expect expected actual)))
+
 (comment
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.parser :refer [protected-parser]])
   (k/run 'shinsetsu.resolvers.bookmark-test)
-  (k/run #'shinsetsu.resolvers.bookmark-test/fail-fetch-null-bookmark))
+  (k/run #'shinsetsu.resolvers.bookmark-test/fail-fetch-invalid-bookmark))
