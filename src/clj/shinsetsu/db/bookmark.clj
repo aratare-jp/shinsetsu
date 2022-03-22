@@ -6,7 +6,6 @@
     [taoensso.timbre :as log]
     [shinsetsu.db.db :refer [ds]]
     [shinsetsu.schema :as s]
-    [shinsetsu.db.tab :as tab-db]
     [malli.core :as m]
     [malli.error :as me])
   (:import [java.time Instant]
@@ -91,3 +90,60 @@
                             (helpers/from :bookmark)
                             (helpers/where [:= :bookmark/user-id user-id] [:= :bookmark/tab-id tab-id])
                             (sql/format))))))
+
+(defn create-bookmark-tag
+  [{bookmark-id :bookmark/id tag-id :tag/id user-id :user/id :as input}]
+  (if-let [err (m/explain [:map {:closed true} [:bookmark/id :uuid] [:tag/id :uuid] [:user/id :uuid]] input)]
+    (throw (ex-info "Invalid bookmark, tag or user ID" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (try
+      (log/info "Assign tag" tag-id "to bookmark" bookmark-id "for user" user-id)
+      (jdbc/execute-one! ds (-> (helpers/insert-into :bookmark-tag)
+                                (helpers/values [{:bookmark-tag/bookmark-id bookmark-id
+                                                  :bookmark-tag/tag-id      tag-id
+                                                  :bookmark-tag/user-id     user-id}])
+                                (helpers/returning :*)
+                                (sql/format)))
+      (catch PSQLException e
+        (log/error e)
+        (case (.getSQLState e)
+          "23503" (throw (ex-info "Nonexistent bookmark or tag" {:error-type :invalid-input
+                                                                 :error-data {:bookmark/id ["nonexistent"]
+                                                                              :tag/id      ["nonexistent"]}}))
+          (throw (ex-info "Unknown error" {:error-type :unknown} e)))))))
+
+(defn fetch-tags-by-bookmark
+  [{bookmark-id :bookmark/id user-id :user/id :as input}]
+  (if-let [err (m/explain [:map {:closed true} [:bookmark/id :uuid] [:user/id :uuid]] input)]
+    (throw (ex-info "Invalid bookmark or user ID" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (do
+      (log/info "Fetch tags of bookmark" bookmark-id "for user" user-id)
+      (jdbc/execute! ds (-> (helpers/select :*)
+                            (helpers/from :bookmark-tag)
+                            (helpers/where [:= :bookmark-tag/bookmark-id bookmark-id]
+                                           [:= :bookmark-tag/user-id user-id])
+                            (sql/format))))))
+
+(defn fetch-bookmarks-by-tag
+  [{tag-id :tag/id user-id :user/id :as input}]
+  (if-let [err (m/explain [:map {:closed true} [:tag/id :uuid] [:user/id :uuid]] input)]
+    (throw (ex-info "Invalid tag or user ID" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (do
+      (log/info "Fetch bookmarks that have tag" tag-id "for user" user-id)
+      (jdbc/execute! ds (-> (helpers/select :*)
+                            (helpers/from :bookmark-tag)
+                            (helpers/where [:= :bookmark-tag/tag-id tag-id]
+                                           [:= :bookmark-tag/user-id user-id])
+                            (sql/format))))))
+
+(defn delete-bookmark-tag
+  [{bookmark-id :bookmark/id tag-id :tag/id user-id :user/id :as input}]
+  (if-let [err (m/explain [:map {:closed true} [:bookmark/id :uuid] [:tag/id :uuid] [:user/id :uuid]] input)]
+    (throw (ex-info "Invalid bookmark, tag or user ID" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (do
+      (log/info "Delete tag" tag-id "from bookmark" bookmark-id "for user" user-id)
+      (jdbc/execute-one! ds (-> (helpers/delete-from :bookmark-tag)
+                                (helpers/where [:= :bookmark-tag/bookmark-id bookmark-id]
+                                               [:= :bookmark-tag/tag-id tag-id]
+                                               [:= :bookmark-tag/user-id user-id])
+                                (helpers/returning :*)
+                                (sql/format))))))
