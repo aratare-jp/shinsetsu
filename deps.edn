@@ -23,7 +23,7 @@
                           binaryage/devtools          {:mvn/version "1.0.5"}
                           org.clojure/tools.namespace {:mvn/version "1.2.0"}
                           tortue/spy                  {:mvn/version "2.9.0"}}}
-  :test    {:extra-paths   ["test/dev" "test/clj" "test/cljs" "test/resources"]
+  :test    {:extra-paths   ["test/dev" "test/clj" "test/cljs" "test/cljc" "test/resources"]
             :extra-deps    {clj-test-containers/clj-test-containers {:mvn/version "0.5.0"}
                             com.github.seancorfield/expectations    {:mvn/version "2.0.157"}
                             lambdaisland/kaocha                     {:mvn/version "1.63.998"}

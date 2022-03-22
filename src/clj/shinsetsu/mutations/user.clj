@@ -31,14 +31,15 @@
     (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "User with username" username "is attempting to login")
-      (let [user (db/fetch-user-by-username {:user/username username})]
+      (if-let [user (db/fetch-user-by-username {:user/username username})]
         (if (and user (hashers/check password (:user/password user)))
           (do
             (log/info "Credentials correct. Logging in user with ID" (:user/id user))
             {:user/token (create-token user)})
           (do
             (log/warn "User with username" username "attempts to login with a wrong password")
-            (throw (ex-info "Wrong password" {:error-type :wrong-password}))))))))
+            (throw (ex-info "Wrong username or password" {:error-type :wrong-credentials}))))
+        (throw (ex-info "Wrong username or password" {:error-type :wrong-credentials}))))))
 
 (defmutation register
   [_ {:user/keys [username] :as input}]
@@ -49,6 +50,7 @@
     (do
       (log/info "Someone is attempting to register with username" username)
       ;; Can have race condition when multiple user registers.
+      ;; Move to transaction.
       (if (db/fetch-user-by-username {:user/username username})
         (do
           (log/warn "User with username" username "already exists")

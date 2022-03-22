@@ -66,7 +66,36 @@
    [:bookmark/id :uuid]
    [:bookmark/user-id :uuid]])
 
+(def hex-colour-regex #"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$")
+(defn is-hex-colour-str? [s] (not (nil? (re-find hex-colour-regex s))))
+(def hex-colour-spec (m/schema [:and
+                                non-empty-string
+                                [:fn {:error/message "must have hex colour format"} is-hex-colour-str?]]))
+
+(def tag-spec
+  [:map
+   {:closed true}
+   [:tag/name non-empty-string]
+   [:tag/colour {:optional true} hex-colour-spec]
+   [:tag/user-id :uuid]])
+
+(def tag-update-spec
+  [:map
+   {:closed true}
+   [:tag/id :uuid]
+   [:tag/name {:optional true} non-empty-string]
+   [:tag/colour {:optional true} hex-colour-spec]
+   [:tag/user-id :uuid]])
+
+(def tag-delete-spec
+  [:map
+   {:closed true}
+   [:tag/id :uuid]
+   [:tag/user-id :uuid]])
+
 (comment
+  (me/humanize (m/explain non-empty-string ""))
+  (me/humanize (m/explain hex-colour-spec ""))
   (m/explain inst? (java.time.Instant/now))
   (let [uuid (java.util.UUID/randomUUID)
         user {:user/id       uuid

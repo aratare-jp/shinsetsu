@@ -92,6 +92,27 @@
                      (UUID/fromString))]
     (expect (:user/id user) uuid)))
 
+(defexpect fail-login-with-wrong-password
+  (let [username "foo"
+        password "bar"
+        user     (user-db/create-user {:user/username username :user/password (hashers/derive password)})
+        query    [{`(user-mut/login {:user/username ~username :user/password "boo"}) [:user/token]}]
+        actual   (public-parser {} query)
+        expected {`user-mut/login {:error         true
+                                   :error-type    :wrong-credentials
+                                   :error-message "Wrong username or password"}}]
+    (expect expected actual)))
+
+(defexpect fail-login-with-nonexistent-user
+  (let [username "foo"
+        password "bar"
+        query    [{`(user-mut/login {:user/username ~username :user/password ~password}) [:user/token]}]
+        actual   (public-parser {} query)
+        expected {`user-mut/login {:error         true
+                                   :error-type    :wrong-credentials
+                                   :error-message "Wrong username or password"}}]
+    (expect expected actual)))
+
 (defexpect fail-login-without-username
   (let [password "bar"
         query    [{`(user-mut/login {:user/password ~password}) [:user/token]}]
