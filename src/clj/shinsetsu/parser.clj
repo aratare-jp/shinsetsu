@@ -50,8 +50,9 @@
 
 (defn create-parser
   [resolvers]
-  (p/parser {::p/env     {::p/reader        [p/map-reader pc/reader2 pc/ident-reader pc/index-reader]
-                          ::p/process-error process-error}
+  (p/parser {::p/env     {::p/reader                 [p/map-reader pc/reader2 pc/ident-reader pc/index-reader]
+                          ::p/process-error          process-error
+                          ::pc/mutation-join-globals [:tempids]}
              ::p/mutate  pc/mutate
              ::p/plugins [(pc/connect-plugin {::pc/register resolvers})
                           p/error-handler-plugin

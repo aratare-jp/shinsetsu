@@ -18,6 +18,12 @@
    [:user/username {:optional true} non-empty-string]
    [:user/password {:optional true} non-empty-string]])
 
+(def tab-form-spec
+  [:map
+   [:tab/name non-empty-string]
+   [:tab/password {:optional true} non-empty-string]
+   [:tab/is-protected? {:optional true} :boolean]])
+
 (def tab-spec
   [:map
    {:closed true}

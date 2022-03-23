@@ -1,7 +1,7 @@
 (ns shinsetsu.ui.main
   (:require
     [shinsetsu.ui.elastic :as e]
-    [shinsetsu.mutations :as api]
+    [shinsetsu.ui.tab :as tab-ui]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.dom :as dom :refer [div label input form button h1 h2 nav h5 p]]
     [com.fulcrologic.fulcro.mutations :as m]
@@ -10,120 +10,51 @@
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.data-fetch :as df]
     [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
+    [com.fulcrologic.fulcro.algorithms.merge :as merge]
     [clojure.string :as string]
-    [taoensso.timbre :as log]))
-
-(defn tab-valid?
-  [{:ui/keys [name]} field]
-  (let [not-empty? (complement empty?)]
-    (case field
-      :ui/name (not-empty? name)
-      false)))
-
-(def tab-validator (fs/make-validator tab-valid?))
-
-(defsc TabModal
-  [this {:ui/keys [id name created updated] :as props}]
-  {:ident         (fn [] [:component/id ::tab-modal])
-   :query         [:ui/id :ui/name :ui/created :ui/updated fs/form-config-join]
-   :form-fields   #{:ui/name}
-   :initial-state {:ui/name ""}
-   :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config TabModal data-tree))}
-  (let [on-name-changed (fn [e] (m/set-string! this :ui/name :event e))
-        on-blur         (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
-        name-invalid?   (= :invalid (tab-validator props :ui/name))
-        tab-invalid?    name-invalid?
-        on-tab-save     (fn [e]
-                          (evt/prevent-default! e)
-                          (comp/transact! this [(api/create-tab {:tab/name name})]))
-        on-clear        (fn [e]
-                          (evt/prevent-default! e)
-                          (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})]))]
-    (div :.modal.fade#tab-modal {:tabIndex -1}
-         (div :.modal-dialog.modal-dialog-centered.modal-dialog-scrollable
-              (div :.modal-content
-                   (form
-                     (div :.modal-header
-                          (h5 :.modal-title#tab-modal-label (str (if id "Edit" "Create") " tab"))
-                          (button :.btn-close {:type            "button"
-                                               :data-bs-dismiss "modal"}))
-                     (div :.modal-body
-                          (div :.form-floating.mb-3
-                               (input :#tab-name.form-control.form-control-lg
-                                      {:classes     [(if name-invalid? "is-invalid")]
-                                       :value       name
-                                       :onChange    on-name-changed
-                                       :onBlur      #(on-blur :ui/name)
-                                       :placeholder "Name"})
-                               (label :.form-label {:htmlFor "tab-name"} "Name")))
-                     (div :.modal-footer
-                          (button :.btn.btn-secondary.btn-lg {:onClick on-clear} "Clear")
-                          (button :.btn.btn-primary.btn-lg {:type     "submit"
-                                                            :onClick  on-tab-save
-                                                            :disabled tab-invalid?} "Save"))))))))
-
-(def ui-tab-modal (comp/factory TabModal))
-
-(defsc TabBookmark
-  [this {:bookmark/keys [id title url created updated tab-id] :as bookmark}]
-  {:ident (fn [] [:bookmark/id id])
-   :query [:bookmark/tab-id :bookmark/id :bookmark/title :bookmark/url :bookmark/created :bookmark/updated]}
-  (div title))
-
-(def ui-tab-bookmark (comp/factory TabBookmark {:keyfn :bookmark/id}))
-
-(defsc TabBody
-  [this {:tab/keys [id bookmarks] :as props}]
-  {:ident             :tab/id
-   :query             [:tab/id :tab/name {:tab/bookmarks (comp/get-query TabBookmark)}]
-   :initial-state     {:tab/bookmarks []}
-   :componentDidMount (fn [this]
-                        (let [props (comp/props this)
-                              id    (:tab/id props)]
-                          ;; TODO: Right now this means data is loaded every time the tab is selected -> performance issue
-                          (df/load! this [:tab/id id] TabBody)))}
-  (map ui-tab-bookmark bookmarks))
-
-(def ui-tab-body (comp/factory TabBody {:keyfn :tab/id}))
-
-(defsc TabHeaders
-  [_ _]
-  {:ident :tab/id
-   :query [:tab/id :tab/name]})
+    [taoensso.timbre :as log]
+    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]))
 
 (defsc Main
-  [this {tabs :user/tabs :ui/keys [selected-tab-idx loading?]}]
+  [this {tabs :user/tabs :ui/keys [selected-tab-idx loading? show-modal? tab-modal-data]}]
   {:ident         (fn [] [:component/id ::main])
    :route-segment ["main"]
-   :query         [{:user/tabs (comp/get-query TabBody)}
+   :query         [{:user/tabs (comp/get-query tab-ui/TabBody)}
                    :ui/selected-tab-idx
-                   :ui/loading?]
-   :initial-state (fn [_] {:user/tabs           []
-                           ;; FIXME: Do proper loading.
-                           :ui/loading?         false
-                           :ui/tab-modal        (comp/get-initial-state TabModal)
-                           :ui/selected-tab-idx 0})
+                   :ui/loading?
+                   :ui/show-modal?
+                   {:ui/tab-modal-data (comp/get-query tab-ui/TabModal)}]
+   :initial-state (fn [_]
+                    {:user/tabs           []
+                     ;; FIXME: Do proper loading.
+                     :ui/loading?         false
+                     :ui/selected-tab-idx 0
+                     :ui/show-modal?      false
+                     :ui/tab-modal-data   (comp/get-initial-state tab-ui/TabModal)})
    :will-enter    (fn [app _]
-                    (dr/route-deferred
-                      [:component/id ::main]
-                      #(df/load! app :user/tabs TabHeaders {:target               (targeting/append-to [:component/id ::main :user/tabs])
-                                                            :post-mutation        `dr/target-ready
-                                                            :post-mutation-params {:target [:component/id ::main]}})))}
-  (let [ui-tabs (map-indexed (fn [i {:tab/keys [id name]}]
-                               {:id         id
-                                :label      name
-                                :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
-                                :isSelected (= i selected-tab-idx)})
-                             tabs)]
-    (e/page-template {:pageHeader {:pageTitle      "Tabs"
-                                   :rightSideItems [(e/button {:fill true} "Create new tab")]
-                                   :tabs           ui-tabs}})
-    (if (empty? tabs)
-      (e/empty-prompt {:title   (h2 "It seems like you don't have any tab at the moment.")
-                       :body (p "Start enjoying Shinsetsu by add or import your bookmarks")
-                       :actions [(e/button {:color "primary" :fill true} "Create your first tab here!")
-                                 (e/button {:color "primary" :fill true} "Import your bookmarks here!")]})
-      (let [selected-tab (nth tabs selected-tab-idx)]
-        (ui-tab-body selected-tab)))))
-
-(def ui-main (comp/factory Main))
+                    (let [load-target         (targeting/append-to [:component/id ::main :user/tabs])
+                          target-ready-params {:target [:component/id ::main]}]
+                      (dr/route-deferred
+                        [:component/id ::main]
+                        #(df/load! app :user/tabs tab-ui/TabHeaders {:target               load-target
+                                                                     :post-mutation        `dr/target-ready
+                                                                     :post-mutation-params target-ready-params}))))}
+  (if show-modal?
+    (let [on-close (fn [] (m/set-value! this :ui/show-modal? false))]
+      (tab-ui/ui-tab-modal (comp/computed tab-modal-data {:on-close on-close})))
+    (let [ui-tabs (map-indexed (fn [i {:tab/keys [id name]}]
+                                 {:id         id
+                                  :label      name
+                                  :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
+                                  :isSelected (= i selected-tab-idx)}) tabs)]
+      (e/page-template {:pageHeader {:pageTitle      "Welcome!"
+                                     :rightSideItems [(e/button {:fill    true
+                                                                 :onClick #(m/set-value! this :ui/show-modal? true)}
+                                                        "Create new tab")
+                                                      (e/button {:fill true} "Import bookmarks")]
+                                     :tabs           ui-tabs}}
+        (if (empty? tabs)
+          (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
+                           :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
+          (let [selected-tab (nth tabs selected-tab-idx)]
+            (tab-ui/ui-tab-body selected-tab)))))))

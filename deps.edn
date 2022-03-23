@@ -34,7 +34,7 @@
             :ns-default vlaaad.reveal
             :exec-fn    repl
             :main-opts  ["-m" "vlaaad.reveal" "repl" ":always-on-top" "true"]}
-  :migrate {:extra-deps {com.github.paulbutcher/clj-migratus {:git/tag "v1.0.2" :git/sha "5ef41c6"}}
+  :migrate {:extra-deps {com.github.paulbutcher/clj-migratus {:git/tag "v1.0.3" :git/sha "46a3ac1"}}
             :main-opts  ["-m" "clj-migratus"]}
   :build   {:deps       {io.github.seancorfield/build-clj {:git/tag "v0.6.7" :git/sha "22c2d09" :deps/root "slim"}}
             :ns-default build}}}
