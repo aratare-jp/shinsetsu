@@ -16,7 +16,8 @@
                             EuiPageHeader
                             EuiPageBody
                             EuiPageContent
-                            EuiPageContentBody]]))
+                            EuiPageContentBody
+                            EuiLoadingSpinner]]))
 
 (def provider (ri/react-factory EuiProvider))
 (def button (ri/react-factory EuiButton))
@@ -34,3 +35,4 @@
 (def page-body (ri/react-factory EuiPageBody))
 (def page-content (ri/react-factory EuiPageContent))
 (def page-content-body (ri/react-factory EuiPageContentBody))
+(def loading-spinner (ri/react-factory EuiLoadingSpinner))
