@@ -8,4 +8,6 @@
                                        :entries [shinsetsu.client]}}
                    :devtools   {:after-load shinsetsu.client/refresh
                                 :preloads   [com.fulcrologic.fulcro.inspect.preload
-                                             com.fulcrologic.fulcro.inspect.dom-picker-preload]}}}}
+                                             com.fulcrologic.fulcro.inspect.dom-picker-preload]}
+                   :js-options {:js-provider    :external
+                                :external-index "target/index.js"}}}}
