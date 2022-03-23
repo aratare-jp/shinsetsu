@@ -3,7 +3,7 @@
     [shinsetsu.ui.elastic :as e]
     [shinsetsu.ui.login :refer [Login]]
     [shinsetsu.ui.main :refer [Main]]
-    [com.fulcrologic.fulcro.dom :refer [div]]
+    [com.fulcrologic.fulcro.dom :refer [div h2 p]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :refer [defrouter]]
     [com.fulcrologic.fulcro.mutations :as m]))
@@ -12,9 +12,16 @@
   [_ {:keys [current-state]}]
   {:router-targets [Login Main]}
   (case current-state
-    :pending (div "Loading...")
-    :failed (div "Loading failed.")
-    (div "Unknown route")))
+    :pending (e/empty-prompt {:icon  (e/loading-spinner {:size "xxl"})
+                              :title (h2 "Loading...")})
+    :failed (e/empty-prompt {:iconType "alert"
+                             :color    "danger"
+                             :title    (h2 "Unable to load your dashboard")
+                             :body     (p "There has been an error loading the dashboard. Please try again later.")})
+    (e/empty-prompt {:iconType "alert"
+                     :color    "danger"
+                     :title    (h2 "Unknown error")
+                     :body     (p "Unknown error encountered. There has been something fishy going on here!")})))
 
 (def ui-root-router (comp/factory RootRouter))
 

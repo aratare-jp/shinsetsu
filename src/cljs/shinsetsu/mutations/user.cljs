@@ -13,10 +13,15 @@
   [_]
   (auth [_] true)
   (ok-action
-    [{:keys [result]}]
-    (let [token (-> result (get-in [:body `login :token]))]
-      (reset! login-token token)
-      (dr/change-route app ["main"])))
+    [{:keys [result state ref]}]
+    (if-let [token (-> result (get-in [:body `login :user/token]))]
+      (do
+        (reset! login-token token)
+        (dr/change-route app ["main"]))
+      (do
+        (log/error "Invalid token returned")
+        (swap! state assoc-in (conj ref :ui/loading?) false)
+        (swap! state assoc-in (conj ref :ui/error-type) :invalid-token))))
   (error-action
     [{:keys [state ref] {body :body} :result}]
     (let [{:keys [error-type]} (get body `login)]
@@ -28,10 +33,15 @@
   [_]
   (auth [_] true)
   (ok-action
-    [{:keys [result]}]
-    (let [token (-> result (get-in [:body `register :token]))]
-      (reset! login-token token)
-      (dr/change-route app ["main"])))
+    [{:keys [result state ref]}]
+    (if-let [token (-> result (get-in [:body `register :user/token]))]
+      (do
+        (reset! login-token token)
+        (dr/change-route app ["main"]))
+      (do
+        (log/error "Invalid token returned")
+        (swap! state assoc-in (conj ref :ui/loading?) false)
+        (swap! state assoc-in (conj ref :ui/error-type) :invalid-token))))
   (error-action
     [{:keys [state ref] {body :body} :result}]
     (let [{:keys [error-type]} (get body `register)]

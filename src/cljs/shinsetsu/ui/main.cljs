@@ -3,7 +3,7 @@
     [shinsetsu.ui.elastic :as e]
     [shinsetsu.mutations :as api]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
-    [com.fulcrologic.fulcro.dom :as dom :refer [div label input form button h1 h2 nav h5]]
+    [com.fulcrologic.fulcro.dom :as dom :refer [div label input form button h1 h2 nav h5 p]]
     [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
@@ -92,13 +92,13 @@
    :query [:tab/id :tab/name]})
 
 (defsc Main
-  [this {tabs :tab/tabs :ui/keys [selected-tab-idx loading?]}]
+  [this {tabs :user/tabs :ui/keys [selected-tab-idx loading?]}]
   {:ident         (fn [] [:component/id ::main])
    :route-segment ["main"]
-   :query         [{:tab/tabs (comp/get-query TabBody)}
+   :query         [{:user/tabs (comp/get-query TabBody)}
                    :ui/selected-tab-idx
                    :ui/loading?]
-   :initial-state (fn [_] {:tab/tabs            []
+   :initial-state (fn [_] {:user/tabs           []
                            ;; FIXME: Do proper loading.
                            :ui/loading?         false
                            :ui/tab-modal        (comp/get-initial-state TabModal)
@@ -106,21 +106,24 @@
    :will-enter    (fn [app _]
                     (dr/route-deferred
                       [:component/id ::main]
-                      #(df/load! app :tab/tabs TabHeaders {:target               (targeting/append-to [:component/id ::main :tab/tabs])
-                                                           :post-mutation        `dr/target-ready
-                                                           :post-mutation-params {:target [:component/id ::main]}})))}
-  (if loading?
-    (div "Still loading!")
-    (let [ui-tabs      (map-indexed (fn [i {:tab/keys [id name]}]
-                                      {:id         id
-                                       :label      name
-                                       :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
-                                       :isSelected (= i selected-tab-idx)})
-                                    tabs)
-          selected-tab (nth tabs selected-tab-idx)]
-      (e/page-template {:pageHeader {:pageTitle      "Tabs"
-                                     :rightSideItems [(e/button {:fill true} "Create new tab")]
-                                     :tabs           ui-tabs}}
+                      #(df/load! app :user/tabs TabHeaders {:target               (targeting/append-to [:component/id ::main :user/tabs])
+                                                            :post-mutation        `dr/target-ready
+                                                            :post-mutation-params {:target [:component/id ::main]}})))}
+  (let [ui-tabs (map-indexed (fn [i {:tab/keys [id name]}]
+                               {:id         id
+                                :label      name
+                                :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
+                                :isSelected (= i selected-tab-idx)})
+                             tabs)]
+    (e/page-template {:pageHeader {:pageTitle      "Tabs"
+                                   :rightSideItems [(e/button {:fill true} "Create new tab")]
+                                   :tabs           ui-tabs}})
+    (if (empty? tabs)
+      (e/empty-prompt {:title   (h2 "It seems like you don't have any tab at the moment.")
+                       :body (p "Start enjoying Shinsetsu by add or import your bookmarks")
+                       :actions [(e/button {:color "primary" :fill true} "Create your first tab here!")
+                                 (e/button {:color "primary" :fill true} "Import your bookmarks here!")]})
+      (let [selected-tab (nth tabs selected-tab-idx)]
         (ui-tab-body selected-tab)))))
 
 (def ui-main (comp/factory Main))
