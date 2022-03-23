@@ -27,12 +27,14 @@
    tab-mutations/delete-tab
    bookmark-resolver/bookmarks-resolver
    bookmark-resolver/bookmark-resolver
-   bookmark-resolver/bookmark-tag-resolver
    bookmark-mutations/create-bookmark
    bookmark-mutations/patch-bookmark
    bookmark-mutations/delete-bookmark
+   bookmark-mutations/create-bookmark-tag
+   bookmark-mutations/delete-bookmark-tag
    tag-resolver/tag-resolver
    tag-resolver/tags-resolver
+   tag-resolver/bookmark-tag-resolver
    tag-mutations/create-tag
    tag-mutations/patch-tag
    tag-mutations/delete-tag])

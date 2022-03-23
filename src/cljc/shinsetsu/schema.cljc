@@ -93,6 +93,15 @@
    [:tag/id :uuid]
    [:tag/user-id :uuid]])
 
+(def bookmark-tag-spec
+  [:map
+   {:closed true}
+   [:bookmark/id :uuid]
+   [:tag/id :uuid]
+   [:user/id :uuid]])
+
+(def bookmark-tag-delete-spec bookmark-tag-spec)
+
 (comment
   (me/humanize (m/explain non-empty-string ""))
   (me/humanize (m/explain hex-colour-spec ""))

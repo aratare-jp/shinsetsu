@@ -93,7 +93,7 @@
 
 (defn create-bookmark-tag
   [{bookmark-id :bookmark/id tag-id :tag/id user-id :user/id :as input}]
-  (if-let [err (m/explain [:map {:closed true} [:bookmark/id :uuid] [:tag/id :uuid] [:user/id :uuid]] input)]
+  (if-let [err (m/explain s/bookmark-tag-spec input)]
     (throw (ex-info "Invalid bookmark, tag or user ID" {:error-type :invalid-input :error-data (me/humanize err)}))
     (try
       (log/info "Assign tag" tag-id "to bookmark" bookmark-id "for user" user-id)
@@ -137,7 +137,7 @@
 
 (defn delete-bookmark-tag
   [{bookmark-id :bookmark/id tag-id :tag/id user-id :user/id :as input}]
-  (if-let [err (m/explain [:map {:closed true} [:bookmark/id :uuid] [:tag/id :uuid] [:user/id :uuid]] input)]
+  (if-let [err (m/explain s/bookmark-tag-delete-spec input)]
     (throw (ex-info "Invalid bookmark, tag or user ID" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Delete tag" tag-id "from bookmark" bookmark-id "for user" user-id)
