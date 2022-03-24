@@ -1,8 +1,6 @@
 (ns shinsetsu.ui.elastic
   (:require
     [com.fulcrologic.fulcro.algorithms.react-interop :as ri]
-    ["@elastic/eui/es/components/icon/icon" :refer [appendIconComponentCache]]
-    ["@elastic/eui/es/components/icon/assets/cross" :as cross]
     ["@elastic/eui" :refer [EuiProvider
                             EuiButton
                             EuiForm
@@ -27,13 +25,11 @@
                             EuiModalFooter
                             EuiIcon]]))
 
-(appendIconComponentCache {:cross cross})
-
 (def provider (ri/react-factory EuiProvider))
 (def empty-prompt (ri/react-factory EuiEmptyPrompt))
 (def spacer (ri/react-factory EuiSpacer))
 (def loading-spinner (ri/react-factory EuiLoadingSpinner))
-#_(def icon (ri/react-factory EuiIcon))
+(def icon (ri/react-factory EuiIcon))
 
 ;; Form
 (def form (ri/react-factory EuiForm))

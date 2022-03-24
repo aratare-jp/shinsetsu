@@ -14,12 +14,11 @@
   (remote [_] true)
   (ok-action
     [{{{tab `create-tab} :body} :result :keys [state ref component] :as env}]
-    (js/console.log env)
     (let [TabBody (comp/registry-key->class `shinsetsu.ui.tab/TabBody)
           Main    (comp/registry-key->class `shinsetsu.ui.main/Main)]
       (comp/transact! component [(fs/reset-form! {:form-ident (comp/get-ident component)})])
       (merge/merge-component! app TabBody tab :append (conj (comp/get-ident Main {}) :user/tabs))
-      (swap! state assoc-in (conj (comp/get-ident Main {}) :ui/loading?) false)
+      (swap! state assoc-in (conj ref :ui/loading?) false)
       (swap! state assoc-in (conj (comp/get-ident Main {}) :ui/show-modal?) false)))
   (error-action
     [{:keys [state ref] {body :body} :result}]

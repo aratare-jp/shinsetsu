@@ -21,8 +21,8 @@
 (def protected-resolvers
   [user-mutations/patch-user
    tab-resolver/tabs-resolver
-   tab-resolver/tab-resolver
    tab-mutations/create-tab
+   tab-mutations/fetch-tab
    tab-mutations/patch-tab
    tab-mutations/delete-tab
    bookmark-resolver/bookmarks-resolver

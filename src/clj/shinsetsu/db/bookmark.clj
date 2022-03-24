@@ -82,7 +82,7 @@
 
 (defn fetch-bookmarks
   [{tab-id :tab/id user-id :user/id :as input}]
-  (if-let [err (m/explain [:map {:closed true} [:tab/id :uuid] [:user/id :uuid]] input)]
+  (if-let [err (m/explain [:map {:closed true} [:bookmark/tab-id :uuid] [:bookmark/user-id :uuid]] input)]
     (throw (ex-info "Invalid tab or user ID" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Fetch all bookmarks in tab" tab-id "for user" user-id)

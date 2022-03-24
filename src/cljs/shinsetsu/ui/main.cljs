@@ -3,7 +3,7 @@
     [shinsetsu.ui.elastic :as e]
     [shinsetsu.ui.tab :as tab-ui]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
-    [com.fulcrologic.fulcro.dom :as dom :refer [div label input form button h1 h2 nav h5 p]]
+    [com.fulcrologic.fulcro.dom :as dom :refer [div label input form button h1 h2 nav h5 p span]]
     [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
@@ -48,10 +48,13 @@
                                   :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
                                   :isSelected (= i selected-tab-idx)}) tabs)]
       (e/page-template {:pageHeader {:pageTitle      "Welcome!"
-                                     :rightSideItems [(e/button {:fill    true
-                                                                 :onClick #(m/set-value! this :ui/show-modal? true)}
+                                     :rightSideItems [(e/button {:fill     true
+                                                                 :onClick  #(m/set-value! this :ui/show-modal? true)
+                                                                 :iconType "plus"}
                                                         "Create new tab")
-                                                      (e/button {:fill true} "Import bookmarks")]
+                                                      (e/button {:fill     true
+                                                                 :iconType "importAction"}
+                                                        "Import bookmarks")]
                                      :tabs           ui-tabs}}
         (if (empty? tabs)
           (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")

@@ -19,3 +19,6 @@
   []
   (server/stop-app)
   (refresh :after 'user/start))
+
+(comment
+  (start))

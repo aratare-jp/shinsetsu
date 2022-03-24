@@ -26,24 +26,15 @@
 
 (def tab-join [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated])
 
-(defexpect normal-create-tab-with-protection
-  (let [query    [{`(tab-mut/create-tab {:tab/name "foo" :tab/password "bar" :tab/is-protected? true}) tab-join}]
-        result   (protected-parser {:request {:user/id @user-id}} query)
-        actual   (get result `tab-mut/create-tab)
-        tab-id   (:tab/id actual)
-        expected (-> (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})
-                     (assoc :tab/is-protected? true)
-                     (dissoc :tab/password)
-                     (dissoc :tab/user-id))]
-    (expect expected actual)))
+;; CREATE
 
-(defexpect normal-create-tab-without-protection
+(defexpect normal-create-tab-with-password
   (let [query    [{`(tab-mut/create-tab {:tab/name "foo" :tab/password "bar"}) tab-join}]
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   (get result `tab-mut/create-tab)
         tab-id   (:tab/id actual)
-        expected (-> (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})
-                     (assoc :tab/is-protected? false)
+        expected (-> (tab-db/fetch-tab {:tab/id tab-id :tab/user-id @user-id})
+                     (assoc :tab/is-protected? true)
                      (dissoc :tab/password)
                      (dissoc :tab/user-id))]
     (expect expected actual)))
@@ -53,124 +44,173 @@
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   (get result `tab-mut/create-tab)
         tab-id   (:tab/id actual)
-        expected (-> (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})
+        expected (-> (tab-db/fetch-tab {:tab/id tab-id :tab/user-id @user-id})
                      (assoc :tab/is-protected? false)
                      (dissoc :tab/password)
                      (dissoc :tab/user-id))]
     (expect expected actual)))
 
-(defexpect fail-create-tab-without-name
+(defexpect fail-to-create-tab-without-name
   (let [query    [{`(tab-mut/create-tab {}) tab-join}]
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   result
         expected {`tab-mut/create-tab {:error         true
-                                       :error-message "Invalid tab"
+                                       :error-message "Invalid input"
                                        :error-type    :invalid-input
                                        :error-data    {:tab/name ["missing required key"]}}}]
     (expect expected actual)))
 
-(defexpect fail-create-tab-with-invalid-name
+(defexpect fail-to-create-tab-with-invalid-name
   (let [query    [{`(tab-mut/create-tab {:tab/name ""}) tab-join}]
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   result
         expected {`tab-mut/create-tab {:error         true
-                                       :error-message "Invalid tab"
+                                       :error-message "Invalid input"
                                        :error-type    :invalid-input
                                        :error-data    {:tab/name ["should be at least 1 characters"]}}}]
     (expect expected actual)))
 
-(defexpect fail-create-tab-with-invalid-password
-  (let [query    [{`(tab-mut/create-tab {:tab/name "foo" :tab/password ""}) tab-join}]
-        result   (protected-parser {:request {:user/id @user-id}} query)
-        actual   result
-        expected {`tab-mut/create-tab {:error         true
-                                       :error-message "Invalid tab" :error-type :invalid-input
-                                       :error-data    {:tab/password ["should be at least 1 characters"]}}}]
+;; FETCH
+
+(defexpect normal-fetch-tab-with-password
+  (let [tab-password "bar"
+        tab          (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
+                         (update :tab/password hashers/derive)
+                         tab-db/create-tab)
+        tab-id       (:tab/id tab)
+        query        [{`(tab-mut/fetch-tab {:tab/id ~tab-id :tab/password ~tab-password}) tab-join}]
+        actual       (protected-parser {:request {:user/id @user-id}} query)
+        expected     {`tab-mut/fetch-tab (-> tab
+                                             (assoc :tab/is-protected? true)
+                                             (dissoc :tab/password)
+                                             (dissoc :tab/user-id))}]
     (expect expected actual)))
 
-(defexpect fail-create-tab-with-invalid-protection
-  (let [query    [{`(tab-mut/create-tab {:tab/name "foo" :tab/password "bar" :tab/is-protected? "boo"}) tab-join}]
+(defexpect normal-fetch-tab-without-password
+  (let [tab      (tab-db/create-tab {:tab/name "foo" :tab/user-id @user-id})
+        tab-id   (:tab/id tab)
+        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id}) tab-join}]
+        result   (protected-parser {:request {:user/id @user-id}} query)
+        actual   (get result `tab-mut/fetch-tab)
+        expected (-> tab
+                     (assoc :tab/is-protected? false)
+                     (dissoc :tab/password)
+                     (dissoc :tab/user-id))]
+    (expect expected actual)))
+
+(defexpect normal-fetch-unprotected-tab-with-password
+  (let [tab      (tab-db/create-tab {:tab/name "foo" :tab/user-id @user-id})
+        tab-id   (:tab/id tab)
+        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id :tab/password "bar"}) tab-join}]
+        result   (protected-parser {:request {:user/id @user-id}} query)
+        actual   (get result `tab-mut/fetch-tab)
+        expected (-> tab
+                     (assoc :tab/is-protected? false)
+                     (dissoc :tab/password)
+                     (dissoc :tab/user-id))]
+    (expect expected actual)))
+
+(defexpect fail-to-fetch-tab-with-wrong-password
+  (let [tab      (-> {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id}
+                     (update :tab/password hashers/derive)
+                     tab-db/create-tab)
+        tab-id   (:tab/id tab)
+        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id :tab/password "baz"}) tab-join}]
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   result
-        expected {`tab-mut/create-tab {:error         true
-                                       :error-message "Invalid tab" :error-type :invalid-input
-                                       :error-data    {:tab/is-protected? ["should be a boolean"]}}}]
+        expected {`tab-mut/fetch-tab {:error         true
+                                      :error-message "Invalid input"
+                                      :error-type    :wrong-password}}]
     (expect expected actual)))
+
+(defexpect fail-to-fetch-tab-with-no-password
+  (let [tab      (-> {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id}
+                     (update :tab/password hashers/derive)
+                     tab-db/create-tab)
+        tab-id   (:tab/id tab)
+        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id}) tab-join}]
+        result   (protected-parser {:request {:user/id @user-id}} query)
+        actual   result
+        expected {`tab-mut/fetch-tab {:error         true
+                                      :error-message "Invalid input"
+                                      :error-type    :wrong-password}}]
+    (expect expected actual)))
+
+(defexpect fail-to-fetch-tab-with-empty-password
+  (let [tab      (-> {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id}
+                     (update :tab/password hashers/derive)
+                     tab-db/create-tab)
+        tab-id   (:tab/id tab)
+        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id :tab/password ""}) tab-join}]
+        result   (protected-parser {:request {:user/id @user-id}} query)
+        actual   result
+        expected {`tab-mut/fetch-tab {:error         true
+                                      :error-message "Invalid input"
+                                      :error-type    :wrong-password}}]
+    (expect expected actual)))
+
+;; PATCH
 
 (defexpect normal-patch-tab-with-new-name-and-password
-  (let [tab              (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
-        tab-id           (:tab/id tab)
-        new-tab-name     "fim"
-        new-tab-password "baz"
-        query            [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/name ~new-tab-name :tab/password ~new-tab-password}) tab-join}]
-        result           (protected-parser {:request {:user/id @user-id}} query)
-        patched-tab      (get result `tab-mut/patch-tab)
-        fetched-tab      (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})]
+  (let [tab         (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
+        tab-id      (:tab/id tab)
+        new-name    "fim"
+        new-pwd     "baz"
+        query       [{`(tab-mut/patch-tab #:tab{:id ~tab-id :name ~new-name :password ~new-pwd}) tab-join}]
+        result      (protected-parser {:request {:user/id @user-id}} query)
+        patched-tab (get result `tab-mut/patch-tab)
+        fetched-tab (tab-db/fetch-tab {:tab/id tab-id :tab/user-id @user-id})]
     (expect tab-id (:tab/id patched-tab))
-    (expect new-tab-name (:tab/name patched-tab))
-    (expect #(hashers/check new-tab-password %) (:tab/password fetched-tab))
-    (expect (not (:tab/is-protected? patched-tab)))
+    (expect new-name (:tab/name patched-tab))
+    (expect #(hashers/check new-pwd %) (:tab/password fetched-tab))
+    (expect true (:tab/is-protected? patched-tab))
     (expect inst? (:tab/created patched-tab))
     (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))))
 
 (defexpect normal-patch-tab-with-new-name
-  (let [tab          (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
-        tab-id       (:tab/id tab)
-        new-tab-name "fim"
-        query        [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/name ~new-tab-name}) tab-join}]
-        result       (protected-parser {:request {:user/id @user-id}} query)
-        patched-tab  (get result `tab-mut/patch-tab)]
+  (let [tab         (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
+        tab-id      (:tab/id tab)
+        new-name    "fim"
+        query       [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/name ~new-name}) tab-join}]
+        result      (protected-parser {:request {:user/id @user-id}} query)
+        patched-tab (get result `tab-mut/patch-tab)]
     (expect tab-id (:tab/id patched-tab))
-    (expect new-tab-name (:tab/name patched-tab))
-    (expect (not (:tab/is-protected? patched-tab)))
+    (expect new-name (:tab/name patched-tab))
+    (expect true (:tab/is-protected? patched-tab))
     (expect inst? (:tab/created patched-tab))
     (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))))
 
 (defexpect normal-patch-tab-with-new-password
-  (let [tab              (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
-        tab-id           (:tab/id tab)
-        new-tab-password "fim"
-        query            [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/password ~new-tab-password}) tab-join}]
-        result           (protected-parser {:request {:user/id @user-id}} query)
-        patched-tab      (get result `tab-mut/patch-tab)
-        fetched-tab      (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})]
-    (expect tab-id (:tab/id patched-tab))
-    (expect (:tab/name tab) (:tab/name patched-tab))
-    (expect #(hashers/check new-tab-password %) (:tab/password fetched-tab))
-    (expect (not (:tab/is-protected? patched-tab)))
-    (expect inst? (:tab/created patched-tab))
-    (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))))
-
-(defexpect normal-patch-tab-with-protection
-  (let [tab         (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+  (let [tab         (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
         tab-id      (:tab/id tab)
-        query       [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/is-protected? true}) tab-join}]
+        new-pwd     "fim"
+        query       [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/password ~new-pwd}) tab-join}]
         result      (protected-parser {:request {:user/id @user-id}} query)
         patched-tab (get result `tab-mut/patch-tab)
-        fetched-tab (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})]
+        fetched-tab (tab-db/fetch-tab {:tab/id tab-id :tab/user-id @user-id})]
     (expect tab-id (:tab/id patched-tab))
     (expect (:tab/name tab) (:tab/name patched-tab))
-    (expect (:tab/password tab) (:tab/password fetched-tab))
-    (expect (:tab/is-protected? patched-tab))
+    (expect #(hashers/check new-pwd %) (:tab/password fetched-tab))
+    (expect true (:tab/is-protected? patched-tab))
     (expect inst? (:tab/created patched-tab))
     (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))))
 
 (defexpect normal-patch-tab-without-new-name-and-password
-  (let [tab         (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+  (let [tab         (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
         tab-id      (:tab/id tab)
         query       [{`(tab-mut/patch-tab {:tab/id ~tab-id}) tab-join}]
         result      (protected-parser {:request {:user/id @user-id}} query)
         patched-tab (get result `tab-mut/patch-tab)
-        fetched-tab (tab-db/fetch-tab {:tab/id tab-id :user/id @user-id})]
+        fetched-tab (tab-db/fetch-tab {:tab/id tab-id :tab/user-id @user-id})]
     (expect tab-id (:tab/id patched-tab))
     (expect (:tab/name tab) (:tab/name patched-tab))
     (expect (:tab/password tab) (:tab/password fetched-tab))
-    (expect (not (:tab/is-protected? patched-tab)))
+    (expect true (:tab/is-protected? patched-tab))
     (expect inst? (:tab/created patched-tab))
     (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))))
 
 (defexpect fail-patch-tab-with-invalid-name
-  (let [tab    (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+  (let [tab    (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
         tab-id (:tab/id tab)
         query  [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/name ""}) tab-join}]
         result (protected-parser {:request {:user/id @user-id}} query)
@@ -182,7 +222,7 @@
             error)))
 
 (defexpect fail-patch-tab-with-invalid-password
-  (let [tab    (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+  (let [tab    (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
         tab-id (:tab/id tab)
         query  [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/password ""}) tab-join}]
         result (protected-parser {:request {:user/id @user-id}} query)
@@ -193,20 +233,10 @@
              :error-data    {:tab/password ["should be at least 1 characters"]}}
             error)))
 
-(defexpect fail-patch-tab-with-invalid-protection
-  (let [tab    (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
-        tab-id (:tab/id tab)
-        query  [{`(tab-mut/patch-tab {:tab/id ~tab-id :tab/is-protected? "boo"}) tab-join}]
-        result (protected-parser {:request {:user/id @user-id}} query)
-        error  (get result `tab-mut/patch-tab)]
-    (expect {:error         true
-             :error-type    :invalid-input
-             :error-message "Invalid input"
-             :error-data    {:tab/is-protected? ["should be a boolean"]}}
-            error)))
+;; DELETE
 
 (defexpect normal-delete-tab
-  (let [tab         (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+  (let [tab         (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
         tab-id      (:tab/id tab)
         query       [{`(tab-mut/delete-tab {:tab/id ~tab-id}) tab-join}]
         result      (protected-parser {:request {:user/id @user-id}} query)
@@ -214,7 +244,7 @@
     (expect tab-id (:tab/id deleted-tab))
     (expect (:tab/name tab) (:tab/name deleted-tab))
     (expect nil (:tab/password deleted-tab))
-    (expect (:tab/is-protected? tab) (:tab/is-protected? deleted-tab))
+    (expect true (:tab/is-protected? deleted-tab))
     (expect (:tab/created tab) (:tab/created deleted-tab))
     (expect (:tab/updated tab) (:tab/updated deleted-tab))))
 
@@ -226,7 +256,7 @@
     (expect nil deleted-tab)))
 
 (defexpect fail-delete-tab-with-invalid-id
-  (let [tab    (tab-db/create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})
+  (let [tab    (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
         tab-id "foo"
         query  [{`(tab-mut/delete-tab {:tab/id ~tab-id}) tab-join}]
         result (protected-parser {:request {:user/id @user-id}} query)
@@ -242,4 +272,4 @@
   (require '[malli.core :as m])
   (m/validate [:map [:a :int] [:b {:optional true} [:maybe :int]]] {:a 3 :b 3})
   (k/run 'shinsetsu.mutations.tab-test)
-  (k/run #'shinsetsu.mutations.tab-test/fail-delete-tab-with-invalid-id))
+  (k/run #'shinsetsu.mutations.tab-test/fail-to-fetch-tab-with-empty-password))

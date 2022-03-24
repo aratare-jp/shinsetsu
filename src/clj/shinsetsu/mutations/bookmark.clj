@@ -15,7 +15,7 @@
   {::pc/params bookmark-input
    ::pc/output bookmark-output}
   (let [bookmark (assoc bookmark :bookmark/user-id user-id)]
-    (if-let [err (m/explain s/bookmark-spec bookmark)]
+    (if-let [err (m/explain s/bookmark-create-spec bookmark)]
       (throw (ex-info "Invalid bookmark" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with id" user-id "is attempting to create a new bookmark")

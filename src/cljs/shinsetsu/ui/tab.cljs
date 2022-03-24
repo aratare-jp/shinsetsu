@@ -18,52 +18,33 @@
   [{:tab/keys [name password is-protected?] :as tab} tab-field]
   (mc/validate s/tab-form-spec tab))
 
-(def tab-validator (fs/make-validator tab-valid?))
-
 (defsc TabModal
-  [this
-   {:tab/keys [id name is-protected? password created updated]
-    :ui/keys  [loading? error-type]
-    :as       props}
-   {:keys [on-close]}]
+  [this {:tab/keys [id name password created updated] :ui/keys [loading? error-type]} {:keys [on-close]}]
   {:ident         (fn [] [:component/id ::tab-modal])
-   :query         [:tab/id :tab/name :tab/password :tab/is-protected? :tab/created :tab/updated
+   :query         [:tab/id :tab/name :tab/password :tab/created :tab/updated
                    :ui/loading? :ui/error-type fs/form-config-join]
-   :form-fields   #{:tab/name :tab/password :tab/is-protected?}
-   :initial-state {:tab/name          ""
-                   :tab/password      ""
-                   :tab/is-protected? false}
+   :form-fields   #{:tab/name :tab/password}
+   :initial-state {:tab/name "" :tab/password ""}
    :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config TabModal data-tree))}
-  (let [on-name-changed         (fn [e] (m/set-string! this :tab/name :event e))
-        on-password-changed     (fn [e] (m/set-string! this :tab/password :event e))
-        on-is-protected-changed (fn [e] (m/set-value! this :tab/is-protected? (not is-protected?)))
-        on-blur                 (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
-        name-invalid?           (= :invalid (tab-validator props :tab/name))
-        password-invalid?       (= :invalid (tab-validator props :tab/password))
-        tab-invalid?            (or name-invalid? password-invalid?)
-        on-close                (fn [e]
-                                  (evt/prevent-default! e)
-                                  (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
-                                  (on-close))
-        on-tab-save             (fn [e]
-
-                                  (m/set-value! this :ui/loading? true)
-                                  (comp/transact! this [(tab-mut/create-tab {:tab/name          name
-                                                                             :tab/password      password
-                                                                             :tab/is-protected? is-protected?})]))
-        on-clear                (fn [e]
-                                  (evt/prevent-default! e)
-                                  (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})]))
-        modal-title             (if id "Edit tab" "Create new tab")
-        errors                  (case error-type
-                                  :invalid-input ["Unable to create new tab."
-                                                  "Please try again."]
-                                  :internal-server-error ["Unknown error encountered"]
-                                  nil)]
+  (let [on-name-changed     (fn [e] (m/set-string! this :tab/name :event e))
+        on-password-changed (fn [e] (m/set-string! this :tab/password :event e))
+        on-blur             (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
+        tab-valid?          (mc/validate s/tab-form-spec #:tab{:name name :password password})
+        on-close            (fn [_]
+                              (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+                              (on-close))
+        on-tab-save         #(let [args #:tab{:name name :password password}]
+                               (m/set-value! this :ui/loading? true)
+                               (comp/transact! this [(tab-mut/create-tab args)]))
+        on-clear            #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+        errors              (case error-type
+                              :invalid-input ["Unable to create new tab." "Please try again."]
+                              :internal-server-error ["Unknown error encountered"]
+                              nil)]
     (e/modal {:onClose on-close}
       (e/modal-header {}
         (e/modal-header-title {}
-          (h1 modal-title)))
+          (h1 (if id "Edit Tab" "Create New Tab"))))
       (e/modal-body {}
         (e/form {:component "form" :isInvalid (boolean errors) :error errors}
           (e/form-row {:label "Name"}
@@ -72,7 +53,7 @@
                            :onChange on-name-changed
                            :onBlur   #(on-blur :tab/name)
                            :disabled loading?}))
-          (e/form-row {:label "Password"}
+          (e/form-row {:label "Password" :helpText "Can be left empty if you don't want to lock this tab"}
             (e/field-text {:name     "password"
                            :value    password
                            :type     "password"
@@ -85,7 +66,7 @@
                    :fill      true
                    :onClick   on-tab-save
                    :isLoading loading?
-                   :disabled  tab-invalid?
+                   :disabled  (not tab-valid?)
                    :form      "tab-modal-form"} "Save")
         (e/button {:onClick on-clear} "Clear")))))
 
