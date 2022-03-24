@@ -13,7 +13,7 @@
 (defn create-user
   [{:user/keys [username] :as user}]
   (if-let [err (m/explain s/user-spec user)]
-    (throw (ex-info "Invalid user" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Create a new user with username" username)
       (jdbc/execute-one! ds (-> (helpers/insert-into :user)
@@ -24,7 +24,7 @@
 (defn patch-user
   [{:user/keys [id] :as user}]
   (if-let [err (m/explain s/user-update-spec user)]
-    (throw (ex-info "Invalid user" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (let [user (assoc user :user/updated (Instant/now))]
       (do
         (log/info "Patching user with ID" id)
@@ -37,7 +37,7 @@
 (defn fetch-user-by-username
   [{:user/keys [username] :as input}]
   (if-let [err (m/explain [:map {:closed true} [:user/username s/non-empty-string]] input)]
-    (throw (ex-info "Invalid username" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Fetching user with username" username)
       (jdbc/execute-one! ds (-> (helpers/select :*)
@@ -48,7 +48,7 @@
 (defn fetch-user-by-id
   [{:user/keys [id] :as input}]
   (if-let [err (m/explain [:map {:closed true} [:user/id :uuid]] input)]
-    (throw (ex-info "Invalid user ID" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Fetching user with ID" id)
       (jdbc/execute-one! ds (-> (helpers/select :*)

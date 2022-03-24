@@ -62,15 +62,6 @@
 
 ;; BOOKMARK
 
-(def bookmark-spec
-  [:map
-   {:closed true}
-   [:bookmark/title non-empty-string]
-   [:bookmark/url non-empty-string]
-   [:bookmark/image {:optional true} non-empty-string]
-   [:bookmark/tab-id :uuid]
-   [:bookmark/user-id :uuid]])
-
 (def bookmark-create-spec
   [:map
    {:closed true}
@@ -80,7 +71,19 @@
    [:bookmark/tab-id :uuid]
    [:bookmark/user-id :uuid]])
 
-(def bookmark-update-spec
+(def bookmark-fetch-spec
+  [:map
+   {:closed true}
+   [:bookmark/id :uuid]
+   [:bookmark/user-id :uuid]])
+
+(def bookmark-multi-fetch-spec
+  [:map
+   {:closed true}
+   [:bookmark/tab-id :uuid]
+   [:bookmark/user-id :uuid]])
+
+(def bookmark-patch-spec
   [:map
    {:closed true}
    [:bookmark/id :uuid]
@@ -105,7 +108,7 @@
              non-empty-string
              [:fn {:error/message "must have hex colour format"} is-hex-colour-str?]]))
 
-(def tag-spec
+(def tag-create-spec
   [:map
    {:closed true}
    [:tag/name non-empty-string]
@@ -126,14 +129,28 @@
    [:tag/id :uuid]
    [:tag/user-id :uuid]])
 
-(def bookmark-tag-spec
+;; BOOKMARK TAG
+
+(def bookmark-tag-create-spec
   [:map
    {:closed true}
-   [:bookmark/id :uuid]
-   [:tag/id :uuid]
-   [:user/id :uuid]])
+   [:bookmark-tag/bookmark-id :uuid]
+   [:bookmark-tag/tag-id :uuid]
+   [:bookmark-tag/user-id :uuid]])
 
-(def bookmark-tag-delete-spec bookmark-tag-spec)
+(def bookmark-tag-fetch-by-bookmark-spec
+  [:map
+   {:closed true}
+   [:bookmark-tag/bookmark-id :uuid]
+   [:bookmark-tag/user-id :uuid]])
+
+(def bookmark-tag-fetch-by-tag-spec
+  [:map
+   {:closed true}
+   [:bookmark-tag/tag-id :uuid]
+   [:bookmark-tag/user-id :uuid]])
+
+(def bookmark-tag-delete-spec bookmark-tag-create-spec)
 
 (comment
   (println #:foo{:a 1 :foo/b 2})

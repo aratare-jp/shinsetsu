@@ -272,4 +272,4 @@
   (require '[malli.core :as m])
   (m/validate [:map [:a :int] [:b {:optional true} [:maybe :int]]] {:a 3 :b 3})
   (k/run 'shinsetsu.mutations.tab-test)
-  (k/run #'shinsetsu.mutations.tab-test/fail-to-fetch-tab-with-empty-password))
+  (k/run #'shinsetsu.mutations.tab-test/normal-fetch-tab))

@@ -7,8 +7,7 @@
     [shinsetsu.db.tag :as tag-db]
     [shinsetsu.db.bookmark :as bookmark-db]
     [taoensso.timbre :as log]
-    [malli.error :as me]
-    [shinsetsu.db.bookmark :as bookmark-db])
+    [malli.error :as me])
   (:import [java.util UUID]
            [clojure.lang ExceptionInfo]))
 
@@ -53,7 +52,7 @@
     (catch Exception e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/name ["missing required key"]}} data)))))
 
 (defexpect fail-create-tag-with-invalid-name
@@ -63,7 +62,7 @@
     (catch Exception e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/name ["should be at least 1 characters"]}} data)))))
 
 (defexpect fail-create-tag-without-user
@@ -73,7 +72,7 @@
     (catch Exception e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/user-id ["missing required key"]}} data)))))
 
 (defexpect fail-create-tag-with-invalid-user
@@ -83,7 +82,7 @@
     (catch Exception e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/user-id ["should be a uuid"]}} data)))))
 
 (defexpect normal-patch-tag-with-new-name-and-colour
@@ -150,7 +149,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/name ["should be at least 1 characters"]}} data)))))
 
 (defexpect fail-patch-tag-with-invalid-colour
@@ -162,7 +161,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/colour ["must have hex colour format"]}} data)))))
 
 (defexpect normal-delete-tag
@@ -190,7 +189,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/id ["missing required key"]}} data)))))
 
 (defexpect fail-delete-tag-with-invalid-tag-id
@@ -199,7 +198,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/id ["should be a uuid"]}} data)))))
 
 (defexpect fail-delete-tag-without-user-id
@@ -210,7 +209,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/user-id ["missing required key"]}} data)))))
 
 (defexpect fail-delete-tag-with-invalid-user-id
@@ -221,7 +220,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tag" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/user-id ["should be a uuid"]}} data)))))
 
 (defexpect normal-fetch-tags
@@ -242,7 +241,7 @@
     (catch Exception e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid user ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/id ["missing required key"]}} data)))))
 
 (defexpect fail-fetch-tags-with-invalid-user
@@ -252,7 +251,7 @@
     (catch Exception e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid user ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/id ["should be a uuid"]}} data)))))
 
 (defexpect normal-fetch-tag
@@ -274,7 +273,7 @@
     (catch Exception e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid user or tag ID" message)
+        (expect "Invalid input" message)
         (expect
           {:error-type :invalid-input
            :error-data {:tag/id  ["missing required key"]
@@ -288,7 +287,7 @@
     (catch Exception e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid user or tag ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/id ["missing required key"]}} data)))))
 
 (defexpect fail-fetch-tag-with-invalid-id
@@ -298,7 +297,7 @@
     (catch ExceptionInfo e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid user or tag ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tag/id ["should be a uuid"]}} data)))))
 
 (defexpect fail-fetch-tag-without-user
@@ -308,7 +307,7 @@
     (catch Exception e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid user or tag ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/id ["missing required key"]}} data)))))
 
 (defexpect fail-fetch-tag-with-invalid-user
@@ -318,7 +317,7 @@
     (catch ExceptionInfo e
       (let [message (ex-message e)
             data    (ex-data e)]
-        (expect "Invalid user or tag ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/id ["should be a uuid"]}} data)))))
 
 (comment

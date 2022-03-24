@@ -1,7 +1,6 @@
 (ns shinsetsu.resolvers.tag
   (:require
     [com.wsscode.pathom.connect :as pc :refer [defresolver]]
-    [shinsetsu.db.bookmark :as bookmark-db]
     [shinsetsu.db.tag :as tag-db]
     [taoensso.timbre :as log]))
 
@@ -20,13 +19,4 @@
   {::pc/input  #{:tag/id}
    ::pc/output tag-output}
   (log/info "User" user-id "requested tag" tag-id)
-  (if-let [tag (tag-db/fetch-tag {:user/id user-id :tag/id tag-id})]
-    (dissoc tag :tag/password)))
-
-(defresolver bookmark-tag-resolver
-  [{{user-id :user/id} :request} {bookmark-id :bookmark/id}]
-  {::pc/input  #{:bookmark/id}
-   ::pc/output [{:bookmark/tags tag-output}]}
-  (log/info "Fetching tags for bookmark" bookmark-id "for user" user-id)
-  (let [bookmarks (bookmark-db/fetch-tags-by-bookmark {:bookmark/id bookmark-id :user/id user-id})]
-    {:bookmark/tags (mapv (fn [e] {:tag/id (:bookmark-tag/tag-id e)}) bookmarks)}))
+  (tag-db/fetch-tag {:user/id user-id :tag/id tag-id}))

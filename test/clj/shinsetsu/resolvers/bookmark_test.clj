@@ -54,7 +54,7 @@
   (let [random-id   "foo"
         inner-error {:error         true
                      :error-type    :invalid-input
-                     :error-message "Invalid bookmark or user ID"
+                     :error-message "Invalid input"
                      :error-data    {:bookmark/id ["should be a uuid"]}}
         expected    {[:bookmark/id random-id] {:bookmark/id      random-id
                                                :bookmark/title   ::pc/reader-error
@@ -74,7 +74,7 @@
   (let [random-id   nil
         inner-error {:error         true
                      :error-type    :invalid-input
-                     :error-message "Invalid bookmark or user ID"
+                     :error-message "Invalid input"
                      :error-data    {:bookmark/id ["should be a uuid"]}}
         expected    {[:bookmark/id random-id] {:bookmark/id      random-id
                                                :bookmark/title   ::pc/reader-error
@@ -94,27 +94,30 @@
   (let [bookmark1 (create-bookmark "foo" "bar" @tab-id @user-id)
         bookmark2 (create-bookmark "foo" "bar" @tab-id @user-id)
         expected  {[:tab/id @tab-id] {:tab/bookmarks [bookmark1 bookmark2]}}
-        actual    (protected-parser {:request {:user/id @user-id}} [{[:tab/id @tab-id] [{:tab/bookmarks bookmark-join}]}])]
+        query     [{[:tab/id @tab-id] [{:tab/bookmarks bookmark-join}]}]
+        actual    (protected-parser {:request {:user/id @user-id}} query)]
     (expect expected actual)))
 
 (defexpect fetch-empty-bookmarks
   (let [expected {[:tab/id @tab-id] {:tab/bookmarks []}}
-        actual   (protected-parser {:request {:user/id @user-id}} [{[:tab/id @tab-id] [{:tab/bookmarks bookmark-join}]}])]
+        query    [{[:tab/id @tab-id] [{:tab/bookmarks bookmark-join}]}]
+        actual   (protected-parser {:request {:user/id @user-id}} query)]
     (expect expected actual)))
 
 (defexpect fail-fetch-invalid-bookmarks
-  (let [random-id   "foo"
+  (let [tab-id      "foo"
         inner-error {:error         true
                      :error-type    :invalid-input
-                     :error-message "Invalid tab or user ID"
+                     :error-message "Invalid input"
                      :error-data    {:tab/id ["should be a uuid"]}}
-        expected    {[:tab/id random-id] {:tab/bookmarks ::pc/reader-error}
-                     ::pc/errors         {[[:tab/id random-id] :tab/bookmarks] inner-error}}
-        actual      (protected-parser {:request {:user/id @user-id}} [{[:tab/id random-id] [:tab/bookmarks]}])]
+        expected    {[:tab/id tab-id] {:tab/bookmarks ::pc/reader-error}
+                     ::pc/errors      {[[:tab/id tab-id] :tab/bookmarks] inner-error}}
+        query       [{[:tab/id tab-id] [:tab/bookmarks]}]
+        actual      (protected-parser {:request {:user/id @user-id}} query)]
     (expect expected actual)))
 
 (comment
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.parser :refer [protected-parser]])
   (k/run 'shinsetsu.resolvers.bookmark-test)
-  (k/run #'shinsetsu.resolvers.bookmark-test/fail-fetch-invalid-bookmark))
+  (k/run #'shinsetsu.resolvers.bookmark-test/normal-fetch-bookmarks))

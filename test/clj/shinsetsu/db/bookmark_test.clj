@@ -58,7 +58,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/title ["missing required key"]}} data)))))
 
 (defexpect fail-create-bookmark-with-invalid-title
@@ -71,7 +71,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/title ["should be at least 1 characters"]}} data)))))
 
 (defexpect fail-create-bookmark-without-url
@@ -83,7 +83,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/url ["missing required key"]}} data)))))
 
 (defexpect fail-create-bookmark-with-invalid-url
@@ -96,7 +96,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/url ["should be at least 1 characters"]}} data)))))
 
 (defexpect fail-create-bookmark-without-tab
@@ -108,7 +108,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["missing required key"]}} data)))))
 
 (defexpect fail-create-bookmark-with-invalid-tab
@@ -121,7 +121,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["should be a uuid"]}} data)))))
 
 (defexpect fail-create-bookmark-without-user
@@ -133,7 +133,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/user-id ["missing required key"]}} data)))))
 
 (defexpect fail-create-bookmark-with-invalid-user
@@ -146,7 +146,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["should be a uuid"]}} data)))))
 
 (defexpect normal-patch-bookmark-with-new-title-and-url-and-tab
@@ -252,7 +252,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/title ["should be at least 1 characters"]}} data)))))
 
 (defexpect fail-patch-bookmark-with-invalid-url
@@ -272,7 +272,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/url ["should be at least 1 characters"]}} data)))))
 
 (defexpect fail-patch-bookmark-with-invalid-tab
@@ -292,7 +292,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["should be a uuid"]}} data)))))
 
 (defexpect fail-patch-bookmark-with-nonexistent-tab
@@ -322,7 +322,7 @@
                                                        :bookmark/user-id @user-id})
         bookmark-id      (:bookmark/id bookmark)
         deleted-bookmark (bookmark-db/delete-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})
-        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
+        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})]
     (expect nil fetched-bookmark)
     (expect (:bookmark/id bookmark) (:bookmark/id deleted-bookmark))
     (expect (:bookmark/title bookmark) (:bookmark/title deleted-bookmark))
@@ -341,7 +341,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/id ["should be a uuid"]}} data)))))
 
 (comment
@@ -349,33 +349,30 @@
   (k/run #'shinsetsu.db.bookmark-test/fail-delete-bookmark-with-invalid-id))
 
 (defexpect normal-fetch-bookmark
-  (let [bookmark         (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                       :bookmark/url     "bar"
-                                                       :bookmark/tab-id  @tab1-id
-                                                       :bookmark/user-id @user-id})
-        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id (:bookmark/id bookmark)
-                                                      :user/id     @user-id})]
-    (expect bookmark fetched-bookmark)))
+  (let [bookmark    (bookmark-db/create-bookmark #:bookmark{:title "foo" :url "bar" :tab-id @tab1-id :user-id @user-id})
+        bookmark-id (:bookmark/id bookmark)
+        fetched     (bookmark-db/fetch-bookmark #:bookmark{:id bookmark-id :user-id @user-id})]
+    (expect bookmark fetched)))
 
-(defexpect normal-fetch-nonexistent-bookmark nil (bookmark-db/fetch-bookmark {:bookmark/id (UUID/randomUUID)
-                                                                              :user/id     @user-id}))
+(defexpect normal-fetch-nonexistent-bookmark nil (bookmark-db/fetch-bookmark {:bookmark/id      (UUID/randomUUID)
+                                                                              :bookmark/user-id @user-id}))
 
 (defexpect fail-fetch-bookmark-without-id
   (try
-    (bookmark-db/fetch-bookmark {:user/id @user-id})
+    (bookmark-db/fetch-bookmark {:bookmark/user-id @user-id})
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark or user ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/id ["missing required key"]}} data)))))
 
 (defexpect fail-fetch-bookmark-with-invalid-id
   (try
-    (bookmark-db/fetch-bookmark {:bookmark/id "foo" :user/id @user-id})
+    (bookmark-db/fetch-bookmark {:bookmark/id "foo" :bookmark/user-id @user-id})
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark or user ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:bookmark/id ["should be a uuid"]}} data)))))
 
 (defexpect fail-fetch-bookmark-without-user-id
@@ -384,17 +381,17 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:user/id ["missing required key"]}} data)))))
+        (expect "Invalid input" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/user-id ["missing required key"]}} data)))))
 
 (defexpect fail-fetch-bookmark-with-invalid-user-id
   (try
-    (bookmark-db/fetch-bookmark {:bookmark/id (UUID/randomUUID) :user/id "foo"})
+    (bookmark-db/fetch-bookmark {:bookmark/id (UUID/randomUUID) :bookmark/user-id "foo"})
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid bookmark or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:user/id ["should be a uuid"]}} data)))))
+        (expect "Invalid input" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/user-id ["should be a uuid"]}} data)))))
 
 (defexpect normal-fetch-bookmarks
   (let [bookmark1-title   "hello"
@@ -409,10 +406,10 @@
                                                         :bookmark/url     bookmark2-url
                                                         :bookmark/tab-id  @tab1-id
                                                         :bookmark/user-id @user-id})
-        fetched-bookmarks (bookmark-db/fetch-bookmarks {:user/id @user-id :tab/id @tab1-id})]
+        fetched-bookmarks (bookmark-db/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id})]
     (expect [bookmark1 bookmark2] fetched-bookmarks)))
 
-(defexpect fetch-empty-bookmarks [] (bookmark-db/fetch-bookmarks {:tab/id @tab1-id :user/id @user-id}))
+(defexpect fetch-empty-bookmarks [] (bookmark-db/fetch-bookmarks {:bookmark/tab-id @tab1-id :bookmark/user-id @user-id}))
 
 (defexpect fail-fetch-bookmarks-without-user-and-tab
   (try
@@ -421,231 +418,55 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tab or user ID" message)
+        (expect "Invalid input" message)
         (expect
           {:error-type :invalid-input
-           :error-data {:tab/id  ["missing required key"]
-                        :user/id ["missing required key"]}}
+           :error-data {:bookmark/tab-id  ["missing required key"]
+                        :bookmark/user-id ["missing required key"]}}
           data)))))
 
 (defexpect fail-fetch-bookmarks-without-user
   (try
-    (bookmark-db/fetch-bookmarks {:tab/id @tab1-id})
+    (bookmark-db/fetch-bookmarks {:bookmark/tab-id @tab1-id})
     (expect false)
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tab or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:user/id ["missing required key"]}} data)))))
+        (expect "Invalid input" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/user-id ["missing required key"]}} data)))))
 
 (defexpect fail-fetch-bookmarks-with-invalid-user
   (try
-    (bookmark-db/fetch-bookmarks {:tab/id @tab1-id :user/id "foo"})
+    (bookmark-db/fetch-bookmarks {:bookmark/tab-id @tab1-id :bookmark/user-id "foo"})
     (expect false)
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tab or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:user/id ["should be a uuid"]}} data)))))
+        (expect "Invalid input" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/user-id ["should be a uuid"]}} data)))))
 
 (defexpect fail-fetch-bookmarks-without-tab
   (try
-    (bookmark-db/fetch-bookmarks {:user/id @user-id})
+    (bookmark-db/fetch-bookmarks {:bookmark/user-id @user-id})
     (expect false)
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tab or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:tab/id ["missing required key"]}} data)))))
+        (expect "Invalid input" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["missing required key"]}} data)))))
 
 (defexpect fail-fetch-bookmarks-with-invalid-tab
   (try
-    (bookmark-db/fetch-bookmarks {:tab/id "foo" :user/id @user-id})
+    (bookmark-db/fetch-bookmarks {:bookmark/tab-id "foo" :bookmark/user-id @user-id})
     (expect false)
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid tab or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:tab/id ["should be a uuid"]}} data)))))
-
-(defexpect normal-create-bookmark-tag
-  (let [bookmark     (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                   :bookmark/url     "bar"
-                                                   :bookmark/user-id @user-id
-                                                   :bookmark/tab-id  @tab1-id})
-        bookmark-id  (:bookmark/id bookmark)
-        tag          (tag-db/create-tag {:tag/name "bob" :tag/user-id @user-id})
-        tag-id       (:tag/id tag)
-        bookmark-tag (bookmark-db/create-bookmark-tag {:bookmark/id bookmark-id
-                                                       :tag/id      tag-id
-                                                       :user/id     @user-id})]
-    (expect bookmark-id (:bookmark-tag/bookmark-id bookmark-tag))
-    (expect tag-id (:bookmark-tag/tag-id bookmark-tag))
-    (expect @user-id (:bookmark-tag/user-id bookmark-tag))))
-
-(defexpect fail-create-bookmark-tag-with-invalid-bookmark-id
-  (try
-    (let [bookmark-id "foo"
-          tag         (tag-db/create-tag {:tag/name "bob" :tag/user-id @user-id})
-          tag-id      (:tag/id tag)]
-      (bookmark-db/create-bookmark-tag {:bookmark/id bookmark-id :tag/id tag-id :user/id @user-id})
-      (expect false))
-    (catch Exception e
-      (let [data    (ex-data e)
-            message (ex-message e)]
-        (expect "Invalid bookmark, tag or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:bookmark/id ["should be a uuid"]}} data)))))
-
-(defexpect fail-create-bookmark-tag-with-invalid-tag-id
-  (try
-    (let [bookmark    (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                    :bookmark/url     "bar"
-                                                    :bookmark/user-id @user-id
-                                                    :bookmark/tab-id  @tab1-id})
-          bookmark-id (:bookmark/id bookmark)
-          tag-id      "foo"]
-      (bookmark-db/create-bookmark-tag {:bookmark/id bookmark-id :tag/id tag-id :user/id @user-id})
-      (expect false))
-    (catch Exception e
-      (let [data    (ex-data e)
-            message (ex-message e)]
-        (expect "Invalid bookmark, tag or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:tag/id ["should be a uuid"]}} data)))))
-
-(defexpect normal-fetch-bookmarks-by-tag
-  (let [bookmark             (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                           :bookmark/url     "bar"
-                                                           :bookmark/user-id @user-id
-                                                           :bookmark/tab-id  @tab1-id})
-        bookmark-id          (:bookmark/id bookmark)
-        tag                  (tag-db/create-tag {:tag/name "bob" :tag/user-id @user-id})
-        tag-id               (:tag/id tag)
-        bookmark-tag         (bookmark-db/create-bookmark-tag {:bookmark/id bookmark-id
-                                                               :tag/id      tag-id
-                                                               :user/id     @user-id})
-        fetched-bookmark-tag (bookmark-db/fetch-bookmarks-by-tag {:tag/id tag-id :user/id @user-id})]
-    (expect [bookmark-tag] fetched-bookmark-tag)))
-
-(defexpect normal-fetch-empty-bookmarks-by-tag
-  (let [tag                  (tag-db/create-tag {:tag/name "bob" :tag/user-id @user-id})
-        tag-id               (:tag/id tag)
-        fetched-bookmark-tag (bookmark-db/fetch-bookmarks-by-tag {:tag/id tag-id :user/id @user-id})]
-    (expect [] fetched-bookmark-tag)))
-
-(defexpect normal-fetch-bookmarks-by-nonexistent-tag
-  (let [fetched-bookmark-tag (bookmark-db/fetch-bookmarks-by-tag {:tag/id (UUID/randomUUID) :user/id @user-id})]
-    (expect [] fetched-bookmark-tag)))
-
-(defexpect fail-fetch-bookmarks-by-invalid-tag
-  (try
-    (bookmark-db/fetch-bookmarks-by-tag {:tag/id "foo" :user/id @user-id})
-    (expect false)
-    (catch Exception e
-      (let [data    (ex-data e)
-            message (ex-message e)]
-        (expect "Invalid tag or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:tag/id ["should be a uuid"]}} data)))))
-
-(defexpect normal-fetch-tags-by-bookmark
-  (let [bookmark             (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                           :bookmark/url     "bar"
-                                                           :bookmark/user-id @user-id
-                                                           :bookmark/tab-id  @tab1-id})
-        bookmark-id          (:bookmark/id bookmark)
-        tag                  (tag-db/create-tag {:tag/name "bob" :tag/user-id @user-id})
-        tag-id               (:tag/id tag)
-        bookmark-tag         (bookmark-db/create-bookmark-tag {:bookmark/id bookmark-id
-                                                               :tag/id      tag-id
-                                                               :user/id     @user-id})
-        fetched-bookmark-tag (bookmark-db/fetch-tags-by-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
-    (expect [bookmark-tag] fetched-bookmark-tag)))
-
-(defexpect normal-fetch-empty-tags-by-bookmark
-  (let [bookmark             (bookmark-db/create-bookmark {:bookmark/title   "bob"
-                                                           :bookmark/url     "bar"
-                                                           :bookmark/tab-id  @tab1-id
-                                                           :bookmark/user-id @user-id})
-        bookmark-id          (:bookmark/id bookmark)
-        fetched-bookmark-tag (bookmark-db/fetch-tags-by-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
-    (expect [] fetched-bookmark-tag)))
-
-(defexpect normal-fetch-tags-by-nonexistent-bookmark
-  (let [fetched-bookmark-tag (bookmark-db/fetch-tags-by-bookmark {:bookmark/id (UUID/randomUUID) :user/id @user-id})]
-    (expect [] fetched-bookmark-tag)))
-
-(defexpect fail-fetch-tags-by-invalid-bookmark
-  (try
-    (bookmark-db/fetch-tags-by-bookmark {:bookmark/id "foo" :user/id @user-id})
-    (expect false)
-    (catch Exception e
-      (let [data    (ex-data e)
-            message (ex-message e)]
-        (expect "Invalid bookmark or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:bookmark/id ["should be a uuid"]}} data)))))
-
-
-(defexpect normal-delete-bookmark-tag
-  (let [bookmark             (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                           :bookmark/url     "bar"
-                                                           :bookmark/user-id @user-id
-                                                           :bookmark/tab-id  @tab1-id})
-        bookmark-id          (:bookmark/id bookmark)
-        tag                  (tag-db/create-tag {:tag/name "bob" :tag/user-id @user-id})
-        tag-id               (:tag/id tag)
-        bookmark-tag         (bookmark-db/create-bookmark-tag {:bookmark/id bookmark-id
-                                                               :tag/id      tag-id
-                                                               :user/id     @user-id})
-        deleted-bookmark-tag (bookmark-db/delete-bookmark-tag {:bookmark/id bookmark-id
-                                                               :tag/id      tag-id
-                                                               :user/id     @user-id})
-        fetched-bookmark-tag (bookmark-db/fetch-bookmarks-by-tag {:tag/id tag-id :user/id @user-id})]
-    (expect [] fetched-bookmark-tag)
-    (expect bookmark-tag deleted-bookmark-tag)))
-
-(defexpect normal-delete-bookmark-tag-by-nonexistent-bookmark
-  (let [bookmark-id          (UUID/randomUUID)
-        tag                  (tag-db/create-tag {:tag/name "bob" :tag/user-id @user-id})
-        tag-id               (:tag/id tag)
-        deleted-bookmark-tag (bookmark-db/delete-bookmark-tag {:bookmark/id bookmark-id
-                                                               :tag/id      tag-id
-                                                               :user/id     @user-id})]
-    (expect nil deleted-bookmark-tag)))
-
-(defexpect normal-delete-bookmark-tag-by-nonexistent-tag
-  (let [bookmark             (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                           :bookmark/url     "bar"
-                                                           :bookmark/user-id @user-id
-                                                           :bookmark/tab-id  @tab1-id})
-        bookmark-id          (:bookmark/id bookmark)
-        tag-id               (UUID/randomUUID)
-        deleted-bookmark-tag (bookmark-db/delete-bookmark-tag {:bookmark/id bookmark-id
-                                                               :tag/id      tag-id
-                                                               :user/id     @user-id})]
-    (expect nil deleted-bookmark-tag)))
-
-(defexpect fail-delete-bookmark-tag-by-invalid-tag
-  (try
-    (bookmark-db/delete-bookmark-tag {:tag/id "foo" :bookmark/id (UUID/randomUUID) :user/id @user-id})
-    (expect false)
-    (catch Exception e
-      (let [data    (ex-data e)
-            message (ex-message e)]
-        (expect "Invalid bookmark, tag or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:tag/id ["should be a uuid"]}} data)))))
-
-(defexpect fail-delete-bookmark-tag-by-invalid-bookmark
-  (try
-    (bookmark-db/delete-bookmark-tag {:tag/id (UUID/randomUUID) :bookmark/id "foo" :user/id @user-id})
-    (expect false)
-    (catch Exception e
-      (let [data    (ex-data e)
-            message (ex-message e)]
-        (expect "Invalid bookmark, tag or user ID" message)
-        (expect {:error-type :invalid-input :error-data {:bookmark/id ["should be a uuid"]}} data)))))
+        (expect "Invalid input" message)
+        (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["should be a uuid"]}} data)))))
 
 (comment
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.db.bookmark-test])
   (k/run 'shinsetsu.db.bookmark-test)
-  (k/run #'shinsetsu.db.bookmark-test/fail-fetch-tags-by-invalid-bookmark)
-  )
+  (k/run #'shinsetsu.db.bookmark-test/fail-fetch-tags-by-invalid-bookmark))

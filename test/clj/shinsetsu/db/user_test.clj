@@ -27,7 +27,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid user" message)
+        (expect "Invalid input" message)
         (expect
           {:error-type :invalid-input
            :error-data {:user/username ["missing required key"]
@@ -41,7 +41,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid user" message)
+        (expect "Invalid input" message)
         (expect
           {:error-type :invalid-input
            :error-data {:user/username ["missing required key"]}}
@@ -54,7 +54,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid user" message)
+        (expect "Invalid input" message)
         (expect
           {:error-type :invalid-input
            :error-data {:user/username ["should be at least 1 characters"]}}
@@ -67,7 +67,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid user" message)
+        (expect "Invalid input" message)
         (expect
           {:error-type :invalid-input
            :error-data {:user/password ["missing required key"]}}
@@ -80,7 +80,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid user" message)
+        (expect "Invalid input" message)
         (expect
           {:error-type :invalid-input
            :error-data {:user/password ["should be at least 1 characters"]}}
@@ -144,7 +144,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid user" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/username ["should be at least 1 characters"]}} data)))))
 
 (defexpect fail-patch-user-with-invalid-password
@@ -153,7 +153,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid user" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/password ["should be at least 1 characters"]}} data)))))
 
 (defexpect normal-fetch-user-by-username
@@ -172,7 +172,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid username" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/username ["missing required key"]}} data)))))
 
 (defexpect fail-fetch-user-with-invalid-username
@@ -182,7 +182,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid username" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/username ["should be at least 1 characters"]}} data)))))
 
 (defexpect normal-fetch-user-by-id
@@ -201,7 +201,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid user ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/id ["missing required key"]}} data)))))
 
 (defexpect fail-fetch-user-with-invalid-id
@@ -211,7 +211,7 @@
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
-        (expect "Invalid user ID" message)
+        (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:user/id ["should be a uuid"]}} data)))))
 
 (comment

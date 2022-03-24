@@ -5,10 +5,12 @@
     [shinsetsu.resolvers.tab :as tab-resolver]
     [shinsetsu.resolvers.bookmark :as bookmark-resolver]
     [shinsetsu.resolvers.tag :as tag-resolver]
+    [shinsetsu.resolvers.bookmark-tag :as bookmark-tag-resolver]
     [shinsetsu.mutations.user :as user-mutations]
     [shinsetsu.mutations.tab :as tab-mutations]
     [shinsetsu.mutations.bookmark :as bookmark-mutations]
     [shinsetsu.mutations.tag :as tag-mutations]
+    [shinsetsu.mutations.bookmark-tag :as bookmark-tag-mutations]
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.connect :as pc]
     [taoensso.timbre :as log])
@@ -30,11 +32,12 @@
    bookmark-mutations/create-bookmark
    bookmark-mutations/patch-bookmark
    bookmark-mutations/delete-bookmark
-   bookmark-mutations/create-bookmark-tag
-   bookmark-mutations/delete-bookmark-tag
+   bookmark-tag-mutations/create-bookmark-tag
+   bookmark-tag-mutations/delete-bookmark-tag
    tag-resolver/tag-resolver
    tag-resolver/tags-resolver
-   tag-resolver/bookmark-tag-resolver
+   bookmark-tag-resolver/bookmark-tag-resolver-by-bookmark
+   bookmark-tag-resolver/bookmark-tag-resolver-by-tag
    tag-mutations/create-tag
    tag-mutations/patch-tag
    tag-mutations/delete-tag])

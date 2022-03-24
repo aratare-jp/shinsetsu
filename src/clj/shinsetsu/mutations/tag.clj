@@ -14,11 +14,11 @@
 
 (defmutation create-tag
   [{{user-id :user/id} :request} tag]
-  {::pc/params #{:tag/name :tag/password}
+  {::pc/params #{:tag/name :tag/colour}
    ::pc/output [:tag/id :tag/name :tag/colour :tag/created :tag/updated]}
   (let [tag (merge {:tag/user-id user-id} tag)]
-    (if-let [err (m/explain s/tag-spec tag)]
-      (throw (ex-info "Invalid tag" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (if-let [err (m/explain s/tag-create-spec tag)]
+      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User" user-id "is attempting to create a new tag")
         (let [tag (-> tag db/create-tag trim-tag)]
@@ -27,7 +27,7 @@
 
 (defmutation patch-tag
   [{{user-id :user/id} :request} {:tag/keys [id] :as patch-data}]
-  {::pc/params #{:tag/name :tag/password}
+  {::pc/params #{:tag/name :tag/colour}
    ::pc/output [:tag/id :tag/name :tag/colour :tag/created :tag/updated]}
   (let [patch-data (merge patch-data {:tag/user-id user-id})]
     (if-let [err (m/explain s/tag-update-spec patch-data)]

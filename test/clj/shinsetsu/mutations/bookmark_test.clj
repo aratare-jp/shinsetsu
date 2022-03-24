@@ -41,7 +41,7 @@
         result           (protected-parser {:request {:user/id @user-id}} query)
         bookmark         (get result `bookmark-mut/create-bookmark)
         bookmark-id      (:bookmark/id bookmark)
-        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
+        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})]
     (expect (:bookmark/id fetched-bookmark) (:bookmark/id bookmark))
     (expect (:bookmark/title fetched-bookmark) (:bookmark/title bookmark))
     (expect (:bookmark/url fetched-bookmark) (:bookmark/url bookmark))
@@ -58,7 +58,7 @@
         result         (protected-parser {:request {:user/id @user-id}} query)
         bookmark       (get result `bookmark-mut/create-bookmark)]
     (expect {:error         true
-             :error-message "Invalid bookmark"
+             :error-message "Invalid input"
              :error-type    :invalid-input
              :error-data    {:bookmark/title ["should be at least 1 characters"]}} bookmark)))
 
@@ -71,7 +71,7 @@
         result         (protected-parser {:request {:user/id @user-id}} query)
         bookmark       (get result `bookmark-mut/create-bookmark)]
     (expect {:error         true
-             :error-message "Invalid bookmark"
+             :error-message "Invalid input"
              :error-type    :invalid-input
              :error-data    {:bookmark/url ["should be at least 1 characters"]}} bookmark)))
 
@@ -85,7 +85,7 @@
         result         (protected-parser {:request {:user/id @user-id}} query)
         bookmark       (get result `bookmark-mut/create-bookmark)]
     (expect {:error         true
-             :error-message "Invalid bookmark"
+             :error-message "Invalid input"
              :error-type    :invalid-input
              :error-data    {:bookmark/tab-id ["should be a uuid"]}} bookmark)))
 
@@ -117,7 +117,7 @@
                                                             :bookmark/tab-id ~(deref tab1-id)}) bookmark-join}]
         result             (protected-parser {:request {:user/id @user-id}} query)
         patched-bookmark   (get result `bookmark-mut/patch-bookmark)
-        fetched-bookmark   (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
+        fetched-bookmark   (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})]
     (expect (:bookmark/id fetched-bookmark) (:bookmark/id patched-bookmark))
     (expect new-bookmark-title (:bookmark/title patched-bookmark))
     (expect new-bookmark-url (:bookmark/url patched-bookmark))
@@ -138,7 +138,7 @@
                                                             :bookmark/tab-id ~(deref tab1-id)}) bookmark-join}]
         result             (protected-parser {:request {:user/id @user-id}} query)
         patched-bookmark   (get result `bookmark-mut/patch-bookmark)
-        fetched-bookmark   (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
+        fetched-bookmark   (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})]
     (expect (:bookmark/id fetched-bookmark) (:bookmark/id patched-bookmark))
     (expect new-bookmark-title (:bookmark/title patched-bookmark))
     (expect (:bookmark/url fetched-bookmark) (:bookmark/url patched-bookmark))
@@ -159,7 +159,7 @@
                                                           :bookmark/tab-id ~(deref tab1-id)}) bookmark-join}]
         result           (protected-parser {:request {:user/id @user-id}} query)
         patched-bookmark (get result `bookmark-mut/patch-bookmark)
-        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
+        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})]
     (expect (:bookmark/id fetched-bookmark) (:bookmark/id patched-bookmark))
     (expect (:bookmark/title fetched-bookmark) (:bookmark/title patched-bookmark))
     (expect new-bookmark-url (:bookmark/url patched-bookmark))
@@ -178,7 +178,7 @@
                                                           :bookmark/tab-id ~(deref tab2-id)}) bookmark-join}]
         result           (protected-parser {:request {:user/id @user-id}} query)
         patched-bookmark (get result `bookmark-mut/patch-bookmark)
-        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
+        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})]
     (expect (:bookmark/id fetched-bookmark) (:bookmark/id patched-bookmark))
     (expect (:bookmark/title fetched-bookmark) (:bookmark/title patched-bookmark))
     (expect (:bookmark/url fetched-bookmark) (:bookmark/url patched-bookmark))
@@ -201,7 +201,7 @@
         result         (protected-parser {:request {:user/id @user-id}} query)
         bookmark       (get result `bookmark-mut/patch-bookmark)]
     (expect {:error         true
-             :error-message "Invalid bookmark"
+             :error-message "Invalid input"
              :error-type    :invalid-input
              :error-data    {:bookmark/title ["should be at least 1 characters"]}})))
 
@@ -218,7 +218,7 @@
         result       (protected-parser {:request {:user/id @user-id}} query)
         bookmark     (get result `bookmark-mut/patch-bookmark)]
     (expect {:error         true
-             :error-message "Invalid bookmark"
+             :error-message "Invalid input"
              :error-type    :invalid-input
              :error-data    {:bookmark/url ["should be at least 1 characters"]}})))
 
@@ -235,7 +235,7 @@
         result      (protected-parser {:request {:user/id @user-id}} query)
         bookmark    (get result `bookmark-mut/patch-bookmark)]
     (expect {:error         true
-             :error-message "Invalid bookmark"
+             :error-message "Invalid input"
              :error-type    :invalid-input
              :error-data    {:bookmark/tab-id ["should be a uuid"]}} bookmark)))
 
@@ -264,7 +264,7 @@
         query            [{`(bookmark-mut/delete-bookmark {:bookmark/id ~bookmark-id}) bookmark-join}]
         result           (protected-parser {:request {:user/id @user-id}} query)
         deleted-bookmark (get result `bookmark-mut/delete-bookmark)
-        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
+        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})]
     (expect nil fetched-bookmark)
     (expect (:bookmark/id deleted-bookmark) (:bookmark/id bookmark))
     (expect (:bookmark/title deleted-bookmark) (:bookmark/title bookmark))
@@ -287,153 +287,9 @@
         result      (protected-parser {:request {:user/id @user-id}} query)
         bookmark    (get result `bookmark-mut/delete-bookmark)]
     (expect {:error         true
-             :error-message "Invalid bookmark"
+             :error-message "Invalid input"
              :error-type    :invalid-input
              :error-data    {:bookmark/id ["should be a uuid"]}} bookmark)))
-
-(defexpect normal-create-bookmark-tag
-  (let [bookmark    (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                  :bookmark/url     "bar"
-                                                  :bookmark/user-id @user-id
-                                                  :bookmark/tab-id  @tab1-id})
-        bookmark-id (:bookmark/id bookmark)
-        tag         (tag-db/create-tag {:tag/name "foo" :tag/user-id @user-id})
-        tag-id      (:tag/id tag)
-        query       [{`(bookmark-mut/create-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id}) bookmark-join}]
-        result      (protected-parser {:request {:user/id @user-id}} query)
-        _           (get result `bookmark-mut/create-bookmark-tag)
-        fetched     (bookmark-db/fetch-tags-by-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
-    (expect 1 (count fetched))
-    (expect tag-id (-> fetched first :bookmark-tag/tag-id))
-    (expect bookmark-id (-> fetched first :bookmark-tag/bookmark-id))
-    (expect @user-id (-> fetched first :bookmark-tag/user-id))))
-
-(defexpect fail-create-bookmark-tag-with-invalid-bookmark
-  (let [bookmark-id "foo"
-        tag         (tag-db/create-tag {:tag/name "foo" :tag/user-id @user-id})
-        tag-id      (:tag/id tag)
-        query       [{`(bookmark-mut/create-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id}) bookmark-join}]
-        result      (protected-parser {:request {:user/id @user-id}} query)
-        error       (get result `bookmark-mut/create-bookmark-tag)]
-    (expect {:error         true
-             :error-message "Invalid bookmark or tag"
-             :error-type    :invalid-input
-             :error-data    {:bookmark/id ["should be a uuid"]}} error)))
-
-(defexpect fail-create-bookmark-tag-with-nonexistent-bookmark
-  (let [bookmark-id (UUID/randomUUID)
-        tag         (tag-db/create-tag {:tag/name "foo" :tag/user-id @user-id})
-        tag-id      (:tag/id tag)
-        query       [{`(bookmark-mut/create-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id}) bookmark-join}]
-        result      (protected-parser {:request {:user/id @user-id}} query)
-        error       (get result `bookmark-mut/create-bookmark-tag)]
-    (expect {:error         true
-             :error-message "Nonexistent bookmark or tag"
-             :error-type    :invalid-input
-             :error-data    {:bookmark/id ["nonexistent"] :tag/id ["nonexistent"]}} error)))
-
-(defexpect fail-create-bookmark-tag-with-invalid-tag
-  (let [bookmark    (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                  :bookmark/url     "bar"
-                                                  :bookmark/user-id @user-id
-                                                  :bookmark/tab-id  @tab1-id})
-        bookmark-id (:bookmark/id bookmark)
-        tag-id      "foo"
-        query       [{`(bookmark-mut/create-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id}) bookmark-join}]
-        result      (protected-parser {:request {:user/id @user-id}} query)
-        error       (get result `bookmark-mut/create-bookmark-tag)]
-    (expect {:error         true
-             :error-message "Invalid bookmark or tag"
-             :error-type    :invalid-input
-             :error-data    {:tag/id ["should be a uuid"]}} error)))
-
-(defexpect fail-create-bookmark-tag-with-nonexistent-tag
-  (let [bookmark    (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                  :bookmark/url     "bar"
-                                                  :bookmark/user-id @user-id
-                                                  :bookmark/tab-id  @tab1-id})
-        bookmark-id (:bookmark/id bookmark)
-        tag-id      (UUID/randomUUID)
-        query       [{`(bookmark-mut/create-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id}) bookmark-join}]
-        result      (protected-parser {:request {:user/id @user-id}} query)
-        error       (get result `bookmark-mut/create-bookmark-tag)]
-    (expect {:error         true
-             :error-message "Nonexistent bookmark or tag"
-             :error-type    :invalid-input
-             :error-data    {:bookmark/id ["nonexistent"] :tag/id ["nonexistent"]}} error)))
-
-
-(defexpect normal-delete-bookmark-tag
-  (let [bookmark              (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                            :bookmark/url     "bar"
-                                                            :bookmark/user-id @user-id
-                                                            :bookmark/tab-id  @tab1-id})
-        bookmark-id           (:bookmark/id bookmark)
-        tag                   (tag-db/create-tag {:tag/name "foo" :tag/user-id @user-id})
-        tag-id                (:tag/id tag)
-        bookmark-tag          (bookmark-db/create-bookmark-tag {:bookmark/id bookmark-id
-                                                                :tag/id      tag-id
-                                                                :user/id     @user-id})
-        query                 [{`(bookmark-mut/delete-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id})
-                                [:bookmark/id :tag/id]}]
-        result                (protected-parser {:request {:user/id @user-id}} query)
-        bookmark-tag          (get result `bookmark-mut/delete-bookmark-tag)
-        fetched-bookmark-tags (bookmark-db/fetch-tags-by-bookmark {:bookmark/id bookmark-id :user/id @user-id})]
-    (expect [] fetched-bookmark-tags)
-    (expect tag-id (:tag/id bookmark-tag))
-    (expect bookmark-id (:bookmark/id bookmark-tag))))
-
-(defexpect normal-delete-bookmark-tag-with-nonexistent-bookmark
-  (let [bookmark-id (UUID/randomUUID)
-        tag         (tag-db/create-tag {:tag/name "foo" :tag/user-id @user-id})
-        tag-id      (:tag/id tag)
-        query       [{`(bookmark-mut/delete-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id})
-                      [:bookmark/id :tag/id]}]
-        result      (protected-parser {:request {:user/id @user-id}} query)
-        actual      (get result `bookmark-mut/delete-bookmark-tag)]
-    (expect {:tag/id tag-id :bookmark/id bookmark-id} actual)))
-
-(defexpect normal-delete-bookmark-tag-with-nonexistent-tag
-  (let [bookmark    (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                  :bookmark/url     "bar"
-                                                  :bookmark/user-id @user-id
-                                                  :bookmark/tab-id  @tab1-id})
-        bookmark-id (:bookmark/id bookmark)
-        tag-id      (UUID/randomUUID)
-        query       [{`(bookmark-mut/delete-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id})
-                      [:bookmark/id :tag/id]}]
-        result      (protected-parser {:request {:user/id @user-id}} query)
-        actual      (get result `bookmark-mut/delete-bookmark-tag)]
-    (expect {:tag/id tag-id :bookmark/id bookmark-id} actual)))
-
-(defexpect fail-delete-bookmark-tag-with-invalid-bookmark
-  (let [bookmark-id "foo"
-        tag         (tag-db/create-tag {:tag/name "foo" :tag/user-id @user-id})
-        tag-id      (:tag/id tag)
-        query       [{`(bookmark-mut/delete-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id})
-                      [:bookmark/id :tag/id]}]
-        result      (protected-parser {:request {:user/id @user-id}} query)
-        error       (get result `bookmark-mut/delete-bookmark-tag)]
-    (expect {:error         true
-             :error-message "Invalid bookmark or tag"
-             :error-type    :invalid-input
-             :error-data    {:bookmark/id ["should be a uuid"]}} error)))
-
-(defexpect fail-delete-bookmark-tag-with-invalid-tag
-  (let [bookmark    (bookmark-db/create-bookmark {:bookmark/title   "foo"
-                                                  :bookmark/url     "bar"
-                                                  :bookmark/user-id @user-id
-                                                  :bookmark/tab-id  @tab1-id})
-        bookmark-id (:bookmark/id bookmark)
-        tag-id      "foo"
-        query       [{`(bookmark-mut/delete-bookmark-tag {:bookmark/id ~bookmark-id :tag/id ~tag-id})
-                      [:bookmark/id :tag/id]}]
-        result      (protected-parser {:request {:user/id @user-id}} query)
-        error       (get result `bookmark-mut/delete-bookmark-tag)]
-    (expect {:error         true
-             :error-message "Invalid bookmark or tag"
-             :error-type    :invalid-input
-             :error-data    {:tag/id ["should be a uuid"]}} error)))
 
 (comment
   (require '[kaocha.repl :as k])

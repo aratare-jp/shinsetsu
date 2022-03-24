@@ -3,7 +3,10 @@
     [com.wsscode.pathom.connect :as pc :refer [defresolver]]
     [shinsetsu.db.tab :as tab-db]
     [taoensso.timbre :as log]
-    [buddy.hashers :as hashers]))
+    [buddy.hashers :as hashers]
+    [malli.core :as m]
+    [shinsetsu.schema :as s]
+    [malli.error :as me]))
 
 (def tab-output [:tab/id :tab/name :tab/is-protected?])
 
@@ -14,8 +17,13 @@
       (select-keys tab-output)))
 
 (defresolver tabs-resolver
-  "Fetch all the tabs that belong to a user."
   [{{user-id :user/id} :request} _]
   {::pc/output [{:user/tabs tab-output}]}
-  (log/info "User" user-id "requested all tabs")
-  {:user/tabs (map trim-tab (tab-db/fetch-tabs {:tab/user-id user-id}))})
+  (let [input {:tab/user-id user-id}]
+    (if-let [err (m/explain s/tab-multi-fetch-spec input)]
+      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
+      (do
+        (log/info "Fetching all tabs for user" user-id)
+        (let [bookmarks {:user/tabs (map trim-tab (tab-db/fetch-tabs {:tab/user-id user-id}))}]
+          (log/info "User" user-id "fetched tabs successfully")
+          bookmarks)))))

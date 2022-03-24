@@ -12,8 +12,8 @@
 
 (defn create-tag
   [{:tag/keys [user-id] :as tag}]
-  (if-let [err (m/explain s/tag-spec tag)]
-    (throw (ex-info "Invalid tag" {:error-type :invalid-input :error-data (me/humanize err)}))
+  (if-let [err (m/explain s/tag-create-spec tag)]
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Create new tag for user" user-id)
       (jdbc/execute-one! ds (-> (helpers/insert-into :tag)
@@ -24,7 +24,7 @@
 (defn patch-tag
   [{:tag/keys [id user-id] :as tag}]
   (if-let [err (m/explain s/tag-update-spec tag)]
-    (throw (ex-info "Invalid tag" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (let [tag (assoc tag :tag/updated (Instant/now))]
       (log/info "Update tag" id "for user" user-id)
       (jdbc/execute-one! ds (-> (helpers/update :tag)
@@ -36,7 +36,7 @@
 (defn delete-tag
   [{:tag/keys [id user-id] :as tag}]
   (if-let [err (m/explain s/tag-delete-spec tag)]
-    (throw (ex-info "Invalid tag" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Delete tag" id "for user" user-id)
       (jdbc/execute-one! ds (-> (helpers/delete-from :tag)
@@ -47,7 +47,7 @@
 (defn fetch-tag
   [{tag-id :tag/id user-id :user/id :as input}]
   (if-let [err (m/explain [:map {:closed true} [:tag/id :uuid] [:user/id :uuid]] input)]
-    (throw (ex-info "Invalid user or tag ID" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Fetch tag" tag-id "for user" user-id)
       (jdbc/execute-one! ds (-> (helpers/select :*)
@@ -58,7 +58,7 @@
 (defn fetch-tags
   [{user-id :user/id :as input}]
   (if-let [err (m/explain [:map {:closed true} [:user/id :uuid]] input)]
-    (throw (ex-info "Invalid user ID" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
       (log/info "Fetch all tags for user" user-id)
       (jdbc/execute! ds (-> (helpers/select :*)

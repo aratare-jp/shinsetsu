@@ -47,7 +47,7 @@
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   result
         expected {`tag-mut/create-tag {:error         true
-                                       :error-message "Invalid tag"
+                                       :error-message "Invalid input"
                                        :error-type    :invalid-input
                                        :error-data    {:tag/name ["missing required key"]}}}]
     (expect expected actual)))
@@ -57,7 +57,7 @@
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   result
         expected {`tag-mut/create-tag {:error         true
-                                       :error-message "Invalid tag"
+                                       :error-message "Invalid input"
                                        :error-type    :invalid-input
                                        :error-data    {:tag/name ["should be at least 1 characters"]}}}]
     (expect expected actual)))
@@ -67,14 +67,14 @@
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   result
         expected {`tag-mut/create-tag {:error         true
-                                       :error-message "Invalid tag" :error-type :invalid-input
+                                       :error-message "Invalid input" :error-type :invalid-input
                                        :error-data    {:tag/colour ["must have hex colour format"]}}}]
     (expect expected actual))
   (let [query    [{`(tag-mut/create-tag {:tag/name "foo" :tag/colour ""}) tag-join}]
         result   (protected-parser {:request {:user/id @user-id}} query)
         actual   result
         expected {`tag-mut/create-tag {:error         true
-                                       :error-message "Invalid tag" :error-type :invalid-input
+                                       :error-message "Invalid input" :error-type :invalid-input
                                        :error-data    {:tag/colour ["should be at least 1 characters"
                                                                     "must have hex colour format"]}}}]
     (expect expected actual)))
