@@ -1,7 +1,8 @@
 (ns shinsetsu.schema
   (:require
     [malli.core :as m]
-    [malli.error :as me]))
+    [malli.error :as me]
+    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]))
 
 (def non-empty-string (m/schema [:string {:min 1}]))
 
@@ -30,6 +31,7 @@
 (def tab-create-spec
   [:map
    {:closed true}
+   [:tab/id {:optional true} [:fn tempid/tempid?]]
    [:tab/name non-empty-string]
    [:tab/password {:optional true} non-empty-string]
    [:tab/user-id :uuid]])

@@ -21,10 +21,9 @@
   (mc/validate s/tab-form-spec tab))
 
 (defsc TabModal
-  [this {:tab/keys [id name password created updated] :ui/keys [loading? error-type]} {:keys [on-close]}]
-  {:ident         (fn [] [:component/id ::tab-modal])
-   :query         [:tab/id :tab/name :tab/password :tab/created :tab/updated
-                   :ui/loading? :ui/error-type fs/form-config-join]
+  [this {:tab/keys [id name password] :ui/keys [loading? error-type]} {:keys [on-close]}]
+  {:ident         :tab/id
+   :query         [:tab/id :tab/name :tab/password :ui/loading? :ui/error-type fs/form-config-join]
    :form-fields   #{:tab/name :tab/password}
    :initial-state {:tab/name "" :tab/password ""}
    :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config TabModal data-tree))}
@@ -36,9 +35,8 @@
                               (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
                               (on-close))
         on-tab-save         #(let [args (if (= "" password)
-                                          {:tab/name name}
-                                          #:tab{:name name :password password})]
-                               (m/set-value! this :ui/loading? true)
+                                          #:tab{:id id :name name}
+                                          #:tab{:id id :name name :password password})]
                                (comp/transact! this [(tab-mut/create-tab args)]))
         on-clear            #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
         errors              (case error-type
@@ -89,6 +87,7 @@
   {:ident         :tab/id
    :query         [:tab/id
                    :tab/name
+                   :tab/password
                    :tab/is-protected?
                    {:ui/bookmarks (comp/get-query TabBookmark)}
                    :ui/is-unlocked?
@@ -102,11 +101,14 @@
                         (if (or (nil? password) (= "" password))
                           (comp/transact! this [(bookmark-mut/fetch-bookmarks #:tab{:id id})])
                           (comp/transact! this [(bookmark-mut/fetch-bookmarks #:tab{:id id :password password})])))
+        add-bm-btn   (e/button {:fill true :iconType "plus"} "Add new bookmark")
         bookmark-uis #(if (empty? bookmarks)
                         (e/empty-prompt {:title   (p "Seems like you don't have any bookmark")
                                          :body    (p "Let's add your first bookmark!")
-                                         :actions [(e/button {:fill true :iconType "plus"} "Add new bookmark")]})
-                        (map ui-tab-bookmark bookmarks))]
+                                         :actions [add-bm-btn]})
+                        (e/page-template {:pageHeader {:pageTitle      "Welcome!"
+                                                       :rightSideItems [add-bm-btn]}}
+                          (map ui-tab-bookmark bookmarks)))]
     (if is-protected?
       (if is-unlocked?
         (bookmark-uis)
@@ -123,9 +125,3 @@
         (bookmark-uis)))))
 
 (def ui-tab-body (comp/factory TabBody {:keyfn :tab/id}))
-
-(defsc TabHeader
-  [_ _]
-  {:ident :tab/id
-   :query [:tab/id :tab/name :tab/is-protected?]})
-

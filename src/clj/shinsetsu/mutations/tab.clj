@@ -28,9 +28,11 @@
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User" user-id "is attempting to create a new tab")
-        (let [tab (-> tab hash-password db/create-tab trim-tab)]
+        (let [tempid  (:tab/id tab)
+              tab     (-> tab (dissoc :tab/id) hash-password db/create-tab trim-tab)
+              real-id (:tab/id tab)]
           (log/info "User" user-id "created tab" (:tab/id tab) "successfully")
-          tab)))))
+          (merge {:tempids {tempid real-id}} tab))))))
 
 (defmutation patch-tab
   [{{user-id :user/id} :request} {:tab/keys [id] :as patch-data}]
