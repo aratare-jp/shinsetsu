@@ -1,6 +1,6 @@
 (ns shinsetsu.mutations.tab
   (:require
-    [shinsetsu.application :refer [app login-token]]
+    [shinsetsu.application :refer [app]]
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]

@@ -24,14 +24,13 @@
   [user-mutations/patch-user
    tab-resolver/tabs-resolver
    tab-mutations/create-tab
-   tab-mutations/fetch-tab
    tab-mutations/patch-tab
    tab-mutations/delete-tab
-   bookmark-resolver/bookmarks-resolver
    bookmark-resolver/bookmark-resolver
    bookmark-mutations/create-bookmark
    bookmark-mutations/patch-bookmark
    bookmark-mutations/delete-bookmark
+   bookmark-mutations/fetch-bookmarks
    bookmark-tag-mutations/create-bookmark-tag
    bookmark-tag-mutations/delete-bookmark-tag
    tag-resolver/tag-resolver

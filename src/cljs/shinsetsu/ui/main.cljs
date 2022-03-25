@@ -16,7 +16,7 @@
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]))
 
 (defsc Main
-  [this {tabs :user/tabs :ui/keys [selected-tab-idx loading? show-modal? tab-modal-data]}]
+  [this {:user/keys [tabs] :ui/keys [selected-tab-idx loading? show-modal? tab-modal-data]}]
   {:ident         (fn [] [:component/id ::main])
    :route-segment ["main"]
    :query         [{:user/tabs (comp/get-query tab-ui/TabBody)}
@@ -34,17 +34,21 @@
    :will-enter    (fn [app _]
                     (let [load-target         (targeting/append-to [:component/id ::main :user/tabs])
                           target-ready-params {:target [:component/id ::main]}]
+                      ;; FIXME: Needs to load from local storage first before fetching from remote.
                       (dr/route-deferred
                         [:component/id ::main]
-                        #(df/load! app :user/tabs tab-ui/TabHeaders {:target               load-target
-                                                                     :post-mutation        `dr/target-ready
-                                                                     :post-mutation-params target-ready-params}))))}
+                        #(df/load! app :user/tabs tab-ui/TabBody {:target               load-target
+                                                                  :post-mutation        `dr/target-ready
+                                                                  :post-mutation-params target-ready-params}))))}
   (if show-modal?
-    (let [on-close (fn [] (m/set-value! this :ui/show-modal? false))]
+    (let [on-close #(m/set-value! this :ui/show-modal? false)]
       (tab-ui/ui-tab-modal (comp/computed tab-modal-data {:on-close on-close})))
-    (let [ui-tabs (map-indexed (fn [i {:tab/keys [id name]}]
+    (let [ui-tabs (map-indexed (fn [i {:tab/keys [id name is-protected?] :ui/keys [is-unlocked?]}]
                                  {:id         id
-                                  :label      name
+                                  :label      (h2 (str name " ") (if is-protected?
+                                                                   (if is-unlocked?
+                                                                     (e/icon {:type "lockOpen"})
+                                                                     (e/icon {:type "lock"}))))
                                   :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
                                   :isSelected (= i selected-tab-idx)}) tabs)]
       (e/page-template {:pageHeader {:pageTitle      "Welcome!"

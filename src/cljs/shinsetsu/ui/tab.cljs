@@ -1,7 +1,9 @@
 (ns shinsetsu.ui.tab
   (:require
+    [shinsetsu.application :refer [app]]
     [shinsetsu.ui.elastic :as e]
     [shinsetsu.mutations.tab :as tab-mut]
+    [shinsetsu.mutations.bookmark :as bookmark-mut]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.dom :refer [div label input form button h1 h2 nav h5 p]]
@@ -33,7 +35,9 @@
         on-close            (fn [_]
                               (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
                               (on-close))
-        on-tab-save         #(let [args #:tab{:name name :password password}]
+        on-tab-save         #(let [args (if (= "" password)
+                                          {:tab/name name}
+                                          #:tab{:name name :password password})]
                                (m/set-value! this :ui/loading? true)
                                (comp/transact! this [(tab-mut/create-tab args)]))
         on-clear            #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
@@ -73,29 +77,55 @@
 (def ui-tab-modal (comp/factory TabModal {:keyfn :tab/id}))
 
 (defsc TabBookmark
-  [this {:bookmark/keys [id title url created updated tab-id] :as bookmark}]
-  {:ident (fn [] [:bookmark/id id])
-   :query [:bookmark/tab-id :bookmark/id :bookmark/title :bookmark/url :bookmark/created :bookmark/updated]}
+  [this {:bookmark/keys [id title url] :as bookmark}]
+  {:ident :bookmark/id
+   :query [:bookmark/id :bookmark/title :bookmark/url]}
   (div title))
 
 (def ui-tab-bookmark (comp/factory TabBookmark {:keyfn :bookmark/id}))
 
 (defsc TabBody
-  [this {:tab/keys [id bookmarks] :as props}]
-  {:ident             :tab/id
-   :query             [:tab/id :tab/name {:tab/bookmarks (comp/get-query TabBookmark)}]
-   :initial-state     {:tab/bookmarks []}
-   :componentDidMount (fn [this]
-                        (let [props (comp/props this)
-                              id    (:tab/id props)]
-                          ;; TODO: Right now this means data is loaded every time the tab is selected -> performance issue
-                          (df/load! this [:tab/id id] TabBody)))}
-  (map ui-tab-bookmark bookmarks))
+  [this {:tab/keys [id is-protected?] :ui/keys [bookmarks password is-unlocked? error-type] :as props}]
+  {:ident         :tab/id
+   :query         [:tab/id
+                   :tab/name
+                   :tab/is-protected?
+                   {:ui/bookmarks (comp/get-query TabBookmark)}
+                   :ui/is-unlocked?
+                   :ui/password
+                   :ui/error-type]
+   :initial-state {:ui/bookmarks    []
+                   :ui/password     ""
+                   :ui/is-unlocked? false}}
+  (let [on-unlock    #(do
+                        (m/set-value! this :ui/is-unlocked? true)
+                        (if (or (nil? password) (= "" password))
+                          (comp/transact! this [(bookmark-mut/fetch-bookmarks #:tab{:id id})])
+                          (comp/transact! this [(bookmark-mut/fetch-bookmarks #:tab{:id id :password password})])))
+        bookmark-uis #(if (empty? bookmarks)
+                        (e/empty-prompt {:title   (p "Seems like you don't have any bookmark")
+                                         :body    (p "Let's add your first bookmark!")
+                                         :actions [(e/button {:fill true :iconType "plus"} "Add new bookmark")]})
+                        (map ui-tab-bookmark bookmarks))]
+    (if is-protected?
+      (if is-unlocked?
+        (bookmark-uis)
+        (e/empty-prompt {:title   (h2 "This tab is protected!")
+                         :body    (e/form {:component "form" :id "tab-password-modal"}
+                                    (e/form-row {:label "Password"}
+                                      (e/field-text {:type     "password"
+                                                     :name     "password"
+                                                     :value    password
+                                                     :onChange #(m/set-string! this :ui/password :event %)})))
+                         :actions [(e/button {:fill true :onClick on-unlock} "UNLOCK")]}))
+      (do
+        (on-unlock)
+        (bookmark-uis)))))
 
 (def ui-tab-body (comp/factory TabBody {:keyfn :tab/id}))
 
-(defsc TabHeaders
+(defsc TabHeader
   [_ _]
   {:ident :tab/id
-   :query [:tab/id :tab/name]})
+   :query [:tab/id :tab/name :tab/is-protected?]})
 

@@ -32,23 +32,6 @@
           (log/info "User" user-id "created tab" (:tab/id tab) "successfully")
           tab)))))
 
-(defmutation fetch-tab
-  [{{user-id :user/id} :request} {:tab/keys [id password] :as input}]
-  {::pc/params #{:tab/id :tab/password}
-   ::pc/output [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated]}
-  (log/info "User" user-id "requested tab" id)
-  (let [input (merge {:tab/user-id user-id} input)]
-    (if-let [err (m/explain s/tab-fetch-spec input)]
-      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
-      (let [tab (db/fetch-tab input)]
-        (if-let [pwd (:tab/password tab)]
-          (if (hashers/check password pwd)
-            (trim-tab tab)
-            (do
-              (log/warn "User" user-id "attempted to fetch tab" id "with wrong password")
-              (throw (ex-info "Invalid input" {:error-type :wrong-password}))))
-          (trim-tab tab))))))
-
 (defmutation patch-tab
   [{{user-id :user/id} :request} {:tab/keys [id] :as patch-data}]
   {::pc/params #{:tab/name :tab/password}

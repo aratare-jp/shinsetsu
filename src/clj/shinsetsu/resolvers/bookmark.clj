@@ -23,27 +23,3 @@
         (let [bookmark (db/fetch-bookmark #:bookmark{:id bookmark-id :user-id user-id})]
           (log/info "User" user-id "fetched bookmark successfully")
           bookmark)))))
-
-(defresolver bookmarks-resolver
-  [{{user-id :user/id} :request} {tab-id :tab/id}]
-  {::pc/input  #{:tab/id}
-   ::pc/output [{:tab/bookmarks bookmark-output}]}
-  (try
-    (let [input {:bookmark/tab-id tab-id :bookmark/user-id user-id}]
-      (if-let [err (m/explain s/bookmark-multi-fetch-spec input)]
-        (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
-        (do
-          (log/info "Fetching all bookmarks within tab" tab-id "for user" user-id)
-          (let [bookmarks {:tab/bookmarks (db/fetch-bookmarks #:bookmark{:tab-id tab-id :user-id user-id})}]
-            (log/info "User" user-id "fetched bookmarks within tab" tab-id "successfully")
-            bookmarks))))
-    (catch ExceptionInfo e
-      (let [message (ex-message e)
-            data    (as-> e $
-                          (ex-data $)
-                          (if-let [tab-id-data (get-in $ [:error-data :bookmark/tab-id])]
-                            (-> $
-                                (assoc-in [:error-data :tab/id] tab-id-data)
-                                (dissoc-in [:error-data :bookmark/tab-id]))
-                            $))]
-        (throw (ex-info message data))))))
