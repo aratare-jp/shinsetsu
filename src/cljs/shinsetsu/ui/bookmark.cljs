@@ -2,7 +2,7 @@
   (:require
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
-    [com.fulcrologic.fulcro.dom :refer [h1]]
+    [com.fulcrologic.fulcro.dom :refer [h1 div]]
     [com.fulcrologic.fulcro.mutations :as m]
     [malli.core :as mc]
     [shinsetsu.schema :as s]
@@ -10,8 +10,8 @@
     [shinsetsu.ui.elastic :as e]))
 
 (defsc BookmarkModal
-  [this {:bookmark/keys [id title url created updated] :ui/keys [loading? error-type]} {:keys [on-close]}]
-  {:ident         (fn [] [:component/id ::bookmark-modal])
+  [this {:bookmark/keys [id title url] :ui/keys [loading? error-type]} {:keys [on-close]}]
+  {:ident         :bookmark/id
    :query         [:bookmark/id :bookmark/title :bookmark/url :bookmark/created :bookmark/updated
                    :ui/loading? :ui/error-type fs/form-config-join]
    :form-fields   #{:bookmark/title :bookmark/url}
@@ -64,3 +64,11 @@
         (e/button {:onClick on-clear} "Clear")))))
 
 (def ui-bookmark-modal (comp/factory BookmarkModal {:keyfn :bookmark/id}))
+
+(defsc Bookmark
+  [this {:bookmark/keys [id title url] :as bookmark}]
+  {:ident :bookmark/id
+   :query [:bookmark/id :bookmark/title :bookmark/url]}
+  (div title))
+
+(def ui-bookmark (comp/factory Bookmark {:keyfn :bookmark/id}))

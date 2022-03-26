@@ -1,5 +1,6 @@
 (ns shinsetsu.mutations.tab
   (:require
+    [medley.core :refer [dissoc-in]]
     [shinsetsu.application :refer [app]]
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
@@ -29,3 +30,11 @@
     (let [{:keys [error-type]} (get body `create-tab)]
       (swap! state assoc-in (conj ref :ui/loading?) false)
       (swap! state assoc-in (conj ref :ui/error-type) error-type))))
+
+(defmutation remove-ident
+  [{:keys [ident remove-from]}]
+  (action
+    [{:keys [state]}]
+    (swap! state dissoc-in ident)
+    (if remove-from
+      (swap! state merge/remove-ident* ident remove-from))))
