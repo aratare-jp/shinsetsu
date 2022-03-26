@@ -21,10 +21,11 @@
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with id" user-id "is attempting to create a new bookmark")
-        (let [bookmark    (db/create-bookmark bookmark)
-              bookmark-id (:bookmark/id bookmark)]
-          (log/info "User with ID" user-id "created bookmark" bookmark-id "successfully")
-          bookmark)))))
+        (let [tempid   (:bookmark/id bookmark)
+              bookmark (-> bookmark (dissoc :bookmark/id) db/create-bookmark)
+              real-id  (:bookmark/id bookmark)]
+          (log/info "User with ID" user-id "created bookmark" real-id "successfully")
+          (merge bookmark {:tempids {tempid real-id}}))))))
 
 (defmutation fetch-bookmarks
   [{{user-id :user/id} :request} {:tab/keys [id password] :as input}]

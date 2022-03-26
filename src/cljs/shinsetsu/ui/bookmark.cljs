@@ -6,13 +6,14 @@
     [com.fulcrologic.fulcro.mutations :as m]
     [malli.core :as mc]
     [shinsetsu.schema :as s]
-    [shinsetsu.mutations.tab :as tab-mut]
-    [shinsetsu.ui.elastic :as e]))
+    [shinsetsu.mutations.bookmark :refer [create-bookmark]]
+    [shinsetsu.ui.elastic :as e]
+    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]))
 
 (defsc BookmarkModal
-  [this {:bookmark/keys [id title url] :ui/keys [loading? error-type]} {:keys [on-close]}]
+  [this {:bookmark/keys [id title url tab-id] :ui/keys [loading? error-type]} {:keys [on-close]}]
   {:ident         :bookmark/id
-   :query         [:bookmark/id :bookmark/title :bookmark/url :bookmark/created :bookmark/updated
+   :query         [:bookmark/id :bookmark/title :bookmark/url :bookmark/tab-id
                    :ui/loading? :ui/error-type fs/form-config-join]
    :form-fields   #{:bookmark/title :bookmark/url}
    :initial-state {:bookmark/title "" :bookmark/url ""}
@@ -20,15 +21,12 @@
   (let [on-title-changed (fn [e] (m/set-string! this :bookmark/title :event e))
         on-url-changed   (fn [e] (m/set-string! this :bookmark/url :event e))
         on-blur          (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
-        tab-valid?       (mc/validate s/tab-form-spec #:tab{:title title :url url})
+        tab-valid?       (mc/validate s/bookmark-form-spec #:bookmark{:title title :url url})
         on-close         (fn [_]
                            (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
                            (on-close))
-        on-tab-save      #(let [args (if (= "" url)
-                                       {:bookmark/title title}
-                                       #:tab{:title title :url url})]
-                            (m/set-value! this :ui/loading? true)
-                            (comp/transact! this [(tab-mut/create-tab args)]))
+        on-tab-save      #(let [args #:bookmark{:id id :title title :url url :tab-id tab-id}]
+                            (comp/transact! this [(create-bookmark args)]))
         on-clear         #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
         errors           (case error-type
                            :invalid-input ["Unable to create new tab." "Please try again."]
@@ -37,7 +35,7 @@
     (e/modal {:onClose on-close}
       (e/modal-header {}
         (e/modal-header-title {}
-          (h1 (if id "Edit Bookmark" "Create New Bookmark"))))
+          (h1 (if (tempid/tempid? id) "Edit Bookmark" "Create New Bookmark"))))
       (e/modal-body {}
         (e/form {:component "form" :isInvalid (boolean errors) :error errors}
           (e/form-row {:label "Title"}
@@ -46,7 +44,7 @@
                            :onChange on-title-changed
                            :onBlur   #(on-blur :bookmark/title)
                            :disabled loading?}))
-          (e/form-row {:label "url" :helpText "Can be left empty if you don't want to lock this tab"}
+          (e/form-row {:label "URL"}
             (e/field-text {:name     "url"
                            :value    url
                            :type     "url"

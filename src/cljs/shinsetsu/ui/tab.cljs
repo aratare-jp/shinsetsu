@@ -2,19 +2,18 @@
   (:require
     [shinsetsu.application :refer [app]]
     [shinsetsu.ui.elastic :as e]
-    [shinsetsu.mutations.tab :as tab-mut]
-    [shinsetsu.mutations.bookmark :as bookmark-mut]
+    [shinsetsu.mutations.tab :refer [create-tab]]
+    [shinsetsu.mutations.bookmark :refer [fetch-bookmarks]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.mutations :as m]
-    [shinsetsu.ui.bookmark :as bookmark-ui]
+    [shinsetsu.ui.bookmark :refer [BookmarkModal ui-bookmark-modal Bookmark ui-bookmark]]
     [com.fulcrologic.fulcro.dom :refer [div label input form button h1 h2 nav h5 p]]
-    [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.routing.dynamic-routing :refer [defrouter]]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
-    [com.fulcrologic.fulcro.data-fetch :as df]
     [shinsetsu.schema :as s]
     [taoensso.timbre :as log]
     [malli.core :as mc]
+    [shinsetsu.mutations.common :refer [remove-ident]]
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]))
 
@@ -35,7 +34,7 @@
         on-tab-save         #(let [args (if (= "" password)
                                           #:tab{:id id :name name}
                                           #:tab{:id id :name name :password password})]
-                               (comp/transact! this [(tab-mut/create-tab args)]))
+                               (comp/transact! this [(create-tab args)]))
         on-clear            #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
         errors              (case error-type
                               :invalid-input ["Unable to create new tab." "Please try again."]
@@ -78,7 +77,7 @@
    :query [:tab/id
            :tab/name
            :tab/is-protected?
-           {:tab/bookmarks (comp/get-query bookmark-ui/Bookmark)}
+           {:tab/bookmarks (comp/get-query BookmarkModal)}
            :ui/unlocked?
            :ui/password
            :ui/error-type
@@ -86,13 +85,16 @@
   (let [unlock       (fn []
                        (m/set-value! this :ui/unlocked? true)
                        (if (or (nil? password) (= "" password))
-                         (comp/transact! this [(bookmark-mut/fetch-bookmarks #:tab{:id id})])
-                         (comp/transact! this [(bookmark-mut/fetch-bookmarks #:tab{:id id :password password})])))
+                         (comp/transact! this [(fetch-bookmarks #:tab{:id id})])
+                         (comp/transact! this [(fetch-bookmarks #:tab{:id id :password password})])))
         add-bm-btn   (e/button {:fill     true
                                 :iconType "plus"
                                 :onClick  (fn []
-                                            (merge/merge-component! app bookmark-ui/BookmarkModal
-                                                                    #:bookmark{:id (tempid/tempid) :title "" :url ""}
+                                            (merge/merge-component! app BookmarkModal
+                                                                    #:bookmark{:id     (tempid/tempid)
+                                                                               :title  ""
+                                                                               :url    ""
+                                                                               :tab-id id}
                                                                     :append [:tab/id id :tab/bookmarks])
                                             (m/set-value! this :ui/show-bookmark-modal? true))}
                        "Add new bookmark")
@@ -101,17 +103,17 @@
                                          :body    (p "Let's add your first bookmark!")
                                          :actions [add-bm-btn]})
                         (e/page-template {:pageHeader {:pageTitle "Welcome!" :rightSideItems [add-bm-btn]}}
-                          (map bookmark-ui/ui-bookmark bookmarks)))
+                          (map ui-bookmark bookmarks)))
         back-fn      #(m/set-value! this :ui/error-type nil)]
     (cond
       show-bookmark-modal?
       (let [new-bookmark (last bookmarks)
             on-close     (fn []
-                           (comp/transact! this [(tab-mut/remove-ident
-                                                   {:ident       (comp/get-ident bookmark-ui/BookmarkModal new-bookmark)
+                           (comp/transact! this [(remove-ident
+                                                   {:ident       (comp/get-ident BookmarkModal new-bookmark)
                                                     :remove-from (conj (comp/get-ident this) :ui/bookmarks)})])
                            (m/set-value! this :ui/show-bookmark-modal? false))]
-        (bookmark-ui/ui-bookmark-modal (comp/computed new-bookmark {:on-close on-close})))
+        (ui-bookmark-modal (comp/computed new-bookmark {:on-close on-close})))
       error-type
       (case error-type
         :wrong-password (e/empty-prompt {:color    "danger"

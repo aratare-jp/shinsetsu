@@ -67,6 +67,7 @@
 (def bookmark-create-spec
   [:map
    {:closed true}
+   [:bookmark/id {:optional true} [:fn tempid/tempid?]]
    [:bookmark/title non-empty-string]
    [:bookmark/url non-empty-string]
    [:bookmark/image {:optional true} non-empty-string]
@@ -132,6 +133,11 @@
    [:tag/user-id :uuid]])
 
 ;; BOOKMARK TAG
+
+(def bookmark-form-spec
+  [:map
+   [:bookmark/title non-empty-string]
+   [:bookmark/url non-empty-string]])
 
 (def bookmark-tag-create-spec
   [:map

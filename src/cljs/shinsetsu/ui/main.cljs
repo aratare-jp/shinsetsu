@@ -1,26 +1,24 @@
 (ns shinsetsu.ui.main
   (:require
     [shinsetsu.ui.elastic :as e]
-    [shinsetsu.ui.tab :as tab-ui]
+    [shinsetsu.ui.tab :refer [TabModal TabBody ui-tab-modal ui-tab-body]]
     [shinsetsu.application :refer [app]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
-    [com.fulcrologic.fulcro.dom :as dom :refer [div label input form button h1 h2 nav h5 p span]]
+    [com.fulcrologic.fulcro.dom :refer [div label input form button h1 h2 nav h5 p span]]
     [com.fulcrologic.fulcro.mutations :as m]
-    [com.fulcrologic.fulcro.dom.events :as evt]
+    [shinsetsu.mutations.common :refer [remove-ident]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
-    [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.data-fetch :as df]
     [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]
     [taoensso.timbre :as log]
-    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
-    [shinsetsu.mutations.tab :as tab-mut]))
+    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]))
 
 (defsc Main
   [this {:user/keys [tabs] :ui/keys [selected-tab-idx show-tab-modal?]}]
   {:ident         (fn [] [:component/id ::main])
    :route-segment ["main"]
-   :query         [{:user/tabs (comp/get-query tab-ui/TabBody)} :ui/selected-tab-idx :ui/show-tab-modal?]
+   :query         [{:user/tabs (comp/get-query TabBody)} :ui/selected-tab-idx :ui/show-tab-modal?]
    :initial-state {:user/tabs           []
                    :ui/selected-tab-idx 0
                    :ui/show-tab-modal?  false}
@@ -30,16 +28,16 @@
                       ;; FIXME: Needs to load from local storage first before fetching from remote.
                       (dr/route-deferred
                         [:component/id ::main]
-                        #(df/load! app :user/tabs tab-ui/TabBody {:target               load-target
-                                                                  :post-mutation        `dr/target-ready
-                                                                  :post-mutation-params target-ready-params}))))}
+                        #(df/load! app :user/tabs TabBody {:target               load-target
+                                                           :post-mutation        `dr/target-ready
+                                                           :post-mutation-params target-ready-params}))))}
   (if show-tab-modal?
     (let [new-tab  (last tabs)
           on-close (fn []
-                     (comp/transact! this [(tab-mut/remove-ident {:ident       (comp/get-ident tab-ui/TabModal new-tab)
-                                                                  :remove-from (conj (comp/get-ident this) :user/tabs)})])
+                     (comp/transact! this [(remove-ident {:ident       (comp/get-ident TabModal new-tab)
+                                                          :remove-from (conj (comp/get-ident this) :user/tabs)})])
                      (m/set-value! this :ui/show-tab-modal? false))]
-      (tab-ui/ui-tab-modal (comp/computed new-tab {:on-close on-close})))
+      (ui-tab-modal (comp/computed new-tab {:on-close on-close})))
     (let [ui-tabs    (map-indexed (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?]}]
                                     {:id         id
                                      :prepend    (if is-protected?
@@ -51,7 +49,7 @@
                                      :isSelected (= i selected-tab-idx)}) tabs)
           new-tab-fn (fn []
                        (m/set-value! this :ui/show-tab-modal? true)
-                       (merge/merge-component! app tab-ui/TabModal
+                       (merge/merge-component! app TabModal
                                                #:tab{:id (tempid/tempid) :name "" :password ""}
                                                :append [:component/id ::main :user/tabs]))]
       (e/page-template
@@ -62,4 +60,4 @@
         (if (empty? tabs)
           (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
                            :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-          (tab-ui/ui-tab-body (nth tabs selected-tab-idx)))))))
+          (ui-tab-body (nth tabs selected-tab-idx)))))))
