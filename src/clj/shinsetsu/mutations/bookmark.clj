@@ -12,6 +12,8 @@
 (def bookmark-input #{:bookmark/title :bookmark/url :bookmark/image :bookmark/user-id :bookmark/tab-id})
 (def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/created :bookmark/updated])
 
+(defn trim-bookmark [b] (dissoc b :bookmark/user-id :bookmark/tab-id))
+
 (defmutation create-bookmark
   [{{user-id :user/id} :request} bookmark]
   {::pc/params bookmark-input
@@ -22,10 +24,12 @@
       (do
         (log/info "User with id" user-id "is attempting to create a new bookmark")
         (let [tempid   (:bookmark/id bookmark)
-              bookmark (-> bookmark (dissoc :bookmark/id) db/create-bookmark)
+              bookmark (-> bookmark (dissoc :bookmark/id) db/create-bookmark trim-bookmark)
               real-id  (:bookmark/id bookmark)]
           (log/info "User with ID" user-id "created bookmark" real-id "successfully")
-          (merge bookmark {:tempids {tempid real-id}}))))))
+          (if tempid
+            (merge bookmark {:tempids {tempid real-id}})
+            bookmark))))))
 
 (defmutation fetch-bookmarks
   [{{user-id :user/id} :request} {:tab/keys [id password] :as input}]
@@ -34,11 +38,12 @@
   ;; Fetch tab and verify against the provided password.
   (let [tab-input          (merge input {:tab/user-id user-id})
         bookmark-input     #:bookmark{:tab-id id :user-id user-id}
-        fetch-bookmarks-fn #(do
-                              (log/info "Fetching all bookmarks within tab" id "for user" user-id)
-                              (let [bookmarks {:tab/id id :tab/bookmarks (db/fetch-bookmarks bookmark-input)}]
-                                (log/info "User" user-id "fetched bookmarks within tab" id "successfully")
-                                bookmarks))]
+        fetch-bookmarks-fn (fn []
+                             (log/info "Fetching all bookmarks within tab" id "for user" user-id)
+                             (let [bookmarks {:tab/id        id
+                                              :tab/bookmarks (->> bookmark-input db/fetch-bookmarks (map trim-bookmark))}]
+                               (log/info "User" user-id "fetched bookmarks within tab" id "successfully")
+                               bookmarks))]
     (if-let [err (or (m/explain s/tab-fetch-spec tab-input) (m/explain s/bookmark-multi-fetch-spec bookmark-input))]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (if-let [pwd (-> tab-input tab-db/fetch-tab :tab/password)]
@@ -59,7 +64,7 @@
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with id" user-id "is attempting to patch bookmark" id)
-        (let [bookmark (db/patch-bookmark bookmark)]
+        (let [bookmark (-> bookmark db/patch-bookmark trim-bookmark)]
           (log/info "User with ID" user-id "patched bookmark" id "successfully")
           bookmark)))))
 
@@ -72,6 +77,6 @@
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with id" user-id "is attempting to delete bookmark" id)
-        (let [bookmark (db/delete-bookmark bookmark)]
+        (let [bookmark (-> bookmark db/delete-bookmark trim-bookmark)]
           (log/info "User with ID" user-id "deleted bookmark" id "successfully")
           bookmark)))))

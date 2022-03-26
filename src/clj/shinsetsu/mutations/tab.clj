@@ -32,7 +32,9 @@
               tab     (-> tab (dissoc :tab/id) hash-password db/create-tab trim-tab)
               real-id (:tab/id tab)]
           (log/info "User" user-id "created tab" (:tab/id tab) "successfully")
-          (merge {:tempids {tempid real-id}} tab))))))
+          (if tempid
+            (merge tab {:tempids {tempid real-id}})
+            tab))))))
 
 (defmutation patch-tab
   [{{user-id :user/id} :request} {:tab/keys [id] :as patch-data}]

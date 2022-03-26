@@ -23,13 +23,15 @@
                             EuiModalHeaderTitle
                             EuiModalBody
                             EuiModalFooter
-                            EuiIcon]]))
+                            EuiIcon
+                            EuiCard]]))
 
 (def provider (ri/react-factory EuiProvider))
 (def empty-prompt (ri/react-factory EuiEmptyPrompt))
 (def spacer (ri/react-factory EuiSpacer))
 (def loading-spinner (ri/react-factory EuiLoadingSpinner))
 (def icon (ri/react-factory EuiIcon))
+(def card (ri/react-factory EuiCard))
 
 ;; Form
 (def form (ri/react-factory EuiForm))

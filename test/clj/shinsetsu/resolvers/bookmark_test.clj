@@ -90,32 +90,6 @@
         actual      (protected-parser {:request {:user/id @user-id}} [{[:bookmark/id random-id] bookmark-join}])]
     (expect expected actual)))
 
-(defexpect normal-fetch-bookmarks
-  (let [bookmark1 (create-bookmark "foo" "bar" @tab-id @user-id)
-        bookmark2 (create-bookmark "foo" "bar" @tab-id @user-id)
-        expected  {[:tab/id @tab-id] {:tab/bookmarks [bookmark1 bookmark2]}}
-        query     [{[:tab/id @tab-id] [{:tab/bookmarks bookmark-join}]}]
-        actual    (protected-parser {:request {:user/id @user-id}} query)]
-    (expect expected actual)))
-
-(defexpect fetch-empty-bookmarks
-  (let [expected {[:tab/id @tab-id] {:tab/bookmarks []}}
-        query    [{[:tab/id @tab-id] [{:tab/bookmarks bookmark-join}]}]
-        actual   (protected-parser {:request {:user/id @user-id}} query)]
-    (expect expected actual)))
-
-(defexpect fail-fetch-invalid-bookmarks
-  (let [tab-id      "foo"
-        inner-error {:error         true
-                     :error-type    :invalid-input
-                     :error-message "Invalid input"
-                     :error-data    {:tab/id ["should be a uuid"]}}
-        expected    {[:tab/id tab-id] {:tab/bookmarks ::pc/reader-error}
-                     ::pc/errors      {[[:tab/id tab-id] :tab/bookmarks] inner-error}}
-        query       [{[:tab/id tab-id] [:tab/bookmarks]}]
-        actual      (protected-parser {:request {:user/id @user-id}} query)]
-    (expect expected actual)))
-
 (comment
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.parser :refer [protected-parser]])

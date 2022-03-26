@@ -10,7 +10,8 @@
     [shinsetsu.db.tag :as tag-db]
     [shinsetsu.db.bookmark :as bookmark-db]
     [taoensso.timbre :as log]
-    [buddy.hashers :as hashers])
+    [buddy.hashers :as hashers]
+    [com.fulcrologic.fulcro.algorithms.tempid :as tempid])
   (:import [java.util UUID]))
 
 (def user-id (atom nil))
@@ -31,6 +32,7 @@
 (use-fixtures :each db-cleanup user-tab-setup)
 
 (def bookmark-join [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/created :bookmark/updated])
+(defn trim-bookmark [b] (dissoc b :bookmark/user-id :bookmark/tab-id))
 
 (defexpect normal-create-bookmark
   (let [bookmark-title   "foo"
@@ -38,16 +40,33 @@
         query            [{`(bookmark-mut/create-bookmark {:bookmark/title  ~bookmark-title
                                                            :bookmark/url    ~bookmark-url
                                                            :bookmark/tab-id ~(deref tab1-id)}) bookmark-join}]
-        result           (protected-parser {:request {:user/id @user-id}} query)
-        bookmark         (get result `bookmark-mut/create-bookmark)
+        actual           (protected-parser {:request {:user/id @user-id}} query)
+        bookmark         (get actual `bookmark-mut/create-bookmark)
         bookmark-id      (:bookmark/id bookmark)
-        fetched-bookmark (bookmark-db/fetch-bookmark {:bookmark/id bookmark-id :bookmark/user-id @user-id})]
-    (expect (:bookmark/id fetched-bookmark) (:bookmark/id bookmark))
-    (expect (:bookmark/title fetched-bookmark) (:bookmark/title bookmark))
-    (expect (:bookmark/url fetched-bookmark) (:bookmark/url bookmark))
-    (expect (:bookmark/image fetched-bookmark) (:bookmark/image bookmark))
-    (expect (:bookmark/created fetched-bookmark) (:bookmark/created bookmark))
-    (expect (:bookmark/updated fetched-bookmark) (:bookmark/updated bookmark))))
+        fetched-bookmark (-> #:bookmark{:id bookmark-id :user-id @user-id}
+                             bookmark-db/fetch-bookmark
+                             trim-bookmark)
+        expected         {`bookmark-mut/create-bookmark fetched-bookmark}]
+    (expect expected actual)))
+
+(defexpect normal-create-bookmark-with-tempid
+  (let [tempid           (tempid/tempid)
+        bookmark-title   "foo"
+        bookmark-url     "bar"
+        query            [{`(bookmark-mut/create-bookmark {:bookmark/id     ~tempid
+                                                           :bookmark/title  ~bookmark-title
+                                                           :bookmark/url    ~bookmark-url
+                                                           :bookmark/tab-id ~(deref tab1-id)}) bookmark-join}]
+        actual           (protected-parser {:request {:user/id @user-id}} query)
+        bookmark         (get actual `bookmark-mut/create-bookmark)
+        bookmark-id      (:bookmark/id bookmark)
+        fetched-bookmark (-> #:bookmark{:id bookmark-id :user-id @user-id}
+                             bookmark-db/fetch-bookmark
+                             trim-bookmark)
+        expected         {`bookmark-mut/create-bookmark (merge
+                                                          fetched-bookmark
+                                                          {:tempids {tempid bookmark-id}})}]
+    (expect expected actual)))
 
 (defexpect fail-create-bookmark-with-invalid-title
   (let [bookmark-title ""
@@ -291,7 +310,87 @@
              :error-type    :invalid-input
              :error-data    {:bookmark/id ["should be a uuid"]}} bookmark)))
 
+;; FETCH
+
+(defexpect normal-fetch-bookmarks-with-password
+  (let [tab-password "bar"
+        tab          (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
+                         (update :tab/password hashers/derive)
+                         tab-db/create-tab)
+        tab-id       (:tab/id tab)
+        bookmark1    (bookmark-db/create-bookmark #:bookmark{:title "foo" :url "bar" :tab-id tab-id :user-id @user-id})
+        bookmark2    (bookmark-db/create-bookmark #:bookmark{:title "fim" :url "baz" :tab-id tab-id :user-id @user-id})
+        query        [{`(bookmark-mut/fetch-bookmarks #:tab{:id ~tab-id :tab/password ~tab-password})
+                       [:tab/id :tab/bookmarks]}]
+        actual       (protected-parser {:request {:user/id @user-id}} query)
+        expected     {`bookmark-mut/fetch-bookmarks {:tab/id        tab-id
+                                                     :tab/bookmarks [(trim-bookmark bookmark1)
+                                                                     (trim-bookmark bookmark2)]}}]
+    (expect expected actual)))
+
+(defexpect normal-fetch-bookmarks-without-password
+  (let [tab-password "bar"
+        tab          (-> {:tab/name "foo" :tab/user-id @user-id} tab-db/create-tab)
+        tab-id       (:tab/id tab)
+        bookmark1    (bookmark-db/create-bookmark #:bookmark{:title "foo" :url "bar" :tab-id tab-id :user-id @user-id})
+        bookmark2    (bookmark-db/create-bookmark #:bookmark{:title "fim" :url "baz" :tab-id tab-id :user-id @user-id})
+        query        [{`(bookmark-mut/fetch-bookmarks #:tab{:id ~tab-id}) [:tab/id :tab/bookmarks]}]
+        actual       (protected-parser {:request {:user/id @user-id}} query)
+        expected     {`bookmark-mut/fetch-bookmarks {:tab/id        tab-id
+                                                     :tab/bookmarks [(trim-bookmark bookmark1)
+                                                                     (trim-bookmark bookmark2)]}}]
+    (expect expected actual)))
+
+(defexpect normal-fetch-unprotected-bookmarks-with-password
+  (let [tab-password "bar"
+        tab          (-> {:tab/name "foo" :tab/user-id @user-id} tab-db/create-tab)
+        tab-id       (:tab/id tab)
+        bookmark1    (bookmark-db/create-bookmark #:bookmark{:title "foo" :url "bar" :tab-id tab-id :user-id @user-id})
+        bookmark2    (bookmark-db/create-bookmark #:bookmark{:title "fim" :url "baz" :tab-id tab-id :user-id @user-id})
+        query        [{`(bookmark-mut/fetch-bookmarks #:tab{:id ~tab-id :password "foo"}) [:tab/id :tab/bookmarks]}]
+        actual       (protected-parser {:request {:user/id @user-id}} query)
+        expected     {`bookmark-mut/fetch-bookmarks {:tab/id        tab-id
+                                                     :tab/bookmarks [(trim-bookmark bookmark1)
+                                                                     (trim-bookmark bookmark2)]}}]
+    (expect expected actual)))
+
+(defexpect fail-to-fetch-bookmarks-with-wrong-password
+  (let [tab      (-> {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id}
+                     (update :tab/password hashers/derive)
+                     tab-db/create-tab)
+        tab-id   (:tab/id tab)
+        query    [{`(bookmark-mut/fetch-bookmarks #:tab{:id ~tab-id :password "baz"}) bookmark-join}]
+        actual   (protected-parser {:request {:user/id @user-id}} query)
+        expected {`bookmark-mut/fetch-bookmarks {:error         true
+                                                 :error-message "Invalid input"
+                                                 :error-type    :wrong-password}}]
+    (expect expected actual)))
+
+(defexpect fail-to-fetch-bookmarks-with-no-password
+  (let [tab      (-> {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id}
+                     (update :tab/password hashers/derive)
+                     tab-db/create-tab)
+        tab-id   (:tab/id tab)
+        query    [{`(bookmark-mut/fetch-bookmarks #:tab{:id ~tab-id}) bookmark-join}]
+        actual   (protected-parser {:request {:user/id @user-id}} query)
+        expected {`bookmark-mut/fetch-bookmarks {:error         true
+                                                 :error-message "Invalid input"
+                                                 :error-type    :wrong-password}}]
+    (expect expected actual)))
+
+(defexpect fail-to-fetch-bookmarks-with-empty-password
+  (let [tab      (-> {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id}
+                     (update :tab/password hashers/derive)
+                     tab-db/create-tab)
+        tab-id   (:tab/id tab)
+        query    [{`(bookmark-mut/fetch-bookmarks {:tab/id ~tab-id :tab/password ""}) bookmark-join}]
+        actual   (protected-parser {:request {:user/id @user-id}} query)
+        expected {`bookmark-mut/fetch-bookmarks {:error         true
+                                                 :error-message "Invalid input"
+                                                 :error-type    :wrong-password}}]
+    (expect expected actual)))
+
 (comment
   (require '[kaocha.repl :as k])
   (k/run 'shinsetsu.mutations.bookmark-test)
-  (k/run #'shinsetsu.mutations.bookmark-test/fail-create-bookmark-tag-with-nonexistent-tag))
+  (k/run #'shinsetsu.mutations.bookmark-test/normal-create-bookmark-with-tempid))

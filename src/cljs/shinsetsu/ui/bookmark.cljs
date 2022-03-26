@@ -67,6 +67,8 @@
   [this {:bookmark/keys [id title url] :as bookmark}]
   {:ident :bookmark/id
    :query [:bookmark/id :bookmark/title :bookmark/url]}
-  (div title))
+  (e/card {:title       title
+           :description url
+           :onClick     #()}))
 
 (def ui-bookmark (comp/factory Bookmark {:keyfn :bookmark/id}))

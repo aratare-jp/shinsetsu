@@ -103,7 +103,10 @@
                                          :body    (p "Let's add your first bookmark!")
                                          :actions [add-bm-btn]})
                         (e/page-template {:pageHeader {:pageTitle "Welcome!" :rightSideItems [add-bm-btn]}}
-                          (map ui-bookmark bookmarks)))
+                          (e/flex-group {:gutterSize "l"}
+                            (map (fn [{:bookmark/keys [id] :as b}]
+                                   (e/flex-item {:key id}
+                                     (ui-bookmark b))) bookmarks))))
         back-fn      #(m/set-value! this :ui/error-type nil)]
     (cond
       show-bookmark-modal?

@@ -8,7 +8,8 @@
     [shinsetsu.db.user :as user-db]
     [shinsetsu.db.tab :as tab-db]
     [taoensso.timbre :as log]
-    [buddy.hashers :as hashers])
+    [buddy.hashers :as hashers]
+    [com.fulcrologic.fulcro.algorithms.tempid :as tempid])
   (:import [java.util UUID]))
 
 (def user-id (atom nil))
@@ -26,28 +27,42 @@
 
 (def tab-join [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated])
 
+(defn trim-tab
+  [t]
+  (-> t
+      (assoc :tab/is-protected? (boolean (:tab/password t)))
+      (dissoc :tab/password :tab/user-id)))
+
 ;; CREATE
 
 (defexpect normal-create-tab-with-password
-  (let [query    [{`(tab-mut/create-tab {:tab/name "foo" :tab/password "bar"}) tab-join}]
-        result   (protected-parser {:request {:user/id @user-id}} query)
-        actual   (get result `tab-mut/create-tab)
-        tab-id   (:tab/id actual)
-        expected (-> (tab-db/fetch-tab {:tab/id tab-id :tab/user-id @user-id})
-                     (assoc :tab/is-protected? true)
-                     (dissoc :tab/password)
-                     (dissoc :tab/user-id))]
+  (let [query       [{`(tab-mut/create-tab {:tab/name "foo" :tab/password "bar"}) tab-join}]
+        actual      (protected-parser {:request {:user/id @user-id}} query)
+        tab         (get actual `tab-mut/create-tab)
+        tab-id      (:tab/id tab)
+        fetched-tab (-> {:tab/id tab-id :tab/user-id @user-id} tab-db/fetch-tab trim-tab)
+        expected    {`tab-mut/create-tab fetched-tab}]
     (expect expected actual)))
 
 (defexpect normal-create-tab-without-password
-  (let [query    [{`(tab-mut/create-tab {:tab/name "foo"}) tab-join}]
-        result   (protected-parser {:request {:user/id @user-id}} query)
-        actual   (get result `tab-mut/create-tab)
-        tab-id   (:tab/id actual)
-        expected (-> (tab-db/fetch-tab {:tab/id tab-id :tab/user-id @user-id})
-                     (assoc :tab/is-protected? false)
-                     (dissoc :tab/password)
-                     (dissoc :tab/user-id))]
+  (let [query       [{`(tab-mut/create-tab {:tab/name "foo"}) tab-join}]
+        actual      (protected-parser {:request {:user/id @user-id}} query)
+        tab         (get actual `tab-mut/create-tab)
+        tab-id      (:tab/id tab)
+        fetched-tab (-> {:tab/id tab-id :tab/user-id @user-id} tab-db/fetch-tab trim-tab)
+        expected    {`tab-mut/create-tab fetched-tab}]
+    (expect expected actual)))
+
+(defexpect normal-create-tab-with-tempid
+  (let [tempid      (tempid/tempid)
+        query       [{`(tab-mut/create-tab #:tab{:id ~tempid :name "foo"}) tab-join}]
+        actual      (protected-parser {:request {:user/id @user-id}} query)
+        tab         (log/spy (get actual `tab-mut/create-tab))
+        tab-id      (:tab/id tab)
+        fetched-tab (-> {:tab/id tab-id :tab/user-id @user-id} tab-db/fetch-tab trim-tab)
+        expected    {`tab-mut/create-tab (merge
+                                           fetched-tab
+                                           {:tempids {tempid tab-id}})}]
     (expect expected actual)))
 
 (defexpect fail-to-create-tab-without-name
@@ -68,85 +83,6 @@
                                        :error-message "Invalid input"
                                        :error-type    :invalid-input
                                        :error-data    {:tab/name ["should be at least 1 characters"]}}}]
-    (expect expected actual)))
-
-;; FETCH
-
-(defexpect normal-fetch-tab-with-password
-  (let [tab-password "bar"
-        tab          (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
-                         (update :tab/password hashers/derive)
-                         tab-db/create-tab)
-        tab-id       (:tab/id tab)
-        query        [{`(tab-mut/fetch-tab {:tab/id ~tab-id :tab/password ~tab-password}) tab-join}]
-        actual       (protected-parser {:request {:user/id @user-id}} query)
-        expected     {`tab-mut/fetch-tab (-> tab
-                                             (assoc :tab/is-protected? true)
-                                             (dissoc :tab/password)
-                                             (dissoc :tab/user-id))}]
-    (expect expected actual)))
-
-(defexpect normal-fetch-tab-without-password
-  (let [tab      (tab-db/create-tab {:tab/name "foo" :tab/user-id @user-id})
-        tab-id   (:tab/id tab)
-        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id}) tab-join}]
-        result   (protected-parser {:request {:user/id @user-id}} query)
-        actual   (get result `tab-mut/fetch-tab)
-        expected (-> tab
-                     (assoc :tab/is-protected? false)
-                     (dissoc :tab/password)
-                     (dissoc :tab/user-id))]
-    (expect expected actual)))
-
-(defexpect normal-fetch-unprotected-tab-with-password
-  (let [tab      (tab-db/create-tab {:tab/name "foo" :tab/user-id @user-id})
-        tab-id   (:tab/id tab)
-        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id :tab/password "bar"}) tab-join}]
-        result   (protected-parser {:request {:user/id @user-id}} query)
-        actual   (get result `tab-mut/fetch-tab)
-        expected (-> tab
-                     (assoc :tab/is-protected? false)
-                     (dissoc :tab/password)
-                     (dissoc :tab/user-id))]
-    (expect expected actual)))
-
-(defexpect fail-to-fetch-tab-with-wrong-password
-  (let [tab      (-> {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id}
-                     (update :tab/password hashers/derive)
-                     tab-db/create-tab)
-        tab-id   (:tab/id tab)
-        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id :tab/password "baz"}) tab-join}]
-        result   (protected-parser {:request {:user/id @user-id}} query)
-        actual   result
-        expected {`tab-mut/fetch-tab {:error         true
-                                      :error-message "Invalid input"
-                                      :error-type    :wrong-password}}]
-    (expect expected actual)))
-
-(defexpect fail-to-fetch-tab-with-no-password
-  (let [tab      (-> {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id}
-                     (update :tab/password hashers/derive)
-                     tab-db/create-tab)
-        tab-id   (:tab/id tab)
-        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id}) tab-join}]
-        result   (protected-parser {:request {:user/id @user-id}} query)
-        actual   result
-        expected {`tab-mut/fetch-tab {:error         true
-                                      :error-message "Invalid input"
-                                      :error-type    :wrong-password}}]
-    (expect expected actual)))
-
-(defexpect fail-to-fetch-tab-with-empty-password
-  (let [tab      (-> {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id}
-                     (update :tab/password hashers/derive)
-                     tab-db/create-tab)
-        tab-id   (:tab/id tab)
-        query    [{`(tab-mut/fetch-tab {:tab/id ~tab-id :tab/password ""}) tab-join}]
-        result   (protected-parser {:request {:user/id @user-id}} query)
-        actual   result
-        expected {`tab-mut/fetch-tab {:error         true
-                                      :error-message "Invalid input"
-                                      :error-type    :wrong-password}}]
     (expect expected actual)))
 
 ;; PATCH
@@ -272,4 +208,4 @@
   (require '[malli.core :as m])
   (m/validate [:map [:a :int] [:b {:optional true} [:maybe :int]]] {:a 3 :b 3})
   (k/run 'shinsetsu.mutations.tab-test)
-  (k/run #'shinsetsu.mutations.tab-test/normal-fetch-tab))
+  (k/run #'shinsetsu.mutations.tab-test/normal-create-tab-with-tempid))
