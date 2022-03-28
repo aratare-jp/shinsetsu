@@ -8,6 +8,7 @@
                             EuiFieldText
                             EuiSwitch
                             EuiFlexGroup
+                            EuiFlexGrid
                             EuiFlexItem
                             EuiPageTemplate
                             EuiEmptyPrompt
@@ -24,7 +25,8 @@
                             EuiModalBody
                             EuiModalFooter
                             EuiIcon
-                            EuiCard]]))
+                            EuiCard
+                            EuiButtonIcon]]))
 
 (def provider (ri/react-factory EuiProvider))
 (def empty-prompt (ri/react-factory EuiEmptyPrompt))
@@ -41,10 +43,12 @@
 (def field-text (ri/react-factory EuiFieldText))
 (def switch (ri/react-factory EuiSwitch))
 (def button (ri/react-factory EuiButton))
+(def button-icon (ri/react-factory EuiButtonIcon))
 
 ;; Flex
 (def flex-group (ri/react-factory EuiFlexGroup))
 (def flex-item (ri/react-factory EuiFlexItem))
+(def flex-grid (ri/react-factory EuiFlexGrid))
 
 ;; Page
 (def page (ri/react-factory EuiPage))

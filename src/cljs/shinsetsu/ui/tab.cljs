@@ -72,7 +72,9 @@
 (def ui-tab-modal (comp/factory TabModal {:keyfn :tab/id}))
 
 (defsc TabBody
-  [this {:tab/keys [id is-protected? bookmarks] :ui/keys [password unlocked? error-type show-bookmark-modal?]}]
+  [this
+   {:tab/keys [id is-protected? bookmarks]
+    :ui/keys  [password unlocked? error-type show-bookmark-modal? selected-bm-idx]}]
   {:ident :tab/id
    :query [:tab/id
            :tab/name
@@ -81,7 +83,8 @@
            :ui/unlocked?
            :ui/password
            :ui/error-type
-           :ui/show-bookmark-modal?]}
+           :ui/show-bookmark-modal?
+           :ui/selected-bm-idx]}
   (let [unlock       (fn []
                        (m/set-value! this :ui/unlocked? true)
                        (if (or (nil? password) (= "" password))
@@ -103,20 +106,31 @@
                                          :body    (p "Let's add your first bookmark!")
                                          :actions [add-bm-btn]})
                         (e/page-template {:pageHeader {:pageTitle "Welcome!" :rightSideItems [add-bm-btn]}}
-                          (e/flex-group {:gutterSize "l"}
-                            (map (fn [{:bookmark/keys [id] :as b}]
-                                   (e/flex-item {:key id}
-                                     (ui-bookmark b))) bookmarks))))
+                          (e/flex-grid {:columns 3}
+                            (map-indexed (fn [i {bookmark-id :bookmark/id :as bookmark}]
+                                           (let [on-click (fn []
+                                                            (m/set-integer! this :ui/selected-bm-idx :value i)
+                                                            (m/set-value! this :ui/show-bookmark-modal? true))
+                                                 bookmark (merge bookmark {:bookmark/tab-id id})]
+                                             (e/flex-item {:key bookmark-id}
+                                               (ui-bookmark (comp/computed bookmark {:on-click on-click})))))
+                                         bookmarks))))
         back-fn      #(m/set-value! this :ui/error-type nil)]
     (cond
       show-bookmark-modal?
-      (let [new-bookmark (last bookmarks)
-            on-close     (fn []
-                           (comp/transact! this [(remove-ident
-                                                   {:ident       (comp/get-ident BookmarkModal new-bookmark)
-                                                    :remove-from (conj (comp/get-ident this) :ui/bookmarks)})])
-                           (m/set-value! this :ui/show-bookmark-modal? false))]
-        (ui-bookmark-modal (comp/computed new-bookmark {:on-close on-close})))
+      (if selected-bm-idx
+        (let [bookmark (merge (nth bookmarks selected-bm-idx) {:bookmark/tab-id id})
+              on-close (fn []
+                         (m/set-value! this :ui/show-bookmark-modal? false)
+                         (m/set-value! this :ui/selected-bm-idx nil))]
+          (ui-bookmark-modal (comp/computed bookmark {:on-close on-close})))
+        (let [new-bookmark (first (filter (fn [b] (tempid/tempid? (:bookmark/id b))) bookmarks))
+              on-close     (fn []
+                             (m/set-value! this :ui/show-bookmark-modal? false)
+                             (comp/transact! this [(remove-ident
+                                                     {:ident       (comp/get-ident BookmarkModal new-bookmark)
+                                                      :remove-from (conj (comp/get-ident this) :ui/bookmarks)})]))]
+          (ui-bookmark-modal (comp/computed new-bookmark {:on-close on-close}))))
       error-type
       (case error-type
         :wrong-password (e/empty-prompt {:color    "danger"
@@ -147,6 +161,7 @@
                          :actions [(e/button {:fill true :onClick unlock} "Unlock this tab!")]}))
       :else
       (do
+        ;; FIXME: Do proper loading so no duplicated loading.
         (unlock)
         (bookmark-uis)))))
 
