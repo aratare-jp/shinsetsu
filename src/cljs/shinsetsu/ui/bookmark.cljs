@@ -12,12 +12,11 @@
 
 (defsc BookmarkModal
   [this {:bookmark/keys [id title url tab-id] :ui/keys [loading? error-type] :as props} {:keys [on-close]}]
-  {:ident         :bookmark/id
-   :query         [:bookmark/id :bookmark/title :bookmark/url :bookmark/tab-id
-                   :ui/loading? :ui/error-type fs/form-config-join]
-   :form-fields   #{:bookmark/title :bookmark/url}
-   :initial-state {:bookmark/title "" :bookmark/url ""}
-   :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config BookmarkModal data-tree))}
+  {:ident       :bookmark/id
+   :query       [:bookmark/id :bookmark/title :bookmark/url :bookmark/tab-id
+                 :ui/loading? :ui/error-type fs/form-config-join]
+   :form-fields #{:bookmark/title :bookmark/url}
+   :pre-merge   (fn [{:keys [data-tree]}] (fs/add-form-config BookmarkModal data-tree))}
   (let [on-title-changed (fn [e] (m/set-string! this :bookmark/title :event e))
         on-url-changed   (fn [e] (m/set-string! this :bookmark/url :event e))
         on-blur          (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))

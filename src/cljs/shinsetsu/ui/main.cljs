@@ -1,7 +1,7 @@
 (ns shinsetsu.ui.main
   (:require
     [shinsetsu.ui.elastic :as e]
-    [shinsetsu.ui.tab :refer [TabModal TabBody ui-tab-modal ui-tab-body]]
+    [shinsetsu.ui.tab :refer [TabModal Tab ui-tab-modal ui-tab]]
     [shinsetsu.application :refer [app]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.dom :refer [div label input form button h1 h2 nav h5 p span]]
@@ -18,7 +18,7 @@
   [this {:user/keys [tabs] :ui/keys [selected-tab-idx show-tab-modal?]}]
   {:ident         (fn [] [:component/id ::main])
    :route-segment ["main"]
-   :query         [{:user/tabs (comp/get-query TabBody)} :ui/selected-tab-idx :ui/show-tab-modal?]
+   :query         [{:user/tabs (comp/get-query Tab)} :ui/selected-tab-idx :ui/show-tab-modal?]
    :initial-state {:user/tabs           []
                    :ui/selected-tab-idx 0
                    :ui/show-tab-modal?  false}
@@ -28,15 +28,16 @@
                       ;; FIXME: Needs to load from local storage first before fetching from remote.
                       (dr/route-deferred
                         [:component/id ::main]
-                        #(df/load! app :user/tabs TabBody {:target               load-target
-                                                           :post-mutation        `dr/target-ready
-                                                           :post-mutation-params target-ready-params}))))}
+                        #(df/load! app :user/tabs Tab {:target               load-target
+                                                       :post-mutation        `dr/target-ready
+                                                       :post-mutation-params target-ready-params}))))}
   (if show-tab-modal?
-    (let [new-tab  (last tabs)
+    (let [new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
           on-close (fn []
                      (comp/transact! this [(remove-ident {:ident       (comp/get-ident TabModal new-tab)
                                                           :remove-from (conj (comp/get-ident this) :user/tabs)})])
                      (m/set-value! this :ui/show-tab-modal? false))]
+      (js/console.log new-tab)
       (ui-tab-modal (comp/computed new-tab {:on-close on-close})))
     (let [ui-tabs    (map-indexed (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?]}]
                                     {:id         id
@@ -60,4 +61,4 @@
         (if (empty? tabs)
           (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
                            :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-          (ui-tab-body (nth tabs selected-tab-idx)))))))
+          (ui-tab (nth tabs selected-tab-idx)))))))

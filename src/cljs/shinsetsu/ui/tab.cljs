@@ -2,7 +2,7 @@
   (:require
     [shinsetsu.application :refer [app]]
     [shinsetsu.ui.elastic :as e]
-    [shinsetsu.mutations.tab :refer [create-tab]]
+    [shinsetsu.mutations.tab :refer [create-tab delete-tab]]
     [shinsetsu.mutations.bookmark :refer [fetch-bookmarks]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.mutations :as m]
@@ -18,12 +18,11 @@
     [com.fulcrologic.fulcro.algorithms.merge :as merge]))
 
 (defsc TabModal
-  [this {:tab/keys [id name password] :ui/keys [loading? error-type]} {:keys [on-close]}]
-  {:ident         :tab/id
-   :query         [:tab/id :tab/name :tab/password :ui/loading? :ui/error-type fs/form-config-join]
-   :form-fields   #{:tab/name :tab/password}
-   :initial-state {:tab/name "" :tab/password ""}
-   :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config TabModal data-tree))}
+  [this {:tab/keys [id name password] :ui/keys [loading? error-type] :as props} {:keys [on-close]}]
+  {:ident       :tab/id
+   :query       [:tab/id :tab/name :tab/password :ui/loading? :ui/error-type fs/form-config-join]
+   :form-fields #{:tab/name :tab/password}
+   :pre-merge   (fn [{:keys [data-tree]}] (fs/add-form-config TabModal data-tree))}
   (let [on-name-changed     (fn [e] (m/set-string! this :tab/name :event e))
         on-password-changed (fn [e] (m/set-string! this :tab/password :event e))
         on-blur             (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
@@ -40,10 +39,11 @@
                               :invalid-input ["Unable to create new tab." "Please try again."]
                               :internal-server-error ["Unknown error encountered"]
                               nil)]
+    (js/console.log props)
     (e/modal {:onClose on-close}
       (e/modal-header {}
         (e/modal-header-title {}
-          (h1 (if id "Edit Tab" "Create New Tab"))))
+          (h1 (if (tempid/tempid? id) "Create New Tab" "Edit Tab"))))
       (e/modal-body {}
         (e/form {:component "form" :isInvalid (boolean errors) :error errors}
           (e/form-row {:label "Name"}
@@ -71,51 +71,55 @@
 
 (def ui-tab-modal (comp/factory TabModal {:keyfn :tab/id}))
 
-(defsc TabBody
+(defsc Tab
   [this
-   {:tab/keys [id is-protected? bookmarks]
-    :ui/keys  [password unlocked? error-type show-bookmark-modal? selected-bm-idx]}]
+   {:tab/keys [id is-protected? bookmarks password]
+    :ui/keys  [unlocked? error-type show-bookmark-modal? selected-bm-idx]}]
   {:ident :tab/id
    :query [:tab/id
            :tab/name
+           :tab/password
            :tab/is-protected?
            {:tab/bookmarks (comp/get-query BookmarkModal)}
            :ui/unlocked?
-           :ui/password
            :ui/error-type
            :ui/show-bookmark-modal?
            :ui/selected-bm-idx]}
-  (let [unlock       (fn []
-                       (m/set-value! this :ui/unlocked? true)
-                       (if (or (nil? password) (= "" password))
-                         (comp/transact! this [(fetch-bookmarks #:tab{:id id})])
-                         (comp/transact! this [(fetch-bookmarks #:tab{:id id :password password})])))
-        add-bm-btn   (e/button {:fill     true
-                                :iconType "plus"
-                                :onClick  (fn []
-                                            (merge/merge-component! app BookmarkModal
-                                                                    #:bookmark{:id     (tempid/tempid)
-                                                                               :title  ""
-                                                                               :url    ""
-                                                                               :tab-id id}
-                                                                    :append [:tab/id id :tab/bookmarks])
-                                            (m/set-value! this :ui/show-bookmark-modal? true))}
-                       "Add new bookmark")
-        bookmark-uis #(if (empty? bookmarks)
-                        (e/empty-prompt {:title   (p "Seems like you don't have any bookmark")
-                                         :body    (p "Let's add your first bookmark!")
-                                         :actions [add-bm-btn]})
-                        (e/page-template {:pageHeader {:pageTitle "Welcome!" :rightSideItems [add-bm-btn]}}
-                          (e/flex-grid {:columns 3}
-                            (map-indexed (fn [i {bookmark-id :bookmark/id :as bookmark}]
-                                           (let [on-click (fn []
-                                                            (m/set-integer! this :ui/selected-bm-idx :value i)
-                                                            (m/set-value! this :ui/show-bookmark-modal? true))
-                                                 bookmark (merge bookmark {:bookmark/tab-id id})]
-                                             (e/flex-item {:key bookmark-id}
-                                               (ui-bookmark (comp/computed bookmark {:on-click on-click})))))
-                                         bookmarks))))
-        back-fn      #(m/set-value! this :ui/error-type nil)]
+  (let [unlock         (fn []
+                         (m/set-value! this :ui/unlocked? true)
+                         (if (or (nil? password) (= "" password))
+                           (comp/transact! this [(fetch-bookmarks #:tab{:id id})])
+                           (comp/transact! this [(fetch-bookmarks #:tab{:id id :password password})])))
+        add-bm-btn     (e/button {:fill     true
+                                  :iconType "plus"
+                                  :onClick  (fn []
+                                              (merge/merge-component! app BookmarkModal
+                                                                      #:bookmark{:id     (tempid/tempid)
+                                                                                 :title  ""
+                                                                                 :url    ""
+                                                                                 :tab-id id}
+                                                                      :append [:tab/id id :tab/bookmarks])
+                                              (m/set-value! this :ui/show-bookmark-modal? true))}
+                         "Add new bookmark")
+        delete-tab-btn (e/button {:iconType "trash"
+                                  :color    "danger"
+                                  :onClick  #(comp/transact! this [(delete-tab {:tab/id id})])}
+                         "Delete this tab")
+        bookmark-uis   #(if (empty? bookmarks)
+                          (e/empty-prompt {:title   (p "Seems like you don't have any bookmark")
+                                           :body    (p "Let's add your first bookmark!")
+                                           :actions [add-bm-btn delete-tab-btn]})
+                          (e/page-template {:pageHeader {:pageTitle "Welcome!" :rightSideItems [add-bm-btn delete-tab-btn]}}
+                            (e/flex-grid {:columns 3}
+                              (map-indexed (fn [i {bookmark-id :bookmark/id :as bookmark}]
+                                             (let [on-click (fn []
+                                                              (m/set-integer! this :ui/selected-bm-idx :value i)
+                                                              (m/set-value! this :ui/show-bookmark-modal? true))
+                                                   bookmark (merge bookmark {:bookmark/tab-id id})]
+                                               (e/flex-item {:key bookmark-id}
+                                                 (ui-bookmark (comp/computed bookmark {:on-click on-click})))))
+                                           bookmarks))))
+        back-fn        #(m/set-value! this :ui/error-type nil)]
     (cond
       show-bookmark-modal?
       (if selected-bm-idx
@@ -129,7 +133,7 @@
                              (m/set-value! this :ui/show-bookmark-modal? false)
                              (comp/transact! this [(remove-ident
                                                      {:ident       (comp/get-ident BookmarkModal new-bookmark)
-                                                      :remove-from (conj (comp/get-ident this) :ui/bookmarks)})]))]
+                                                      :remove-from (conj (comp/get-ident this) :tab/bookmarks)})]))]
           (ui-bookmark-modal (comp/computed new-bookmark {:on-close on-close}))))
       error-type
       (case error-type
@@ -157,7 +161,7 @@
                                       (e/field-text {:type     "password"
                                                      :name     "password"
                                                      :value    password
-                                                     :onChange #(m/set-string! this :ui/password :event %)})))
+                                                     :onChange #(m/set-string! this :tab/password :event %)})))
                          :actions [(e/button {:fill true :onClick unlock} "Unlock this tab!")]}))
       :else
       (do
@@ -165,4 +169,4 @@
         (unlock)
         (bookmark-uis)))))
 
-(def ui-tab-body (comp/factory TabBody {:keyfn :tab/id}))
+(def ui-tab (comp/factory Tab {:keyfn :tab/id}))
