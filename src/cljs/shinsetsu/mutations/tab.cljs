@@ -10,11 +10,15 @@
     [com.fulcrologic.fulcro.mutations :as m]))
 
 (defmutation create-tab
-  [_]
+  [{:tab/keys [password]}]
   (action
     [{:keys [state ref]}]
     (swap! state assoc-in (conj ref :ui/loading?) true))
-  (remote [_] true)
+  (remote
+    [{:keys [ast]}]
+    (if (not-empty password)
+      ast
+      (dissoc-in ast [:params :tab/password])))
   (ok-action
     [{{{tab `create-tab} :body} :result :keys [state ref component] :as env}]
     (let [Tab       (comp/registry-key->class `shinsetsu.ui.tab/Tab)
@@ -23,7 +27,7 @@
           tab-ident (comp/get-ident TabModal tab)]
       (comp/transact! component [(fs/reset-form! {:form-ident (comp/get-ident component)})])
       (merge/merge-component! app Tab tab :append (conj (comp/get-ident Main {}) :user/tabs))
-      (swap! state dissoc-in (conj tab-ident :tab/password))
+      (swap! state dissoc-in (conj tab-ident :ui/password))
       (swap! state assoc-in (conj tab-ident :ui/loading?) false)
       (swap! state assoc-in (conj (comp/get-ident Main {}) :ui/show-tab-modal?) false)))
   (error-action

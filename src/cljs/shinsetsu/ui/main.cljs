@@ -14,6 +14,49 @@
     [taoensso.timbre :as log]
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]))
 
+(defn- ui-tab-headers
+  [this tabs selected-tab-idx]
+  (map-indexed
+    (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?]}]
+      {:id         id
+       :prepend    (if is-protected?
+                     (if unlocked?
+                       (e/icon {:type "lockOpen"})
+                       (e/icon {:type "lock"})))
+       :label      (h1 name)
+       :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
+       :isSelected (= i selected-tab-idx)})
+    tabs))
+
+(defn- ui-new-tab
+  [this tabs]
+  (let [new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
+        on-close (fn []
+                   (comp/transact! this [(remove-ident {:ident       (comp/get-ident TabModal new-tab)
+                                                        :remove-from (conj (comp/get-ident this) :user/tabs)})])
+                   (m/set-value! this :ui/show-tab-modal? false))]
+    (ui-tab-modal (comp/computed new-tab {:on-close on-close}))))
+
+(defn- ui-tabs
+  [this tabs selected-tab-idx]
+  (e/page-template
+    {:pageHeader {:pageTitle      "Welcome!"
+                  :rightSideItems [(e/button
+                                     {:fill     true
+                                      :onClick  (fn []
+                                                  (m/set-value! this :ui/show-tab-modal? true)
+                                                  (merge/merge-component!
+                                                    app TabModal (comp/get-initial-state TabModal)
+                                                    :append [:component/id ::main :user/tabs]))
+                                      :iconType "plus"}
+                                     "Create new tab")
+                                   (e/button {:fill true :iconType "importAction"} "Import bookmarks")]
+                  :tabs           (ui-tab-headers this tabs selected-tab-idx)}}
+    (if (empty? tabs)
+      (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
+                       :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
+      (ui-tab (nth tabs selected-tab-idx)))))
+
 (defsc Main
   [this {:user/keys [tabs] :ui/keys [selected-tab-idx show-tab-modal?]}]
   {:ident         (fn [] [:component/id ::main])
@@ -31,34 +74,8 @@
                         #(df/load! app :user/tabs Tab {:target               load-target
                                                        :post-mutation        `dr/target-ready
                                                        :post-mutation-params target-ready-params}))))}
-  (if show-tab-modal?
-    (let [new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
-          on-close (fn []
-                     (comp/transact! this [(remove-ident {:ident       (comp/get-ident TabModal new-tab)
-                                                          :remove-from (conj (comp/get-ident this) :user/tabs)})])
-                     (m/set-value! this :ui/show-tab-modal? false))]
-      (js/console.log new-tab)
-      (ui-tab-modal (comp/computed new-tab {:on-close on-close})))
-    (let [ui-tabs    (map-indexed (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?]}]
-                                    {:id         id
-                                     :prepend    (if is-protected?
-                                                   (if unlocked?
-                                                     (e/icon {:type "lockOpen"})
-                                                     (e/icon {:type "lock"})))
-                                     :label      (h1 name)
-                                     :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
-                                     :isSelected (= i selected-tab-idx)}) tabs)
-          new-tab-fn (fn []
-                       (m/set-value! this :ui/show-tab-modal? true)
-                       (merge/merge-component! app TabModal
-                                               #:tab{:id (tempid/tempid) :name "" :password ""}
-                                               :append [:component/id ::main :user/tabs]))]
-      (e/page-template
-        {:pageHeader {:pageTitle      "Welcome!"
-                      :rightSideItems [(e/button {:fill true :onClick new-tab-fn :iconType "plus"} "Create new tab")
-                                       (e/button {:fill true :iconType "importAction"} "Import bookmarks")]
-                      :tabs           ui-tabs}}
-        (if (empty? tabs)
-          (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
-                           :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-          (ui-tab (nth tabs selected-tab-idx)))))))
+  [(if show-tab-modal?
+     (ui-new-tab this tabs))
+   (as-> tabs $
+         (filter #(not (tempid/tempid? (:tab/id %))) $)
+         (ui-tabs this $ selected-tab-idx))])

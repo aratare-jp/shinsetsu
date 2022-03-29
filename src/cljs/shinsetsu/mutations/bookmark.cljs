@@ -17,13 +17,13 @@
     [{{{bookmarks `fetch-bookmarks} :body} :result :keys [state ref] :as env}]
     (let [Tab (comp/registry-key->class `shinsetsu.ui.tab/Tab)]
       (merge/merge-component! app Tab bookmarks)
-      (swap! state dissoc-in (conj ref :tab/password))
+      (swap! state dissoc-in (conj ref :ui/password))
       (swap! state assoc-in (conj ref :ui/loading?) false)
       (swap! state assoc-in (conj ref :ui/unlocked?) true)))
   (error-action
     [{:keys [state ref] {body :body} :result}]
     (let [{:keys [error-type]} (get body `fetch-bookmarks)]
-      (swap! state dissoc-in (conj ref :tab/password))
+      (swap! state dissoc-in (conj ref :ui/password))
       (swap! state assoc-in (conj ref :ui/loading?) false)
       (swap! state assoc-in (conj ref :ui/error-type) error-type))))
 
