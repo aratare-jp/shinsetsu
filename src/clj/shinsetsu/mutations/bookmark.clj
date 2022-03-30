@@ -10,7 +10,7 @@
     [buddy.hashers :as hashers]))
 
 (def bookmark-input #{:bookmark/title :bookmark/url :bookmark/image :bookmark/user-id :bookmark/tab-id})
-(def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/created :bookmark/updated])
+(def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/favourite :bookmark/created :bookmark/updated])
 
 (defn trim-bookmark [b] (dissoc b :bookmark/user-id :bookmark/tab-id))
 

@@ -54,12 +54,14 @@
   (ok-action
     [{{{tab `patch-tab} :body} :result :keys [state ref component]}]
     (log/debug "Tab" id "patched successfully")
-    (merge/merge-component! app component tab)
-    (swap! state #(-> %
-                      (fs/entity->pristine* ref)
-                      (dissoc-in (conj ref :ui/password))
-                      (assoc-in (conj ref :ui/loading?) false)
-                      (assoc-in (conj ref :ui/show-tab-modal?) false))))
+    (let [Main     (comp/registry-key->class `shinsetsu.ui.main/Main)
+          main-idt (comp/get-ident Main {})]
+      (merge/merge-component! app component tab)
+      (swap! state #(-> %
+                        (fs/entity->pristine* ref)
+                        (dissoc-in (conj ref :ui/password))
+                        (assoc-in (conj ref :ui/loading?) false)
+                        (assoc-in (conj main-idt :ui/show-edit-modal?) false)))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-tab} :body} :result :keys [state ref]}]
     (log/error "Failed to patch tab" id "due to:" error-message)
@@ -75,9 +77,15 @@
     (swap! state assoc-in (conj ref :ui/loading?) true))
   (remote [_] true)
   (ok-action
-    [{:keys [state ref]}]
+    [{{{tab `delete-tab} :body} :result :keys [state ref]}]
     (log/debug "Tab" id "deleted successfully")
-    (swap! state ns/remove-entity ref #{:tab/bookmarks}))
+    (let [Tab     (comp/registry-key->class `shinsetsu.ui.tab/Tab)
+          tab-idt (comp/get-ident Tab tab)]
+      (swap! state #(-> %
+                        (assoc-in (conj ref :ui/selected-tab-idx) 0)
+                        (assoc-in (conj ref :ui/loading?) false)
+                        (assoc-in (conj ref :ui/show-delete-modal?) false)
+                        (ns/remove-entity tab-idt #{:tab/bookmarks})))))
   (error-action
     [{{{{:keys [error-message error-type]} `delete-tab} :body} :result :keys [state ref]}]
     (log/error "Failed to delete tab" id "due to:" error-message)

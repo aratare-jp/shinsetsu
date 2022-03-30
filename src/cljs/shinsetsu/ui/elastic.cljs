@@ -26,7 +26,10 @@
                             EuiModalFooter
                             EuiIcon
                             EuiCard
-                            EuiButtonIcon]]))
+                            EuiButtonIcon
+                            EuiTabs
+                            EuiTab
+                            EuiConfirmModal]]))
 
 (def provider (ri/react-factory EuiProvider))
 (def empty-prompt (ri/react-factory EuiEmptyPrompt))
@@ -64,3 +67,8 @@
 (def modal-header-title (ri/react-factory EuiModalHeaderTitle))
 (def modal-body (ri/react-factory EuiModalBody))
 (def modal-footer (ri/react-factory EuiModalFooter))
+(def confirm-modal (ri/react-factory EuiConfirmModal))
+
+;; Tab
+(def tabs (ri/react-factory EuiTabs))
+(def tab (ri/react-factory EuiTab))

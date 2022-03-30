@@ -13,10 +13,16 @@
 
 (defsc BookmarkModal
   [this {:bookmark/keys [id title url tab-id] :ui/keys [loading? error-type] :as props} {:keys [on-close]}]
-  {:ident       :bookmark/id
-   :query       [:bookmark/id :bookmark/title :bookmark/url :bookmark/tab-id :ui/loading? :ui/error-type fs/form-config-join]
-   :form-fields #{:bookmark/title :bookmark/url}
-   :pre-merge   (fn [{:keys [data-tree]}] (fs/add-form-config BookmarkModal data-tree))}
+  {:ident         :bookmark/id
+   :query         [:bookmark/id :bookmark/title :bookmark/url :bookmark/tab-id :bookmark/favourite
+                   :ui/loading? :ui/error-type fs/form-config-join]
+   :form-fields   #{:bookmark/title :bookmark/url}
+   :initial-state (fn [{:bookmark/keys [tab-id]}]
+                    #:bookmark{:id     (tempid/tempid)
+                               :title  ""
+                               :url    ""
+                               :tab-id tab-id})
+   :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config BookmarkModal data-tree))}
   (let [on-blur    (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
         tab-valid? (mc/validate s/bookmark-form-spec #:bookmark{:title title :url url})
         on-close   (fn [_]
@@ -65,27 +71,53 @@
 (def ui-bookmark-modal (comp/factory BookmarkModal {:keyfn :bookmark/id}))
 
 (defsc Bookmark
-  [this {:bookmark/keys [id title url tab-id]} {:keys [on-click]}]
+  [this
+   {:bookmark/keys [id title favourite url tab-id]
+    :ui/keys       [edit-mode?]}
+   {:keys [on-click]}]
   {:ident :bookmark/id
-   :query [:bookmark/id :bookmark/title :bookmark/url :bookmark/tab-id]}
-  (let [on-favourite (fn [])
+   :query [:bookmark/id :bookmark/title :bookmark/url :bookmark/favourite :bookmark/tab-id :ui/edit-mode?]}
+  (let [on-favourite #(comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
         on-delete    #(comp/transact! this [(delete-bookmark #:bookmark{:id id :tab-id tab-id})])]
-    (e/card {:title         title
-             :titleElement  "h2"
-             :onContextMenu (fn [e]
-                              (evt/prevent-default! e)
-                              (js/console.log "Hello"))
-             :image         "https://source.unsplash.com/400x200/?Nature"
-             :footer        (e/flex-group {:justifyContent "flexEnd"}
-                              (e/flex-item {:grow false}
-                                (e/button-icon {:aria-label "favourite" :iconType "heart" :onClick on-favourite}))
-                              (e/flex-item {:grow false}
-                                (e/button-icon {:aria-label "edit" :iconType "pencil" :onClick on-click}))
-                              (e/flex-item {:grow false}
-                                (e/button-icon
-                                  {:aria-label "delete"
-                                   :iconType   "trash"
-                                   :onClick    on-delete
-                                   :color      "danger"})))})))
+    (e/card
+      {:title         title
+       :titleElement  "h2"
+       :onClick       (if (not edit-mode?) #(js/window.open url))
+       :onContextMenu (fn [e]
+                        (evt/prevent-default! e)
+                        (js/console.log "Hello"))
+       :image         "https://source.unsplash.com/400x200/?Nature"
+       :footer        (if edit-mode?
+                        (e/flex-group {:justifyContent "flexEnd"}
+                          (e/flex-item {:grow false}
+                            (e/button-icon
+                              {:aria-label "favourite"
+                               :size       "s"
+                               :iconType   (if favourite "starFilled" "starEmpty")
+                               :onClick    on-favourite}))
+                          (e/flex-item {:grow false}
+                            (e/button-icon
+                              {:aria-label "edit"
+                               :size       "s"
+                               :iconType   "pencil"
+                               :onClick    on-click}))
+                          (e/flex-item {:grow false}
+                            (e/button-icon
+                              {:aria-label "delete"
+                               :size       "s"
+                               :iconType   "trash"
+                               :onClick    on-delete
+                               :color      "danger"}))))})))
 
 (def ui-bookmark (comp/factory Bookmark {:keyfn :bookmark/id}))
+
+(defsc NewBookmark
+  [_ _ {:keys [on-click]}]
+  {}
+  (e/card {:title        "Add New"
+           :titleElement "h2"
+           :paddingSize  "l"
+           :icon         (e/icon {:size "xxl" :type "plus"})
+           :onClick      on-click}))
+
+(def ui-new-bookmark (comp/factory NewBookmark))

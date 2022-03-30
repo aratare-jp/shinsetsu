@@ -2,7 +2,7 @@
   (:require
     [shinsetsu.application :refer [app]]
     [shinsetsu.ui.elastic :as e]
-    [shinsetsu.mutations.tab :refer [create-tab patch-tab delete-tab]]
+    [shinsetsu.mutations.tab :refer [create-tab patch-tab]]
     [shinsetsu.mutations.bookmark :refer [fetch-bookmarks]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.mutations :as m]
@@ -122,65 +122,58 @@
       (bui/ui-bookmark-modal (comp/computed new-bookmark {:on-close on-close})))))
 
 (defn- ui-tab-body
-  [this id name bookmarks]
-  (let [add-bm-btn     (e/button
-                         {:fill     true
-                          :iconType "plus"
-                          :onClick  (fn []
-                                      (merge/merge-component!
-                                        app bui/BookmarkModal
-                                        #:bookmark{:id (tempid/tempid) :title "" :url "" :tab-id id}
-                                        :append [:tab/id id :tab/bookmarks])
-                                      (m/set-value! this :ui/show-bookmark-modal? true))}
-                         "Add Bookmark")
-        delete-tab-btn (e/button
-                         {:iconType "trash"
-                          :color    "danger"
-                          :onClick  #(comp/transact! this [(delete-tab {:tab/id id})])}
-                         "Delete")
-        edit-tab-btn   (e/button
-                         {:iconType "pencil"
-                          :onClick  #(m/set-value! this :ui/show-tab-modal? true)}
-                         "Edit")]
+  [this id bookmarks edit-mode?]
+  (let [add-bm-fn  (fn []
+                     (merge/merge-component!
+                       app bui/BookmarkModal
+                       (comp/get-initial-state bui/BookmarkModal {:bookmark/tab-id id})
+                       :append [:tab/id id :tab/bookmarks])
+                     (m/set-value! this :ui/show-bookmark-modal? true))
+        add-bm-btn (e/button
+                     {:fill     true
+                      :iconType "plus"
+                      :onClick  add-bm-fn}
+                     "Add Bookmark")]
     (if (empty? bookmarks)
       (e/empty-prompt {:title   (p "Seems like you don't have any bookmark")
                        :body    (p "Let's add your first bookmark!")
-                       :actions [add-bm-btn edit-tab-btn delete-tab-btn]})
-      (e/page-template
-        {:pageHeader {:pageTitle      (h2 name)
-                      :rightSideItems [add-bm-btn edit-tab-btn delete-tab-btn]}}
+                       :actions [add-bm-btn]})
+      (conj
         (e/flex-grid {:columns 3}
           (map-indexed
             (fn [i {bookmark-id :bookmark/id :as bookmark}]
               (let [on-click (fn []
                                (m/set-integer! this :ui/selected-bm-idx :value i)
                                (m/set-value! this :ui/show-bookmark-modal? true))
-                    bookmark (merge bookmark {:bookmark/tab-id id})]
+                    bookmark (merge bookmark {:bookmark/tab-id id :ui/edit-mode? edit-mode?})]
                 (e/flex-item {:key bookmark-id}
                   (bui/ui-bookmark (comp/computed bookmark {:on-click on-click})))))
-            bookmarks))))))
+            bookmarks)
+          (e/flex-item {:key "new-bookmark"}
+            (bui/ui-new-bookmark (comp/computed {} {:on-click add-bm-fn}))))))))
 
 (defn- ui-unlock-prompt
-  [this id name bookmarks unlocked? password]
+  [this id bookmarks unlocked? password edit-mode?]
   (if unlocked?
-    (ui-tab-body this id name bookmarks)
-    (e/empty-prompt {:title   (h2 "This tab is protected!")
-                     :body    (e/form {:component "form" :id "tab-password-modal"}
-                                (e/form-row {:label "Password"}
-                                  (e/field-text {:type     "password"
-                                                 :name     "password"
-                                                 :value    password
-                                                 :onChange #(m/set-string! this :ui/password :event %)})))
-                     :actions [(e/button
-                                 {:fill    true
-                                  :onClick #(comp/transact! this [(fetch-bookmarks #:tab{:id id :password password})])}
-                                 "Unlock this tab!")]})))
+    (ui-tab-body this id bookmarks edit-mode?)
+    (e/empty-prompt
+      {:color   "plain"
+       :title   (h2 "This tab is protected!")
+       :body    (e/form {:component "form" :id "tab-password-modal"}
+                  (e/form-row {:label "Password"}
+                    (e/field-text {:type     "password"
+                                   :name     "password"
+                                   :value    password
+                                   :onChange #(m/set-string! this :ui/password :event %)})))
+       :actions [(e/button
+                   {:fill    true
+                    :onClick #(comp/transact! this [(fetch-bookmarks #:tab{:id id :password password})])}
+                   "Unlock this tab!")]})))
 
 (defsc Tab
   [this
-   {:tab/keys [id name is-protected? bookmarks]
-    :ui/keys  [password unlocked? error-type show-bookmark-modal? show-tab-modal? selected-bm-idx]
-    :as       props}]
+   {:tab/keys [id is-protected? bookmarks]
+    :ui/keys  [password unlocked? error-type show-bookmark-modal? selected-bm-idx edit-mode?]}]
   {:ident             :tab/id
    :query             [:tab/id
                        :tab/name
@@ -191,22 +184,22 @@
                        :ui/change-password?
                        :ui/error-type
                        :ui/show-bookmark-modal?
-                       :ui/show-tab-modal?
+                       :ui/edit-mode?
                        :ui/selected-bm-idx]
    :componentDidMount (fn [this]
                         (let [{:tab/keys [id is-protected?]} (comp/props this)]
                           (if (not is-protected?)
                             (comp/transact! this [(fetch-bookmarks #:tab{:id id})]))))}
 
-  [(if show-bookmark-modal?
+  [(e/spacer {})
+   (e/switch {:label "Edit" :checked edit-mode? :onChange #(m/toggle! this :ui/edit-mode?)})
+   (e/spacer {})
+   (if show-bookmark-modal?
      (ui-bookmark-modal this id selected-bm-idx bookmarks))
-   (if show-tab-modal?
-     (let [on-close #(m/set-value! this :ui/show-tab-modal? false)]
-       (ui-tab-modal (comp/computed props {:on-close on-close}))))
    (let [bookmarks (filter #(not (tempid/tempid? (:bookmark/id %))) bookmarks)]
      (cond
        error-type (ui-error-prompt this error-type)
-       is-protected? (ui-unlock-prompt this id name bookmarks unlocked? password)
-       :else (ui-tab-body this id name bookmarks)))])
+       is-protected? (ui-unlock-prompt this id bookmarks unlocked? password edit-mode?)
+       :else (ui-tab-body this id bookmarks edit-mode?)))])
 
 (def ui-tab (comp/factory Tab {:keyfn :tab/id}))

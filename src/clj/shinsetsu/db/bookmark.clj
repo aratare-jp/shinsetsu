@@ -35,11 +35,11 @@
     (let [bookmark (assoc bookmark :bookmark/updated (Instant/now))]
       (log/info "Update bookmark" id "for user" user-id)
       (try
-        (jdbc/execute-one! ds (-> (helpers/update :bookmark)
-                                  (helpers/set bookmark)
-                                  (helpers/where [:= :bookmark/id id] [:= :bookmark/user-id user-id])
-                                  (helpers/returning :*)
-                                  (sql/format)))
+        (jdbc/execute-one! ds (log/spy (-> (helpers/update :bookmark)
+                                           (helpers/set bookmark)
+                                           (helpers/where [:= :bookmark/id id] [:= :bookmark/user-id user-id])
+                                           (helpers/returning :*)
+                                           (sql/format))))
         (catch PSQLException e
           (log/error e)
           (case (.getSQLState e)
@@ -78,5 +78,5 @@
       (jdbc/execute! ds (-> (helpers/select :*)
                             (helpers/from :bookmark)
                             (helpers/where [:= :bookmark/user-id user-id] [:= :bookmark/tab-id tab-id])
+                            (helpers/order-by [:bookmark/created :asc])
                             (sql/format))))))
-
