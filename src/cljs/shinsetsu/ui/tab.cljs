@@ -17,6 +17,10 @@
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]))
 
+(defn- edit-toggler
+  [this edit-mode?]
+  (e/switch {:label "Edit" :checked edit-mode? :onChange #(m/toggle! this :ui/edit-mode?)}))
+
 (defsc TabModal
   [this {:tab/keys [id name is-protected?] :ui/keys [password loading? error-type change-password?]} {:keys [on-close]}]
   {:ident         :tab/id
@@ -129,17 +133,16 @@
                        (comp/get-initial-state bui/BookmarkModal {:bookmark/tab-id id})
                        :append [:tab/id id :tab/bookmarks])
                      (m/set-value! this :ui/show-bookmark-modal? true))
-        add-bm-btn (e/button
-                     {:fill     true
-                      :iconType "plus"
-                      :onClick  add-bm-fn}
-                     "Add Bookmark")]
+        add-bm-btn (e/button {:fill true :iconType "plus" :onClick add-bm-fn} "Add Bookmark")]
     (if (empty? bookmarks)
       (e/empty-prompt {:title   (p "Seems like you don't have any bookmark")
                        :body    (p "Let's add your first bookmark!")
                        :actions [add-bm-btn]})
-      (conj
+      (div
+        (edit-toggler this edit-mode?)
+        (e/spacer)
         (e/flex-grid {:columns 3}
+          (e/spacer {})
           (map-indexed
             (fn [i {bookmark-id :bookmark/id :as bookmark}]
               (let [on-click (fn []
@@ -192,8 +195,6 @@
                             (comp/transact! this [(fetch-bookmarks #:tab{:id id})]))))}
 
   [(e/spacer {})
-   (e/switch {:label "Edit" :checked edit-mode? :onChange #(m/toggle! this :ui/edit-mode?)})
-   (e/spacer {})
    (if show-bookmark-modal?
      (ui-bookmark-modal this id selected-bm-idx bookmarks))
    (let [bookmarks (filter #(not (tempid/tempid? (:bookmark/id %))) bookmarks)]
