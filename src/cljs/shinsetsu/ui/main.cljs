@@ -12,28 +12,31 @@
     [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]
     [taoensso.timbre :as log]
-    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]))
+    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
+    [com.fulcrologic.fulcro.dom.events :as evt]))
 
 (defn- ui-tab-headers
   [this tabs selected-tab-idx]
   (map-indexed
     (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?]}]
-      {:id         id
-       :prepend    (if is-protected?
-                     (if unlocked?
-                       (e/icon {:type "lockOpen"})
-                       (e/icon {:type "lock"})))
-       :label      (h1 name)
-       :onClick    #(m/set-integer! this :ui/selected-tab-idx :value i)
-       :isSelected (= i selected-tab-idx)})
+      {:id            id
+       :prepend       (if is-protected?
+                        (if unlocked?
+                          (e/icon {:type "lockOpen"})
+                          (e/icon {:type "lock"})))
+       :onContextMenu (fn [e]
+                        (evt/prevent-default! e)
+                        (js/console.log "Hello"))
+       :label         (h1 name)
+       :onClick       #(m/set-integer! this :ui/selected-tab-idx :value i)
+       :isSelected    (= i selected-tab-idx)})
     tabs))
 
 (defn- ui-new-tab
   [this tabs]
   (let [new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
         on-close (fn []
-                   (comp/transact! this [(remove-ident {:ident       (comp/get-ident TabModal new-tab)
-                                                        :remove-from (conj (comp/get-ident this) :user/tabs)})])
+                   (comp/transact! this [(remove-ident {:ident (comp/get-ident TabModal new-tab)})])
                    (m/set-value! this :ui/show-tab-modal? false))]
     (ui-tab-modal (comp/computed new-tab {:on-close on-close}))))
 
@@ -49,8 +52,8 @@
                                                     app TabModal (comp/get-initial-state TabModal)
                                                     :append [:component/id ::main :user/tabs]))
                                       :iconType "plus"}
-                                     "Create new tab")
-                                   (e/button {:fill true :iconType "importAction"} "Import bookmarks")]
+                                     "Create Tab")
+                                   (e/button {:fill true :iconType "importAction"} "Import")]
                   :tabs           (ui-tab-headers this tabs selected-tab-idx)}}
     (if (empty? tabs)
       (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
@@ -66,6 +69,7 @@
                    :ui/selected-tab-idx 0
                    :ui/show-tab-modal?  false}
    :will-enter    (fn [app _]
+                    (log/info "Loading user tabs")
                     (let [load-target         (targeting/append-to [:component/id ::main :user/tabs])
                           target-ready-params {:target [:component/id ::main]}]
                       ;; FIXME: Needs to load from local storage first before fetching from remote.

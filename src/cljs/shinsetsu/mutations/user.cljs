@@ -1,49 +1,72 @@
 (ns shinsetsu.mutations.user
   (:require
+    [medley.core :refer [dissoc-in]]
     [shinsetsu.application :refer [app login-token]]
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
-    [com.fulcrologic.fulcro.algorithms.form-state :as fs]
-    [com.fulcrologic.fulcro.algorithms.merge :as merge]
     [com.fulcrologic.fulcro.components :as comp]
     [taoensso.timbre :as log]))
 
+(defn- move-to-main
+  []
+  (let [Main (comp/registry-key->class `shinsetsu.ui.main/Main)
+        rs   (dr/route-segment Main)]
+    (dr/change-route app rs)))
+
+(defn- move-to-login
+  []
+  (let [Login (comp/registry-key->class `shinsetsu.ui.login/Login)
+        rs    (dr/route-segment Login)]
+    (dr/change-route app rs)))
+
 (defmutation login
-  "Login with a username and password"
   [_]
+  (action
+    [{:keys [state ref]}]
+    (log/debug "Logging user in")
+    (swap! state assoc-in (conj ref :ui/loading?) true))
   (auth [_] true)
   (ok-action
-    [{:keys [result state ref]}]
-    (if-let [token (-> result (get-in [:body `login :user/token]))]
-      (do
-        (reset! login-token token)
-        (dr/change-route app ["main"]))
-      (do
-        (log/error "Invalid token returned")
-        (swap! state assoc-in (conj ref :ui/loading?) false)
-        (swap! state assoc-in (conj ref :ui/error-type) :invalid-token))))
+    [{{{{:user/keys [token]} `login} :body} :result :keys [ref state]}]
+    (log/debug "User logged in successfully")
+    (reset! login-token token)
+    (.setItem js/localStorage "userToken" token)
+    (swap! state dissoc-in (conj ref :ui/password))
+    (move-to-main))
   (error-action
-    [{:keys [state ref] {body :body} :result}]
-    (let [{:keys [error-type]} (get body `login)]
-      (swap! state assoc-in (conj ref :ui/loading?) false)
-      (swap! state assoc-in (conj ref :ui/error-type) error-type))))
+    [{{{{:keys [error-type error-message]} `login} :body} :result :keys [state ref]}]
+    (log/debug "User failed to login due to:" error-message)
+    (swap! state #(-> %
+                      (assoc-in (conj ref :ui/loading?) false)
+                      (assoc-in (conj ref :ui/error-type) error-type)))))
 
 (defmutation register
-  "Register with a username and password"
   [_]
+  (action
+    [{:keys [state ref]}]
+    (log/debug "Registering user")
+    (swap! state assoc-in (conj ref :ui/loading?) true))
   (auth [_] true)
   (ok-action
-    [{:keys [result state ref]}]
-    (if-let [token (-> result (get-in [:body `register :user/token]))]
+    [{{{{:user/keys [token]} `register} :body} :result :keys [ref state]}]
+    (log/debug "User registered successfully")
+    (reset! login-token token)
+    (.setItem js/localStorage "userToken" token)
+    (swap! state dissoc-in (conj ref :ui/password))
+    (move-to-main))
+  (error-action
+    [{{{{:keys [error-type error-message]} `register} :body} :result :keys [state ref]}]
+    (log/debug "User failed to register due to:" error-message)
+    (swap! state #(-> %
+                      (assoc-in (conj ref :ui/loading?) false)
+                      (assoc-in (conj ref :ui/error-type) error-type)))))
+
+(defmutation fetch-current-user
+  [_]
+  (action
+    [_]
+    (if-let [token (.getItem js/localStorage "userToken")]
       (do
         (reset! login-token token)
-        (dr/change-route app ["main"]))
-      (do
-        (log/error "Invalid token returned")
-        (swap! state assoc-in (conj ref :ui/loading?) false)
-        (swap! state assoc-in (conj ref :ui/error-type) :invalid-token))))
-  (error-action
-    [{:keys [state ref] {body :body} :result}]
-    (let [{:keys [error-type]} (get body `register)]
-      (swap! state assoc-in (conj ref :ui/loading?) false)
-      (swap! state assoc-in (conj ref :ui/error-type) error-type))))
+        (move-to-main))
+      (move-to-login))))

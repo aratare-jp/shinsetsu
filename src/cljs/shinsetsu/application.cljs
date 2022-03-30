@@ -19,11 +19,9 @@
 (defn contain-errors?
   [body]
   (let [values (vals body)]
-    (reduce (fn [acc {:keys [error error-message]}]
+    (reduce (fn [acc {:keys [error]}]
               (if error
-                (do
-                  (log/error error-message)
-                  (reduced true))
+                (reduced true)
                 acc))
             false
             values)))

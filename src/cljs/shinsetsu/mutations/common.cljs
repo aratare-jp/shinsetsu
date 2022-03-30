@@ -2,12 +2,11 @@
   (:require
     [medley.core :refer [dissoc-in]]
     [com.fulcrologic.fulcro.algorithms.merge :refer [remove-ident*]]
-    [com.fulcrologic.fulcro.mutations :refer [defmutation]]))
+    [com.fulcrologic.fulcro.mutations :refer [defmutation]]
+    [com.fulcrologic.fulcro.algorithms.normalized-state :as ns]))
 
 (defmutation remove-ident
-  [{:keys [ident remove-from]}]
+  [{:keys [ident]}]
   (action
     [{:keys [state]}]
-    (swap! state dissoc-in ident)
-    (if remove-from
-      (swap! state remove-ident* ident remove-from))))
+    (swap! state ns/remove-entity ident)))

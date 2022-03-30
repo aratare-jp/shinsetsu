@@ -26,7 +26,7 @@
 (def tab-form-spec
   [:map
    [:tab/name non-empty-string]
-   [:tab/password {:optional true} :string]])
+   [:tab/password {:optional true} [:maybe :string]]])
 
 (def tab-create-spec
   [:map

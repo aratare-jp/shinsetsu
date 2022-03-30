@@ -41,6 +41,7 @@
       (jdbc/execute! ds (-> (helpers/select :*)
                             (helpers/from :tab)
                             (helpers/where [:= :tab/user-id user-id])
+                            (helpers/order-by [:tab/created :asc])
                             (sql/format :dialect :ansi))))))
 
 (defn patch-tab
