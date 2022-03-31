@@ -6,7 +6,11 @@
     [ring.middleware.content-type :refer [wrap-content-type]]
     [ring.middleware.resource :refer [wrap-resource]]
     [reitit.ring :as ring]
-    [mount.core :refer [defstate]]))
+    [mount.core :refer [defstate]]
+    [ring.middleware.multipart-params :refer [wrap-multipart-params]]
+    [com.fulcrologic.fulcro.networking.file-upload :as fu]
+    [taoensso.timbre :as log]
+    [puget.printer :refer [pprint]]))
 
 (defstate app
   :start
@@ -20,5 +24,11 @@
       (ring/create-default-handler))
     {:middleware [[wrap-content-type]
                   [wrap-resource "public"]
+                  [wrap-multipart-params]
                   [server/wrap-transit-response]
-                  [server/wrap-transit-params]]}))
+                  [server/wrap-transit-params]
+                  [fu/wrap-mutation-file-uploads {}]]}))
+
+(comment
+  (user/start)
+  (user/restart))

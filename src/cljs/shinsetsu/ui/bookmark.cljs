@@ -9,36 +9,48 @@
     [shinsetsu.mutations.bookmark :refer [create-bookmark patch-bookmark delete-bookmark]]
     [shinsetsu.ui.elastic :as e]
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
-    [com.fulcrologic.fulcro.dom.events :as evt]))
+    [com.fulcrologic.fulcro.dom.events :as evt]
+    [com.fulcrologic.fulcro.networking.file-upload :as fu]
+    [taoensso.timbre :as log]))
 
 (defsc BookmarkModal
-  [this {:bookmark/keys [id title url tab-id] :ui/keys [loading? error-type] :as props} {:keys [on-close]}]
+  [this {:bookmark/keys [id title url image tab-id] :ui/keys [loading? error-type] :as props} {:keys [on-close]}]
   {:ident         :bookmark/id
-   :query         [:bookmark/id :bookmark/title :bookmark/url :bookmark/tab-id :bookmark/favourite
+   :query         [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/tab-id :bookmark/favourite
                    :ui/loading? :ui/error-type fs/form-config-join]
-   :form-fields   #{:bookmark/title :bookmark/url}
+   :form-fields   #{:bookmark/title :bookmark/url :bookmark/image}
    :initial-state (fn [{:bookmark/keys [tab-id]}]
                     #:bookmark{:id     (tempid/tempid)
                                :title  ""
                                :url    ""
                                :tab-id tab-id})
    :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config BookmarkModal data-tree))}
-  (let [on-blur    (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
-        tab-valid? (mc/validate s/bookmark-form-spec #:bookmark{:title title :url url})
-        on-close   (fn [_]
-                     (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
-                     (if on-close (on-close)))
-        on-save    (fn []
-                     (if (tempid/tempid? id)
-                       (let [args #:bookmark{:id id :title title :url url :tab-id tab-id}]
-                         (comp/transact! this [(create-bookmark args)]))
-                       (let [args (-> props (fs/dirty-fields false) vals first (merge #:bookmark{:id id :tab-id tab-id}))]
-                         (comp/transact! this [(patch-bookmark args)]))))
-        on-clear   #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
-        errors     (case error-type
-                     :invalid-input ["Unable to create new tab." "Please try again."]
-                     :internal-server-error ["Unknown error encountered"]
-                     nil)]
+  (let [on-blur          (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
+        on-file-selected (fn [fs]
+                           (let [files (mapv #(fu/new-upload (.-name %) % (.-type %)) fs)]
+                             (m/set-value! this :bookmark/image files)))
+        tab-valid?       (mc/validate s/bookmark-form-spec #:bookmark{:title title :url url})
+        on-close         (fn [_]
+                           (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+                           (if on-close (on-close)))
+        on-save          (fn []
+                           (if (tempid/tempid? id)
+                             (let [args #:bookmark{:id id :title title :url url :tab-id tab-id}]
+                               (if image
+                                 (comp/transact! this [(create-bookmark (fu/attach-uploads args image))])
+                                 (comp/transact! this [(create-bookmark args)])))
+                             (let [args (-> props
+                                            (fs/dirty-fields false)
+                                            vals
+                                            first
+                                            (merge #:bookmark{:id id :tab-id tab-id}))]
+                               (comp/transact! this [(patch-bookmark args)]))))
+        on-clear         #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+        errors           (case error-type
+                           :invalid-input ["Unable to create new tab." "Please try again."]
+                           :internal-server-error ["Unknown error encountered"]
+                           nil)]
+    (js/console.log (fs/dirty-fields props false))
     (e/modal {:onClose on-close}
       (e/modal-header {}
         (e/modal-header-title {}
@@ -56,7 +68,9 @@
                            :value    url
                            :onBlur   #(on-blur :bookmark/url)
                            :disabled loading?
-                           :onChange (fn [e] (m/set-string! this :bookmark/url :event e))}))))
+                           :onChange (fn [e] (m/set-string! this :bookmark/url :event e))}))
+          (e/form-row {:label "Image"}
+            (e/file-picker {:onChange on-file-selected :display "default"}))))
       (e/modal-footer {}
         (e/button {:onClick on-close} "Cancel")
         (e/button {:type      "submit"
@@ -72,11 +86,11 @@
 
 (defsc Bookmark
   [this
-   {:bookmark/keys [id title favourite url tab-id]
+   {:bookmark/keys [id title image favourite url tab-id]
     :ui/keys       [edit-mode?]}
    {:keys [on-click]}]
   {:ident :bookmark/id
-   :query [:bookmark/id :bookmark/title :bookmark/url :bookmark/favourite :bookmark/tab-id :ui/edit-mode?]}
+   :query [:bookmark/id :bookmark/title :bookmark/url :bookmark/favourite :bookmark/image :bookmark/tab-id :ui/edit-mode?]}
   (let [on-favourite #(comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
         on-delete    #(comp/transact! this [(delete-bookmark #:bookmark{:id id :tab-id tab-id})])]
     (e/card
@@ -86,7 +100,9 @@
        :onContextMenu (fn [e]
                         (evt/prevent-default! e)
                         (js/console.log "Hello"))
-       :image         "https://source.unsplash.com/400x200/?Nature"
+       :image         (e/image
+                        {:height "200vh"
+                         :src    image})
        :footer        (if edit-mode?
                         (e/flex-group {:justifyContent "flexEnd"}
                           (e/flex-item {:grow false}

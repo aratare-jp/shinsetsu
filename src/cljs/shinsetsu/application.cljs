@@ -2,6 +2,7 @@
   (:require
     [com.fulcrologic.fulcro.application :as app]
     [com.fulcrologic.fulcro.networking.http-remote :as http]
+    [com.fulcrologic.fulcro.networking.file-upload :as fu]
     [taoensso.timbre :as log]))
 
 (def login-token (atom nil))
@@ -10,11 +11,18 @@
   ([token] (wrap-auth-token identity token))
   ([handler token]
    (fn [req]
-     (handler (update req :headers assoc "Authorization" (str "Bearer " @token))))))
+     (handler (assoc-in req [:headers "Authorization"] (str "Bearer " @token))))))
+
+(defn wrap-spit
+  [handler]
+  (fn [req]
+    (js/console.log req)
+    (handler req)))
 
 (def req-middleware
-  (-> (wrap-auth-token login-token)
-      (http/wrap-fulcro-request)))
+  (-> (http/wrap-fulcro-request)
+      fu/wrap-file-upload
+      (wrap-auth-token login-token)))
 
 (defn contain-errors?
   [body]

@@ -29,7 +29,10 @@
                             EuiButtonIcon
                             EuiTabs
                             EuiTab
-                            EuiConfirmModal]]))
+                            EuiConfirmModal
+                            EuiFieldPassword
+                            EuiFilePicker
+                            EuiImage]]))
 
 (def provider (ri/react-factory EuiProvider))
 (def empty-prompt (ri/react-factory EuiEmptyPrompt))
@@ -37,6 +40,7 @@
 (def loading-spinner (ri/react-factory EuiLoadingSpinner))
 (def icon (ri/react-factory EuiIcon))
 (def card (ri/react-factory EuiCard))
+(def image (ri/react-factory EuiImage))
 
 ;; Form
 (def form (ri/react-factory EuiForm))
@@ -44,9 +48,11 @@
 
 ;; Form controls
 (def field-text (ri/react-factory EuiFieldText))
+(def field-password (ri/react-factory EuiFieldPassword))
 (def switch (ri/react-factory EuiSwitch))
 (def button (ri/react-factory EuiButton))
 (def button-icon (ri/react-factory EuiButtonIcon))
+(def file-picker (ri/react-factory EuiFilePicker))
 
 ;; Flex
 (def flex-group (ri/react-factory EuiFlexGroup))

@@ -7,12 +7,26 @@
     [malli.error :as me]
     [shinsetsu.schema :as s]
     [shinsetsu.db.tab :as tab-db]
-    [buddy.hashers :as hashers]))
+    [buddy.hashers :as hashers]
+    [com.fulcrologic.fulcro.networking.file-upload :as fu])
+  (:import [java.nio.file Files]
+           [java.io File]
+           [java.util Base64]))
 
-(def bookmark-input #{:bookmark/title :bookmark/url :bookmark/image :bookmark/user-id :bookmark/tab-id})
+(def bookmark-input #{:bookmark/title :bookmark/url :bookmark/image :bookmark/user-id :bookmark/tab-id ::fu/files})
 (def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/favourite :bookmark/created :bookmark/updated])
 
-(defn trim-bookmark [b] (dissoc b :bookmark/user-id :bookmark/tab-id))
+(defn trim-bookmark
+  [b]
+  (dissoc b :bookmark/user-id :bookmark/tab-id))
+
+(defn image->base64
+  [{:keys [type] :as f}]
+  (some->> f
+           .toPath
+           Files/readAllBytes
+           (.encodeToString (Base64/getEncoder))
+           (str "data:" type ";base64,")))
 
 (defmutation create-bookmark
   [{{user-id :user/id} :request} bookmark]
@@ -23,8 +37,17 @@
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with id" user-id "is attempting to create a new bookmark")
-        (let [tempid   (:bookmark/id bookmark)
-              bookmark (-> bookmark (dissoc :bookmark/id) db/create-bookmark trim-bookmark)
+        (let [image    (some->> bookmark ::fu/files first :tempfile image->base64)
+              tempid   (:bookmark/id bookmark)
+              bookmark (-> bookmark
+                           (dissoc :bookmark/id)
+                           (dissoc ::fu/files)
+                           ((fn [b]
+                              (if image
+                                (assoc b :bookmark/image image)
+                                b)))
+                           db/create-bookmark
+                           trim-bookmark)
               real-id  (:bookmark/id bookmark)]
           (log/info "User with ID" user-id "created bookmark" real-id "successfully")
           (if tempid

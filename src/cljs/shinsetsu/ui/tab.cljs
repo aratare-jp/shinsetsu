@@ -164,10 +164,10 @@
        :title   (h2 "This tab is protected!")
        :body    (e/form {:component "form" :id "tab-password-modal"}
                   (e/form-row {:label "Password"}
-                    (e/field-text {:type     "password"
-                                   :name     "password"
-                                   :value    password
-                                   :onChange #(m/set-string! this :ui/password :event %)})))
+                    (e/field-password {:type     "dual"
+                                       :name     "password"
+                                       :value    password
+                                       :onChange #(m/set-string! this :ui/password :event %)})))
        :actions [(e/button
                    {:fill    true
                     :onClick #(comp/transact! this [(fetch-bookmarks #:tab{:id id :password password})])}

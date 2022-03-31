@@ -2,7 +2,8 @@
   (:require
     [malli.core :as m]
     [malli.error :as me]
-    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]))
+    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
+    [com.fulcrologic.fulcro.networking.file-upload :as fu]))
 
 (def non-empty-string (m/schema [:string {:min 1}]))
 
@@ -64,16 +65,25 @@
 
 ;; BOOKMARK
 
+(def file-spec
+  (m/schema
+    [:map
+     [:filename non-empty-string]
+     [:content-type non-empty-string]
+     [:tempfile :any]
+     [:size :int]]))
+
 (def bookmark-create-spec
   [:map
    {:closed true}
    [:bookmark/id {:optional true} [:fn tempid/tempid?]]
    [:bookmark/title non-empty-string]
    [:bookmark/url non-empty-string]
-   [:bookmark/image {:optional true} non-empty-string]
+   [:bookmark/image {:optional true} :any]
    [:bookmark/favourite {:optional true} :boolean]
    [:bookmark/tab-id :uuid]
-   [:bookmark/user-id :uuid]])
+   [:bookmark/user-id :uuid]
+   [::fu/files {:optional true} [:cat file-spec]]])
 
 (def bookmark-fetch-spec
   [:map
@@ -93,10 +103,11 @@
    [:bookmark/id :uuid]
    [:bookmark/title {:optional true} non-empty-string]
    [:bookmark/url {:optional true} non-empty-string]
-   [:bookmark/image {:optional true} non-empty-string]
+   [:bookmark/image {:optional true} :any]
    [:bookmark/favourite {:optional true} :boolean]
    [:bookmark/tab-id {:optional true} :uuid]
-   [:bookmark/user-id :uuid]])
+   [:bookmark/user-id :uuid]
+   [::fu/files {:optional true} [:cat file-spec]]])
 
 (def bookmark-delete-spec
   [:map
