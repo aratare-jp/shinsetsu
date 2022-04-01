@@ -7,7 +7,7 @@
     [com.fulcrologic.fulcro.dom :refer [div label input form button h1 h2 nav h5 p span]]
     [com.fulcrologic.fulcro.mutations :as m]
     [shinsetsu.mutations.common :refer [remove-ident]]
-    [shinsetsu.mutations.tab :refer [delete-tab]]
+    [shinsetsu.mutations.tab :refer [delete-tab lock-tab]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
     [com.fulcrologic.fulcro.data-fetch :as df]
     [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
@@ -59,44 +59,68 @@
     (p "Deleting this tab will also delete all the bookmarks within it!")
     (p "Are you sure you want to delete this tab?")))
 
+(defn- show-if-unlocked
+  ([tabs selected-tab-idx btn] (show-if-unlocked tabs selected-tab-idx btn true))
+  ([tabs selected-tab-idx btn show-if-public?]
+   (if-let [curr-tab (and (not (empty? tabs)) (nth tabs selected-tab-idx))]
+     (let [is-protected? (:tab/is-protected? curr-tab)
+           unlocked?     (:ui/unlocked? curr-tab)]
+       (if is-protected?
+         (if unlocked?
+           btn)
+         (if show-if-public?
+           btn))))))
+
 (defn- ui-main-body
   [this tabs selected-tab-idx]
-  (e/page-template
-    {:pageHeader {:pageTitle      (if (empty? tabs)
-                                    "Welcome!"
-                                    (-> tabs (nth selected-tab-idx) :tab/name))
-                  :rightSideItems [(e/button-icon
-                                     {:fill     true
-                                      :size     "m"
-                                      :onClick  (fn []
-                                                  (m/set-value! this :ui/show-tab-modal? true)
-                                                  (merge/merge-component!
-                                                    app TabModal (comp/get-initial-state TabModal)
-                                                    :append [:component/id ::main :user/tabs]))
-                                      :iconType "plus"})
-                                   (if (not (empty? tabs))
-                                     (e/button-icon
-                                       {:fill     true
-                                        :size     "m"
-                                        :onClick  #(m/set-value! this :ui/show-edit-modal? true)
-                                        :iconType "pencil"}))
-                                   (if (not (empty? tabs))
-                                     (e/button-icon
-                                       {:fill     true
-                                        :size     "m"
-                                        :color    "danger"
-                                        :onClick  #(m/set-value! this :ui/show-delete-modal? true)
-                                        :iconType "trash"}))
-                                   (e/button-icon
-                                     {:fill     true
-                                      :size     "m"
-                                      :iconType "importAction"})]}}
-    (e/tabs {:size "xl"}
-      (ui-tab-headers this tabs selected-tab-idx))
-    (if (empty? tabs)
-      (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
-                       :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-      (ui-tab (nth tabs selected-tab-idx)))))
+  (let [right-side-items (->> [(e/button-icon
+                                 {:fill     true
+                                  :size     "m"
+                                  :onClick  (fn []
+                                              (m/set-value! this :ui/show-tab-modal? true)
+                                              (merge/merge-component!
+                                                app TabModal (comp/get-initial-state TabModal)
+                                                :append (conj (comp/get-ident this) :user/tabs)))
+                                  :iconType "plus"})
+                               (show-if-unlocked
+                                 tabs
+                                 selected-tab-idx
+                                 (e/button-icon
+                                   {:fill     true
+                                    :size     "m"
+                                    :onClick  #(m/set-value! this :ui/show-edit-modal? true)
+                                    :iconType "pencil"}))
+                               (show-if-unlocked
+                                 tabs
+                                 selected-tab-idx
+                                 (e/button-icon
+                                   {:fill     true
+                                    :size     "m"
+                                    :color    "danger"
+                                    :onClick  #(m/set-value! this :ui/show-delete-modal? true)
+                                    :iconType "trash"}))
+                               (show-if-unlocked
+                                 tabs
+                                 selected-tab-idx
+                                 (e/button-icon
+                                   {:fill     true
+                                    :size     "m"
+                                    :iconType "lock"
+                                    :onClick  #(if-let [curr-tab (nth tabs selected-tab-idx)]
+                                                 (comp/transact! this [(lock-tab curr-tab)]))})
+                                 false)]
+                              (filter #(not (nil? %))))]
+    (e/page-template
+      {:pageHeader {:pageTitle      (if (empty? tabs)
+                                      "Welcome!"
+                                      (-> tabs (nth selected-tab-idx) :tab/name))
+                    :rightSideItems right-side-items}}
+      (e/tabs {:size "xl"}
+        (ui-tab-headers this tabs selected-tab-idx))
+      (if (empty? tabs)
+        (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
+                         :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
+        (ui-tab (nth tabs selected-tab-idx))))))
 
 (defsc Main
   [this {:user/keys [tabs] :ui/keys [selected-tab-idx show-tab-modal? show-edit-modal? show-delete-modal?]}]

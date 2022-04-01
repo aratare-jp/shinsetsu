@@ -14,7 +14,8 @@
            [java.util Base64]))
 
 (def bookmark-input #{:bookmark/title :bookmark/url :bookmark/image :bookmark/user-id :bookmark/tab-id ::fu/files})
-(def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/favourite :bookmark/created :bookmark/updated])
+(def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/favourite
+                      :bookmark/created :bookmark/updated])
 
 (defn trim-bookmark
   [b]
@@ -87,7 +88,15 @@
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with id" user-id "is attempting to patch bookmark" id)
-        (let [bookmark (-> bookmark db/patch-bookmark trim-bookmark)]
+        (let [image    (some->> bookmark ::fu/files first :tempfile image->base64)
+              bookmark (-> bookmark
+                           (dissoc ::fu/files)
+                           ((fn [b]
+                              (if image
+                                (assoc b :bookmark/image image)
+                                b)))
+                           db/patch-bookmark
+                           trim-bookmark)]
           (log/info "User with ID" user-id "patched bookmark" id "successfully")
           bookmark)))))
 

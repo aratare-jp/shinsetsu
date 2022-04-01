@@ -57,7 +57,7 @@
   (let [tempid      (tempid/tempid)
         query       [{`(tab-mut/create-tab #:tab{:id ~tempid :name "foo"}) tab-join}]
         actual      (protected-parser {:request {:user/id @user-id}} query)
-        tab         (log/spy (get actual `tab-mut/create-tab))
+        tab         (get actual `tab-mut/create-tab)
         tab-id      (:tab/id tab)
         fetched-tab (-> {:tab/id tab-id :tab/user-id @user-id} tab-db/fetch-tab trim-tab)
         expected    {`tab-mut/create-tab (merge

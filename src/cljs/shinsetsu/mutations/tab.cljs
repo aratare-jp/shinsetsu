@@ -92,3 +92,11 @@
     (swap! state #(-> %
                       (assoc-in (conj ref :ui/loading?) false)
                       (assoc-in (conj ref :ui/error-type) error-type)))))
+
+(defmutation lock-tab
+  [p]
+  (action
+    [{:keys [state]}]
+    (log/debug "Locking up tab" (:tab/id p))
+    (let [Tab (comp/registry-key->class `shinsetsu.ui.tab/Tab)]
+      (swap! state assoc-in (conj (comp/get-ident Tab p) :ui/unlocked?) false))))
