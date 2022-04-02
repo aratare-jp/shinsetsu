@@ -124,9 +124,15 @@
              non-empty-string
              [:fn {:error/message "must have hex colour format"} is-hex-colour-str?]]))
 
+(def tag-form-spec
+  [:map
+   [:tag/name non-empty-string]
+   [:tag/colour {:optional true} hex-colour-spec]])
+
 (def tag-create-spec
   [:map
    {:closed true}
+   [:tag/id {:optional true} [:fn tempid/tempid?]]
    [:tag/name non-empty-string]
    [:tag/colour {:optional true} hex-colour-spec]
    [:tag/user-id :uuid]])
@@ -157,6 +163,13 @@
    {:closed true}
    [:bookmark-tag/bookmark-id :uuid]
    [:bookmark-tag/tag-id :uuid]
+   [:bookmark-tag/user-id :uuid]])
+
+(def bookmark-tag-multi-create-spec
+  [:map
+   {:closed true}
+   [:bookmark-tag/bookmark-id :uuid]
+   [:bookmark-tag/tag-ids [:vector :uuid]]
    [:bookmark-tag/user-id :uuid]])
 
 (def bookmark-tag-fetch-by-bookmark-spec

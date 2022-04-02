@@ -64,4 +64,5 @@
       (jdbc/execute! ds (-> (helpers/select :*)
                             (helpers/from :tag)
                             (helpers/where [:= :tag/user-id user-id])
+                            (helpers/order-by [:tag/created :asc])
                             (sql/format))))))

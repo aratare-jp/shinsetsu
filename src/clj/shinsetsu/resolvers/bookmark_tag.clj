@@ -8,16 +8,16 @@
     [malli.error :as me]))
 
 (defresolver bookmark-tag-resolver-by-bookmark
-  [{{user-id :user/id} :request} {:bookmark-tag/keys [bookmark-id] :as input}]
-  {::pc/input  #{:bookmark-tag/bookmark-id}
+  [{{user-id :user/id} :request} {:bookmark/keys [id]}]
+  {::pc/input  #{:bookmark/id}
    ::pc/output [{:bookmark/tags [:tag/id]}]}
-  (let [input (merge {:bookmark-tag/user-id user-id} input)]
+  (let [input {:bookmark-tag/bookmark-id id :bookmark-tag/user-id user-id}]
     (if-let [err (m/explain s/bookmark-tag-fetch-by-bookmark-spec input)]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
-        (log/info "Fetching tags for bookmark" bookmark-id "for user" user-id)
+        (log/info "Fetching tags for bookmark" id "for user" user-id)
         (let [tags (bookmark-tag-db/fetch-tags-by-bookmark input)]
-          (log/info "All tags assigned to bookmark" bookmark-id "fetched successfully for user" user-id)
+          (log/info "All tags assigned to bookmark" id "fetched successfully for user" user-id)
           {:bookmark/tags (mapv (fn [e] {:tag/id (:bookmark-tag/tag-id e)}) tags)})))))
 
 (defresolver bookmark-tag-resolver-by-tag

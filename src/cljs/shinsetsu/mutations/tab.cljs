@@ -24,10 +24,10 @@
   (ok-action
     [{{{{:tab/keys [id] :as tab} `create-tab} :body} :result :keys [state component]}]
     (log/debug "Tab" id "was created successfully")
-    (let [Main       (comp/registry-key->class `shinsetsu.ui.main/Main)
-          main-ident (comp/get-ident Main {})
+    (let [TabMain    (comp/registry-key->class `shinsetsu.ui.tab/TabMain)
+          main-ident (comp/get-ident TabMain {})
           tab-ident  (comp/get-ident component tab)]
-      (merge/merge-component! app component tab :append (conj main-ident :user/tabs))
+      (merge/merge-component! app component tab :append [:root/tabs])
       (swap! state #(-> %
                         (fs/entity->pristine* tab-ident)
                         (dissoc-in (conj tab-ident :ui/password))
@@ -54,8 +54,8 @@
   (ok-action
     [{{{tab `patch-tab} :body} :result :keys [state ref component]}]
     (log/debug "Tab" id "patched successfully")
-    (let [Main     (comp/registry-key->class `shinsetsu.ui.main/Main)
-          main-idt (comp/get-ident Main {})]
+    (let [TabMain  (comp/registry-key->class `shinsetsu.ui.tab/TabMain)
+          main-idt (comp/get-ident TabMain {})]
       (merge/merge-component! app component tab)
       (swap! state #(-> %
                         (fs/entity->pristine* ref)

@@ -1,0 +1,176 @@
+(ns shinsetsu.ui.tag
+  (:require
+    [shinsetsu.ui.elastic :as e]
+    [shinsetsu.application :refer [app]]
+    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+    [com.fulcrologic.fulcro.dom :refer [div label input form button h1 h2 nav h5 p span]]
+    [com.fulcrologic.fulcro.mutations :as m]
+    [shinsetsu.mutations.common :refer [remove-ident]]
+    [shinsetsu.mutations.tag :refer [create-tag patch-tag delete-tag]]
+    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
+    [com.fulcrologic.fulcro.data-fetch :as df]
+    [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
+    [com.fulcrologic.fulcro.algorithms.merge :as merge]
+    [taoensso.timbre :as log]
+    [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
+    [com.fulcrologic.fulcro.dom.events :as evt]
+    [com.fulcrologic.fulcro.algorithms.form-state :as fs]
+    [malli.core :as mc]
+    [shinsetsu.schema :as s]))
+
+(defsc TagModal
+  [this
+   {:tag/keys [id name colour]
+    :ui/keys  [loading? error-type]}
+   {:keys [on-close]}]
+  {:ident         :tag/id
+   :query         [:tag/id :tag/name :tag/colour
+                   :ui/loading? :ui/error-type :ui/change-password?
+                   fs/form-config-join]
+   :form-fields   #{:tag/name :tag/colour}
+   :initial-state (fn [_]
+                    {:tag/id     (tempid/tempid)
+                     :tag/name   ""
+                     :tag/colour "#ffffff"})
+   :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config TagModal data-tree))}
+  (let [new?       (tempid/tempid? id)
+        on-blur    (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
+        tag-valid? (mc/validate s/tag-form-spec #:tag{:name name :tag/colour colour})
+        on-close   (fn [_]
+                     (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+                     (on-close))
+        on-save    (fn [e]
+                     (evt/prevent-default! e)
+                     (if new?
+                       (comp/transact! this [(create-tag #:tag{:id id :name name :colour colour})])
+                       (comp/transact! this [(patch-tag #:tag{:id id :name name :colour colour})])))
+        on-clear   #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+        errors     (case error-type
+                     :invalid-input ["Unable to create new tag." "Please try again."]
+                     :internal-server-error ["Unknown error encountered"]
+                     nil)]
+    (e/modal {:onClose on-close}
+      (e/modal-header {}
+        (e/modal-header-title {}
+          (h1 (if (tempid/tempid? id) "Create New Tag" "Edit Tag"))))
+      (e/modal-body {}
+        (e/form {:id "tag-modal-form" :component "form" :isInvalid (boolean errors) :error errors}
+          (e/form-row {:label "Name"}
+            (e/field-text
+              {:name     "name"
+               :value    name
+               :onChange #(m/set-string! this :tag/name :event %)
+               :onBlur   #(on-blur :tag/name)
+               :disabled loading?}))
+          (e/form-row {:label "Colour"}
+            (e/colour-picker
+              {:color    colour
+               :onChange #(m/set-value! this :tag/colour %)
+               :disabled loading?}))))
+      (e/modal-footer {}
+        (e/button
+          {:type      "submit"
+           :fill      true
+           :iconType  "save"
+           :onClick   on-save
+           :isLoading loading?
+           :disabled  (not tag-valid?)
+           :form      "tag-modal-form"}
+          "Save")
+        (e/button {:onClick on-clear} "Clear")))))
+
+(def ui-tag-modal (comp/factory TagModal {:keyfn :tag/id}))
+
+(defn- ui-new-tag
+  [this tags]
+  (let [new-tag  (first (filter #(tempid/tempid? (:tag/id %)) tags))
+        on-close (fn []
+                   (comp/transact! this [(remove-ident {:ident (comp/get-ident TagModal new-tag)})])
+                   (m/set-value! this :ui/show-create-modal? false))]
+    (ui-tag-modal (comp/computed new-tag {:on-close on-close}))))
+
+(defn- ui-edit-tag
+  [this tag]
+  (let [on-close #(m/set-value! this :ui/show-edit-modal? false)]
+    (ui-tag-modal (comp/computed tag {:on-close on-close}))))
+
+(defn- ui-delete-tag
+  [this {:tag/keys [id name] :as tag}]
+  (e/confirm-modal
+    {:title             (str "Delete tag " name)
+     :onCancel          #(m/set-value! this :ui/show-delete-modal? false)
+     :onConfirm         #(comp/transact! this [(delete-tag {:tag/id id})])
+     :cancelButtonText  "Cancel"
+     :confirmButtonText "Yes, I'm sure!"
+     :buttonColor       "danger"}
+    (p "Deleting this tag will also remove all assignments!")
+    (p "Are you sure you want to delete this tag?")))
+
+(defn- ui-tag-main-body
+  [this tags]
+  (e/page-template
+    {:pageHeader {:pageTitle      "Tags"
+                  :rightSideItems [(e/button
+                                     {:fill       true
+                                      :iconType   "plus"
+                                      :size       "l"
+                                      :aria-label "add-tag"
+                                      :onClick    (fn []
+                                                    (m/set-value! this :ui/show-create-modal? true)
+                                                    (merge/merge-component!
+                                                      app TagModal (comp/get-initial-state TagModal)
+                                                      :append [:root/tags]))}
+                                     "Create new tag")]}}
+    (if (empty? tags)
+      (e/empty-prompt {:title (h2 "It seems like you don't have any tag at the moment.")
+                       :body  (p "Start enjoying Shinsetsu by add or import your tags")})
+      (e/list-group {:bordered true :size "l"}
+        (map-indexed
+          (fn [i {:tag/keys [name colour]}]
+            (e/list-group-item
+              {:label       (e/badge {:color colour} name)
+               :size        "l"
+               :onClick     (fn []
+                              (m/set-value! this :ui/selected-idx i)
+                              (m/toggle! this :ui/show-edit-modal?))
+               :extraAction {:iconType "cross"
+                             :iconSize "m"
+                             :onClick  (fn []
+                                         (m/set-value! this :ui/selected-idx i)
+                                         (m/toggle! this :ui/show-delete-modal?))}}))
+          tags)))))
+
+(defsc TagMain
+  [this
+   {:root/keys [tags]
+    :ui/keys   [selected-idx show-create-modal? show-edit-modal? show-delete-modal?]}]
+  {:ident         (fn [] [:component/id ::tag])
+   :route-segment ["tag"]
+   :query         [{[:root/tags '_] (comp/get-query TagModal)}
+                   :ui/selected-idx
+                   :ui/show-create-modal?
+                   :ui/show-edit-modal?
+                   :ui/show-delete-modal?]
+   :initial-state {:root/tags             []
+                   :ui/selected-idx       0
+                   :ui/show-create-modal? false
+                   :ui/show-edit-modal?   false
+                   :ui/show-delete-modal? false}
+   :will-enter    (fn [app _]
+                    (log/info "Loading user tags")
+                    (dr/route-deferred
+                      [:component/id ::tag]
+                      #(let [load-target (targeting/replace-at [:root/tags])]
+                         ;; FIXME: Needs to load from local storage first before fetching from remote.
+                         (df/load! app :user/tags TagModal {:target               load-target
+                                                            :post-mutation        `dr/target-ready
+                                                            :post-mutation-params {:target [:component/id ::tag]}}))))}
+  [(if show-create-modal?
+     (ui-new-tag this tags))
+   (if show-edit-modal?
+     (ui-edit-tag this (nth tags selected-idx)))
+   (if show-delete-modal?
+     (ui-delete-tag this (nth tags selected-idx)))
+   (->> tags
+        (filter #(not (tempid/tempid? (:tag/id %))))
+        (ui-tag-main-body this))])

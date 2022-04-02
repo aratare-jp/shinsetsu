@@ -32,7 +32,13 @@
                             EuiConfirmModal
                             EuiFieldPassword
                             EuiFilePicker
-                            EuiImage]]))
+                            EuiImage
+                            EuiButtonGroup
+                            EuiColorPicker
+                            EuiListGroup
+                            EuiListGroupItem
+                            EuiBadge
+                            EuiComboBox]]))
 
 (def provider (ri/react-factory EuiProvider))
 (def empty-prompt (ri/react-factory EuiEmptyPrompt))
@@ -41,6 +47,11 @@
 (def icon (ri/react-factory EuiIcon))
 (def card (ri/react-factory EuiCard))
 (def image (ri/react-factory EuiImage))
+(def badge (ri/react-factory EuiBadge))
+
+;; List
+(def list-group (ri/react-factory EuiListGroup))
+(def list-group-item (ri/react-factory EuiListGroupItem))
 
 ;; Form
 (def form (ri/react-factory EuiForm))
@@ -51,8 +62,11 @@
 (def field-password (ri/react-factory EuiFieldPassword))
 (def switch (ri/react-factory EuiSwitch))
 (def button (ri/react-factory EuiButton))
+(def button-group (ri/react-factory EuiButtonGroup))
 (def button-icon (ri/react-factory EuiButtonIcon))
 (def file-picker (ri/react-factory EuiFilePicker))
+(def colour-picker (ri/react-factory EuiColorPicker))
+(def combo-box (ri/react-factory EuiComboBox))
 
 ;; Flex
 (def flex-group (ri/react-factory EuiFlexGroup))

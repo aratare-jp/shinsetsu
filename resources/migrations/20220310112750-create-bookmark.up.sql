@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS "bookmark"
     title     varchar NOT NULL,
     url       varchar NOT NULL,
     favourite bool             DEFAULT FALSE,
-    image     varchar NOT NULL,
+    image     varchar          DEFAULT NULL,
     created   timestamptz      DEFAULT now(),
     updated   timestamptz      DEFAULT now(),
     user_id   uuid    NOT NULL,

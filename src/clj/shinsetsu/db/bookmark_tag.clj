@@ -6,7 +6,8 @@
             [next.jdbc :as jdbc]
             [honey.sql.helpers :as helpers]
             [honey.sql :as sql]
-            [shinsetsu.db.db :refer [ds]])
+            [shinsetsu.db.db :refer [ds]]
+            [clojure.string :as string])
   (:import [org.postgresql.util PSQLException]))
 
 (defn create-bookmark-tag
@@ -21,6 +22,29 @@
                                                   :bookmark-tag/user-id     user-id}])
                                 (helpers/returning :*)
                                 (sql/format)))
+      (catch PSQLException e
+        (log/error e)
+        (case (.getSQLState e)
+          "23503" (throw (ex-info "Invalid input" {:error-type :invalid-input
+                                                   :error-data {:bookmark-tag/bookmark-id ["nonexistent"]
+                                                                :bookmark-tag/tag-id      ["nonexistent"]}}))
+          (throw (ex-info "Unknown error" {:error-type :unknown} e)))))))
+
+(defn create-bookmark-tags
+  [{:bookmark-tag/keys [bookmark-id tag-ids user-id] :as input}]
+  (if-let [err (m/explain s/bookmark-tag-multi-create-spec input)]
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (try
+      (log/info "Assign tags" (string/join tag-ids) "to bookmark" bookmark-id "for user" user-id)
+      (jdbc/execute! ds (-> (helpers/insert-into :bookmark-tag)
+                            (helpers/values (mapv
+                                              (fn [id]
+                                                #:bookmark-tag{:tag-id      id
+                                                               :bookmark-id bookmark-id
+                                                               :user-id     user-id})
+                                              tag-ids))
+                            (helpers/returning :*)
+                            (sql/format)))
       (catch PSQLException e
         (log/error e)
         (case (.getSQLState e)

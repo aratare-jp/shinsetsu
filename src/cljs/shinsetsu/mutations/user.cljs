@@ -7,10 +7,10 @@
     [com.fulcrologic.fulcro.components :as comp]
     [taoensso.timbre :as log]))
 
-(defn- move-to-main
+(defn- move-to-tab
   []
-  (let [Main (comp/registry-key->class `shinsetsu.ui.main/Main)
-        rs   (dr/route-segment Main)]
+  (let [TabMain (comp/registry-key->class `shinsetsu.ui.tab/TabMain)
+        rs      (dr/route-segment TabMain)]
     (dr/change-route app rs)))
 
 (defn- move-to-login
@@ -32,7 +32,7 @@
     (reset! login-token token)
     (.setItem js/localStorage "userToken" token)
     (swap! state dissoc-in (conj ref :ui/password))
-    (move-to-main))
+    (move-to-tab))
   (error-action
     [{{{{:keys [error-type error-message]} `login} :body} :result :keys [state ref]}]
     (log/debug "User failed to login due to:" error-message)
@@ -53,7 +53,7 @@
     (reset! login-token token)
     (.setItem js/localStorage "userToken" token)
     (swap! state dissoc-in (conj ref :ui/password))
-    (move-to-main))
+    (move-to-tab))
   (error-action
     [{{{{:keys [error-type error-message]} `register} :body} :result :keys [state ref]}]
     (log/debug "User failed to register due to:" error-message)
@@ -68,5 +68,5 @@
     (if-let [token (.getItem js/localStorage "userToken")]
       (do
         (reset! login-token token)
-        (move-to-main))
+        (move-to-tab))
       (move-to-login))))

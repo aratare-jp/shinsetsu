@@ -8,6 +8,7 @@
     [shinsetsu.schema :as s]
     [shinsetsu.mutations.bookmark :refer [create-bookmark patch-bookmark delete-bookmark]]
     [shinsetsu.ui.elastic :as e]
+    [shinsetsu.ui.tag :as tui]
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
     [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.networking.file-upload :as fu]
@@ -15,21 +16,24 @@
 
 (defsc BookmarkModal
   [this
-   {:bookmark/keys [id title url tab-id]
+   {:bookmark/keys [id title url tab-id tags]
+    all-tags       :root/tags
     :ui/keys       [image loading? error-type] :as props}
    {:keys [on-close]}]
   {:ident         :bookmark/id
-   :query         [:bookmark/id
+   :query         [{[:root/tags '_] (comp/get-query tui/TagModal)}
+                   :bookmark/id
                    :bookmark/title
                    :bookmark/url
                    :bookmark/image
                    :bookmark/tab-id
                    :bookmark/favourite
+                   {:bookmark/tags (comp/get-query tui/TagModal)}
                    :ui/loading?
                    :ui/error-type
                    :ui/image
                    fs/form-config-join]
-   :form-fields   #{:bookmark/title :bookmark/url :bookmark/image}
+   :form-fields   #{:bookmark/title :bookmark/url :bookmark/image :bookmark/tags}
    :initial-state (fn [{:bookmark/keys [tab-id]}]
                     #:bookmark{:id     (tempid/tempid)
                                :title  ""
@@ -44,7 +48,8 @@
         on-close         (fn [_]
                            (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
                            (if on-close (on-close)))
-        on-save          (fn []
+        on-save          (fn [e]
+                           (evt/prevent-default! e)
                            (if (tempid/tempid? id)
                              (let [args #:bookmark{:id id :title title :url url :tab-id tab-id}]
                                (if image
@@ -54,7 +59,8 @@
                                             (fs/dirty-fields false)
                                             vals
                                             first
-                                            (merge #:bookmark{:id id :tab-id tab-id}))]
+                                            (merge #:bookmark{:id id :tab-id tab-id})
+                                            (update :bookmark/tags #(mapv second %)))]
                                (if image
                                  (comp/transact! this [(patch-bookmark (fu/attach-uploads args image))])
                                  (comp/transact! this [(patch-bookmark args)])))))
@@ -68,7 +74,7 @@
         (e/modal-header-title {}
           (h1 (if (tempid/tempid? id) "Create New Bookmark" "Edit Bookmark"))))
       (e/modal-body {}
-        (e/form {:component "form" :isInvalid (boolean errors) :error errors}
+        (e/form {:id "bookmark-modal-form" :component "form" :isInvalid (boolean errors) :error errors}
           (e/form-row {:label "Title"}
             (e/field-text
               {:name     "title"
@@ -84,25 +90,46 @@
                :disabled loading?
                :onChange (fn [e] (m/set-string! this :bookmark/url :event e))}))
           (e/form-row {:label "Image"}
-            (e/file-picker {:onChange on-file-selected :accept "image/*"}))))
-      (e/modal-footer {}
-        (e/button {:onClick on-close} "Cancel")
-        (e/button
-          {:type      "submit"
-           :fill      true
-           :onClick   on-save
-           :isLoading loading?
-           :disabled  (not bm-valid?)
-           :iconType  "save"
-           :form      "tab-modal-form"}
-          "Save")
-        (e/button {:onClick on-clear} "Clear")))))
+            (e/file-picker {:onChange on-file-selected :accept "image/*"}))
+          (e/form-row {:label "Tags"}
+            (e/combo-box
+              {:aria-label      "Select tag for bookmark"
+               :placeholder     "Select tags"
+               :selectedOptions (map
+                                  (fn [{:tag/keys [id name colour]}]
+                                    {:label name :color colour :value id})
+                                  tags)
+               :options         (map (fn [{:tag/keys [id name colour]}]
+                                       {:label name :color colour :value id})
+                                     all-tags)
+               :onChange        (fn [os]
+                                  (let [tags (as-> os $
+                                                   (js->clj $ :keywordize-keys true)
+                                                   (mapv
+                                                     (fn [{:keys [label color value]}]
+                                                       #:tag{:name   label
+                                                             :colour color
+                                                             :id     value})
+                                                     $))]
+                                    (m/set-value! this :bookmark/tags tags)))})))
+        (e/modal-footer {}
+          (e/button {:onClick on-close} "Cancel")
+          (e/button
+            {:type      "submit"
+             :fill      true
+             :onClick   on-save
+             :isLoading loading?
+             :disabled  (not bm-valid?)
+             :iconType  "save"
+             :form      "bookmark-modal-form"}
+            "Save")
+          (e/button {:onClick on-clear} "Clear"))))))
 
 (def ui-bookmark-modal (comp/factory BookmarkModal {:keyfn :bookmark/id}))
 
 (defsc Bookmark
   [this
-   {:bookmark/keys [id title image favourite url tab-id]
+   {:bookmark/keys [id title image favourite url tab-id tags]
     :ui/keys       [edit-mode?]}
    {:keys [on-click]}]
   {:ident :bookmark/id
@@ -112,6 +139,7 @@
            :bookmark/favourite
            :bookmark/image
            :bookmark/tab-id
+           {:bookmark/tags (comp/get-query tui/TagModal)}
            :ui/edit-mode?
            :ui/image]}
   (let [on-favourite #(comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
@@ -119,6 +147,9 @@
     (e/card
       {:title         title
        :titleElement  "h2"
+       :description   (map
+                        (fn [{:tag/keys [name colour]}] (e/badge {:color colour} name))
+                        tags)
        :onClick       (if (not edit-mode?) #(js/window.open url))
        :onContextMenu (fn [e]
                         (evt/prevent-default! e)
@@ -157,6 +188,8 @@
     {:title        "Add New"
      :titleElement "h2"
      :paddingSize  "l"
+     :display      "transparent"
+     :image        (e/image {:height "200vh"})
      :icon         (e/icon {:size "xxl" :type "plus"})
      :onClick      on-click}))
 

@@ -21,9 +21,13 @@
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User" user-id "is attempting to create a new tag")
-        (let [tag (-> tag db/create-tag trim-tag)]
+        (let [tempid  (:tag/id tag)
+              tag     (-> tag (dissoc :tag/id) db/create-tag trim-tag)
+              real-id (:tag/id tag)]
           (log/info "User" user-id "created tag" (:tag/id tag) "successfully")
-          tag)))))
+          (if tempid
+            (merge tag {:tempids {tempid real-id}})
+            tag))))))
 
 (defmutation patch-tag
   [{{user-id :user/id} :request} {:tag/keys [id] :as patch-data}]

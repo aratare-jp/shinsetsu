@@ -7,13 +7,15 @@
     [malli.error :as me]
     [shinsetsu.schema :as s]
     [shinsetsu.db.tab :as tab-db]
+    [shinsetsu.db.bookmark-tag :as bt-db]
     [buddy.hashers :as hashers]
     [com.fulcrologic.fulcro.networking.file-upload :as fu])
   (:import [java.nio.file Files]
            [java.io File]
            [java.util Base64]))
 
-(def bookmark-input #{:bookmark/title :bookmark/url :bookmark/image :bookmark/user-id :bookmark/tab-id ::fu/files})
+(def bookmark-input #{:bookmark/title :bookmark/url :bookmark/image :bookmark/user-id :bookmark/tab-id
+                      :bookmark/tags ::fu/files})
 (def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/favourite
                       :bookmark/created :bookmark/updated])
 
@@ -80,14 +82,18 @@
         (fetch-bookmarks-fn)))))
 
 (defmutation patch-bookmark
-  [{{user-id :user/id} :request} {:bookmark/keys [id] :as bookmark}]
+  [{{user-id :user/id} :request} {:bookmark/keys [id tags] :as bookmark}]
   {::pc/params bookmark-input
    ::pc/output bookmark-output}
-  (let [bookmark (assoc bookmark :bookmark/user-id user-id)]
-    (if-let [err (m/explain s/bookmark-patch-spec bookmark)]
+  (let [bookmark (-> bookmark
+                     (assoc :bookmark/user-id user-id)
+                     (dissoc :bookmark/tags user-id))]
+    (if-let [err (or (m/explain s/bookmark-patch-spec bookmark) (m/explain [:vector :uuid] tags))]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with id" user-id "is attempting to patch bookmark" id)
+        (if (and tags (not (empty? tags)))
+          (bt-db/create-bookmark-tags #:bookmark-tag{:bookmark-id id :tag-ids tags :user-id user-id}))
         (let [image    (some->> bookmark ::fu/files first :tempfile image->base64)
               bookmark (-> bookmark
                            (dissoc ::fu/files)

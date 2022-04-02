@@ -2,7 +2,7 @@
   (:require
     [shinsetsu.application :refer [app]]
     [shinsetsu.ui.elastic :as e]
-    [shinsetsu.mutations.tab :refer [create-tab patch-tab]]
+    [shinsetsu.mutations.tab :refer [create-tab patch-tab delete-tab lock-tab]]
     [shinsetsu.mutations.bookmark :refer [fetch-bookmarks]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.mutations :as m]
@@ -15,14 +15,21 @@
     [malli.core :as mc]
     [shinsetsu.mutations.common :refer [remove-ident]]
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
-    [com.fulcrologic.fulcro.algorithms.merge :as merge]))
+    [com.fulcrologic.fulcro.algorithms.merge :as merge]
+    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
+    [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
+    [com.fulcrologic.fulcro.data-fetch :as df]
+    [com.fulcrologic.fulcro.dom.events :as evt]))
 
-(defn- edit-toggler
+(defn- ui-edit-switch
   [this edit-mode?]
   (e/switch {:label "Edit" :checked edit-mode? :onChange #(m/toggle! this :ui/edit-mode?)}))
 
 (defsc TabModal
-  [this {:tab/keys [id name is-protected?] :ui/keys [password loading? error-type change-password?]} {:keys [on-close]}]
+  [this
+   {:tab/keys [id name is-protected?]
+    :ui/keys  [password loading? error-type change-password?]}
+   {:keys [on-close]}]
   {:ident         :tab/id
    :query         [:tab/id :tab/name :tab/is-protected?
                    :ui/password :ui/loading? :ui/error-type :ui/change-password?
@@ -39,7 +46,8 @@
         on-close   (fn [_]
                      (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
                      (on-close))
-        on-save    (fn []
+        on-save    (fn [e]
+                     (evt/prevent-default! e)
                      (if new?
                        (comp/transact! this [(create-tab #:tab{:id id :name name :password password})])
                        (comp/transact! this [(patch-tab #:tab{:id id :name name :password password})])))
@@ -53,7 +61,7 @@
         (e/modal-header-title {}
           (h1 (if (tempid/tempid? id) "Create New Tab" "Edit Tab"))))
       (e/modal-body {}
-        (e/form {:component "form" :isInvalid (boolean errors) :error errors}
+        (e/form {:id "tab-modal-form" :component "form" :isInvalid (boolean errors) :error errors}
           (e/form-row {:label "Name"}
             (e/field-text
               {:name     "name"
@@ -139,7 +147,7 @@
                        :body    (p "Let's add your first bookmark!")
                        :actions [add-bm-btn]})
       (div
-        (edit-toggler this edit-mode?)
+        (ui-edit-switch this edit-mode?)
         (e/spacer)
         (e/flex-grid {:columns 3}
           (e/spacer {})
@@ -170,29 +178,32 @@
                                        :onChange #(m/set-string! this :ui/password :event %)})))
        :actions [(e/button
                    {:fill    true
-                    :onClick #(comp/transact! this [(fetch-bookmarks #:tab{:id id :password password})])}
+                    :onClick #(comp/transact! this [{(fetch-bookmarks #:tab{:id id :password password})
+                                                     [:tab/id {:tab/bookmarks (comp/get-query bui/Bookmark)}]}])}
                    "Unlock this tab!")]})))
 
 (defsc Tab
   [this
    {:tab/keys [id is-protected? bookmarks]
     :ui/keys  [password unlocked? error-type show-bookmark-modal? selected-bm-idx edit-mode?]}]
-  {:ident             :tab/id
-   :query             [:tab/id
-                       :tab/name
-                       :tab/is-protected?
-                       {:tab/bookmarks (comp/get-query bui/BookmarkModal)}
-                       :ui/unlocked?
-                       :ui/password
-                       :ui/change-password?
-                       :ui/error-type
-                       :ui/show-bookmark-modal?
-                       :ui/edit-mode?
-                       :ui/selected-bm-idx]
-   :componentDidMount (fn [this]
-                        (let [{:tab/keys [id is-protected?]} (comp/props this)]
-                          (if (not is-protected?)
-                            (comp/transact! this [(fetch-bookmarks #:tab{:id id})]))))}
+  {:ident              :tab/id
+   :query              [:tab/id
+                        :tab/name
+                        :tab/is-protected?
+                        {:tab/bookmarks (comp/get-query bui/BookmarkModal)}
+                        :ui/unlocked?
+                        :ui/password
+                        :ui/change-password?
+                        :ui/error-type
+                        :ui/show-bookmark-modal?
+                        :ui/edit-mode?
+                        :ui/selected-bm-idx]
+   :componentWillMount (fn [this]
+                         (log/info "Loading user bookmarks")
+                         (let [{:tab/keys [id is-protected?]} (comp/props this)]
+                           (if (not is-protected?)
+                             (comp/transact! this [{(fetch-bookmarks #:tab{:id id})
+                                                    [:tab/id {:tab/bookmarks (comp/get-query bui/Bookmark)}]}]))))}
 
   [(e/spacer {})
    (if show-bookmark-modal?
@@ -204,3 +215,142 @@
        :else (ui-tab-body this id bookmarks edit-mode?)))])
 
 (def ui-tab (comp/factory Tab {:keyfn :tab/id}))
+
+(defn- show-if-unlocked
+  ([tabs selected-tab-idx btn] (show-if-unlocked tabs selected-tab-idx btn true))
+  ([tabs selected-tab-idx btn show-if-public?]
+   (if-let [curr-tab (and (not (empty? tabs)) (nth tabs selected-tab-idx))]
+     (let [is-protected? (:tab/is-protected? curr-tab)
+           unlocked?     (:ui/unlocked? curr-tab)]
+       (if is-protected?
+         (if unlocked?
+           btn)
+         (if show-if-public?
+           btn))))))
+
+(defn- ui-tab-headers
+  [this tabs selected-tab-idx]
+  (map-indexed
+    (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?]}]
+      (e/tab
+        {:id            id
+         :prepend       (if is-protected?
+                          (if unlocked?
+                            (e/icon {:type "lockOpen"})
+                            (e/icon {:type "lock"})))
+         :onContextMenu (fn [e]
+                          (evt/prevent-default! e)
+                          (js/console.log "Hello"))
+         :onClick       #(m/set-integer! this :ui/selected-tab-idx :value i)
+         :isSelected    (= i selected-tab-idx)}
+        name))
+    tabs))
+
+(defn- ui-new-tab
+  [this tabs]
+  (let [new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
+        on-close (fn []
+                   (comp/transact! this [(remove-ident {:ident (comp/get-ident TabModal new-tab)})])
+                   (m/set-value! this :ui/show-tab-modal? false))]
+    (ui-tab-modal (comp/computed new-tab {:on-close on-close}))))
+
+(defn ui-edit-tab
+  [this tab]
+  (let [on-close #(m/set-value! this :ui/show-edit-modal? false)]
+    (ui-tab-modal (comp/computed tab {:on-close on-close}))))
+
+(defn- ui-delete-tab
+  [this {:tab/keys [id name]}]
+  (e/confirm-modal
+    {:title             (str "Delete tab " name)
+     :onCancel          #(m/set-value! this :ui/show-delete-modal? false)
+     :onConfirm         #(comp/transact! this [(delete-tab {:tab/id id})])
+     :cancelButtonText  "Cancel"
+     :confirmButtonText "Yes, I'm sure!"
+     :buttonColor       "danger"}
+    (p "Deleting this tab will also delete all the bookmarks within it!")
+    (p "Are you sure you want to delete this tab?")))
+
+(defn- ui-tab-main-body
+  [this tabs selected-tab-idx]
+  (let [right-side-items (->> [(e/button-icon
+                                 {:fill     true
+                                  :size     "m"
+                                  :onClick  (fn []
+                                              (m/set-value! this :ui/show-tab-modal? true)
+                                              (merge/merge-component!
+                                                app TabModal (comp/get-initial-state TabModal)
+                                                :append [:root/tabs]))
+                                  :iconType "plus"})
+                               (show-if-unlocked
+                                 tabs
+                                 selected-tab-idx
+                                 (e/button-icon
+                                   {:fill     true
+                                    :size     "m"
+                                    :onClick  #(m/set-value! this :ui/show-edit-modal? true)
+                                    :iconType "pencil"}))
+                               (show-if-unlocked
+                                 tabs
+                                 selected-tab-idx
+                                 (e/button-icon
+                                   {:fill     true
+                                    :size     "m"
+                                    :color    "danger"
+                                    :onClick  #(m/set-value! this :ui/show-delete-modal? true)
+                                    :iconType "trash"}))
+                               (show-if-unlocked
+                                 tabs
+                                 selected-tab-idx
+                                 (e/button-icon
+                                   {:fill     true
+                                    :size     "m"
+                                    :iconType "lock"
+                                    :onClick  #(if-let [curr-tab (nth tabs selected-tab-idx)]
+                                                 (comp/transact! this [(lock-tab curr-tab)]))})
+                                 false)]
+                              (filter #(not (nil? %))))]
+    (e/page-template
+      {:pageHeader {:pageTitle      (if (empty? tabs)
+                                      "Welcome!"
+                                      (-> tabs (nth selected-tab-idx) :tab/name))
+                    :rightSideItems right-side-items}}
+      (e/tabs {:size "xl"}
+        (ui-tab-headers this tabs selected-tab-idx))
+      (if (empty? tabs)
+        (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
+                         :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
+        (ui-tab (nth tabs selected-tab-idx))))))
+
+(defsc TabMain
+  [this {:root/keys [tabs] :ui/keys [selected-tab-idx show-tab-modal? show-edit-modal? show-delete-modal?]}]
+  {:ident         (fn [] [:component/id ::tab])
+   :route-segment ["tab"]
+   :query         [{[:root/tabs '_] (comp/get-query Tab)}
+                   :ui/selected-tab-idx
+                   :ui/show-edit-modal?
+                   :ui/show-delete-modal?
+                   :ui/show-tab-modal?]
+   :initial-state {:root/tabs             []
+                   :ui/selected-tab-idx   0
+                   :ui/show-tab-modal?    false
+                   :ui/show-delete-modal? false
+                   :ui/show-edit-modal?   false}
+   :will-enter    (fn [app _]
+                    (log/info "Loading user tabs")
+                    (dr/route-deferred
+                      [:component/id ::tab]
+                      #(let [load-target (targeting/replace-at [:root/tabs])]
+                         ;; FIXME: Needs to load from local storage first before fetching from remote.
+                         (df/load! app :user/tabs Tab {:target               load-target
+                                                       :post-mutation        `dr/target-ready
+                                                       :post-mutation-params {:target [:component/id ::tab]}}))))}
+  [(if show-tab-modal?
+     (ui-new-tab this tabs))
+   (if show-edit-modal?
+     (ui-edit-tab this (nth tabs selected-tab-idx)))
+   (if show-delete-modal?
+     (ui-delete-tab this (nth tabs selected-tab-idx)))
+   (as-> tabs $
+         (filter #(not (tempid/tempid? (:tab/id %))) $)
+         (ui-tab-main-body this $ selected-tab-idx))])
