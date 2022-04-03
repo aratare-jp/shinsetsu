@@ -1,28 +1,21 @@
 (ns shinsetsu.application
   (:require
     [com.fulcrologic.fulcro.application :as app]
+    [shinsetsu.store :refer [store get-key set-key]]
     [com.fulcrologic.fulcro.networking.http-remote :as http]
     [com.fulcrologic.fulcro.networking.file-upload :as fu]
     [taoensso.timbre :as log]))
-
-(def login-token (atom nil))
 
 (defn wrap-auth-token
   ([token] (wrap-auth-token identity token))
   ([handler token]
    (fn [req]
-     (handler (assoc-in req [:headers "Authorization"] (str "Bearer " @token))))))
-
-(defn wrap-spit
-  [handler]
-  (fn [req]
-    (js/console.log req)
-    (handler req)))
+     (handler (assoc-in req [:headers "Authorization"] (str "Bearer " token))))))
 
 (def req-middleware
   (-> (http/wrap-fulcro-request)
       fu/wrap-file-upload
-      (wrap-auth-token login-token)))
+      (wrap-auth-token (get-key @store :userToken))))
 
 (defn contain-errors?
   [body]

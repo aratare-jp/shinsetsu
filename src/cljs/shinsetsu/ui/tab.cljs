@@ -27,11 +27,11 @@
 
 (defsc TabModal
   [this
-   {:tab/keys [id name is-protected?]
+   {:tab/keys [id name]
     :ui/keys  [password loading? error-type change-password?]}
    {:keys [on-close]}]
   {:ident         :tab/id
-   :query         [:tab/id :tab/name :tab/is-protected?
+   :query         [:tab/id :tab/name
                    :ui/password :ui/loading? :ui/error-type :ui/change-password?
                    fs/form-config-join]
    :form-fields   #{:tab/name :ui/password :ui/change-password?}
@@ -40,22 +40,38 @@
                      :tab/name    ""
                      :ui/password ""})
    :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config TabModal data-tree))}
-  (let [new?       (tempid/tempid? id)
-        on-blur    (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
-        tab-valid? (mc/validate s/tab-form-spec #:tab{:name name :password password})
-        on-close   (fn [_]
-                     (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
-                     (on-close))
-        on-save    (fn [e]
-                     (evt/prevent-default! e)
-                     (if new?
-                       (comp/transact! this [(create-tab #:tab{:id id :name name :password password})])
-                       (comp/transact! this [(patch-tab #:tab{:id id :name name :password password})])))
-        on-clear   #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
-        errors     (case error-type
-                     :invalid-input ["Unable to create new tab." "Please try again."]
-                     :internal-server-error ["Unknown error encountered"]
-                     nil)]
+  (let [new?        (tempid/tempid? id)
+        on-blur     (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
+        tab-valid?  (mc/validate s/tab-form-spec #:tab{:name name :password password})
+        on-close    (fn [_]
+                      (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+                      (on-close))
+        on-save     (fn [e]
+                      (evt/prevent-default! e)
+                      (if new?
+                        (comp/transact! this [(create-tab #:tab{:id id :name name :password password})])
+                        (if change-password?
+                          (comp/transact! this [(patch-tab #:tab{:id               id
+                                                                 :name             name
+                                                                 :password         password
+                                                                 :change-password? true})])
+                          (comp/transact! this [(patch-tab #:tab{:id id :name name})]))))
+        on-clear    #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+        errors      (case error-type
+                      :invalid-input ["Unable to create new tab." "Please try again."]
+                      :internal-server-error ["Unknown error encountered"]
+                      nil)
+        ui-password (e/form-row
+                      {:label    "Password"
+                       :helpText (if (not new?) "Can be left empty if you don't want to lock this tab")}
+                      (e/field-text
+                        {:name        "password"
+                         :value       password
+                         :placeholder "Add password here"
+                         :type        "password"
+                         :onBlur      #(on-blur :ui/password)
+                         :disabled    loading?
+                         :onChange    (fn [e] (m/set-string! this :ui/password :event e))}))]
     (e/modal {:onClose on-close}
       (e/modal-header {}
         (e/modal-header-title {}
@@ -64,26 +80,19 @@
         (e/form {:id "tab-modal-form" :component "form" :isInvalid (boolean errors) :error errors}
           (e/form-row {:label "Name"}
             (e/field-text
-              {:name     "name"
-               :value    name
-               :onChange (fn [e] (m/set-string! this :tab/name :event e))
-               :onBlur   #(on-blur :tab/name)
-               :disabled loading?}))
-          (if (not new?)
-            (e/form-row {:label (if is-protected? "Change password?" "Lock this tab?")}
-              (e/switch
-                {:name     "change-password"
-                 :checked  change-password?
-                 :onChange (fn [] (m/set-value! this :ui/change-password? (not change-password?)))})))
-          (if (or new? change-password?)
-            (e/form-row {:label "Password" :helpText "Can be left empty if you don't want to lock this tab"}
-              (e/field-text
-                {:name     "password"
-                 :value    password
-                 :type     "password"
-                 :onBlur   #(on-blur :ui/password)
-                 :disabled loading?
-                 :onChange (fn [e] (m/set-string! this :ui/password :event e))})))))
+              {:name        "name"
+               :value       name
+               :placeholder "Add name here"
+               :onChange    #(m/set-string! this :tab/name :event %)
+               :onBlur      #(on-blur :tab/name)
+               :disabled    loading?}))
+          (e/form-row {:label (if new? "Add password?" "Change password?")}
+            (e/switch
+              {:name     "change-password"
+               :checked  change-password?
+               :onChange #(m/toggle! this :ui/change-password?)}))
+          (if change-password?
+            ui-password)))
       (e/modal-footer {}
         (e/button {:onClick on-close} "Cancel")
         (e/button
@@ -134,7 +143,7 @@
       (bui/ui-bookmark-modal (comp/computed new-bookmark {:on-close on-close})))))
 
 (defn- ui-tab-body
-  [this id bookmarks edit-mode?]
+  [this id bookmarks edit-mode? loading?]
   (let [add-bm-fn  (fn []
                      (merge/merge-component!
                        app bui/BookmarkModal
@@ -142,50 +151,55 @@
                        :append [:tab/id id :tab/bookmarks])
                      (m/set-value! this :ui/show-bookmark-modal? true))
         add-bm-btn (e/button {:fill true :iconType "plus" :onClick add-bm-fn} "Add Bookmark")]
-    (if (empty? bookmarks)
-      (e/empty-prompt {:title   (p "Seems like you don't have any bookmark")
-                       :body    (p "Let's add your first bookmark!")
-                       :actions [add-bm-btn]})
-      (div
-        (ui-edit-switch this edit-mode?)
-        (e/spacer)
-        (e/flex-grid {:columns 3}
-          (e/spacer {})
-          (map-indexed
-            (fn [i {bookmark-id :bookmark/id :as bookmark}]
-              (let [on-click (fn []
-                               (m/set-integer! this :ui/selected-bm-idx :value i)
-                               (m/set-value! this :ui/show-bookmark-modal? true))
-                    bookmark (merge bookmark {:bookmark/tab-id id :ui/edit-mode? edit-mode?})]
-                (e/flex-item {:key bookmark-id}
-                  (bui/ui-bookmark (comp/computed bookmark {:on-click on-click})))))
-            bookmarks)
-          (e/flex-item {:key "new-bookmark"}
-            (bui/ui-new-bookmark (comp/computed {} {:on-click add-bm-fn}))))))))
+    [(if loading?
+       (e/progress {:size "xs" :color "ascent"}))
+     (if (empty? bookmarks)
+       (e/empty-prompt {:title   (p "Seems like you don't have any bookmark")
+                        :body    (p "Let's add your first bookmark!")
+                        :actions [add-bm-btn]})
+       (div
+         (ui-edit-switch this edit-mode?)
+         (e/spacer)
+         (e/flex-grid {:columns 3}
+           (e/spacer {})
+           (map-indexed
+             (fn [i {bookmark-id :bookmark/id :as bookmark}]
+               (let [on-click (fn []
+                                (m/set-integer! this :ui/selected-bm-idx :value i)
+                                (m/set-value! this :ui/show-bookmark-modal? true))
+                     bookmark (merge bookmark {:bookmark/tab-id id :ui/edit-mode? edit-mode?})]
+                 (e/flex-item {:key bookmark-id}
+                   (bui/ui-bookmark (comp/computed bookmark {:on-click on-click})))))
+             bookmarks)
+           (e/flex-item {:key "new-bookmark"}
+             (bui/ui-new-bookmark (comp/computed {} {:on-click add-bm-fn}))))))]))
 
 (defn- ui-unlock-prompt
-  [this id bookmarks unlocked? password edit-mode?]
+  [this id bookmarks unlocked? password edit-mode? loading?]
   (if unlocked?
-    (ui-tab-body this id bookmarks edit-mode?)
-    (e/empty-prompt
-      {:color   "plain"
-       :title   (h2 "This tab is protected!")
-       :body    (e/form {:component "form" :id "tab-password-modal"}
-                  (e/form-row {:label "Password"}
-                    (e/field-password {:type     "dual"
-                                       :name     "password"
-                                       :value    password
-                                       :onChange #(m/set-string! this :ui/password :event %)})))
-       :actions [(e/button
-                   {:fill    true
-                    :onClick #(comp/transact! this [{(fetch-bookmarks #:tab{:id id :password password})
-                                                     [:tab/id {:tab/bookmarks (comp/get-query bui/Bookmark)}]}])}
-                   "Unlock this tab!")]})))
+    (ui-tab-body this id bookmarks edit-mode? loading?)
+    (let [form-id (str "tab-" id "-unlock-form")]
+      (e/empty-prompt
+        {:color   "transparent"
+         :title   (h2 "This tab is protected!")
+         :body    (e/form {:id form-id :component "form"}
+                    (e/form-row {:label "Password"}
+                      (e/field-password {:type     "dual"
+                                         :name     "password"
+                                         :value    password
+                                         :onChange #(m/set-string! this :ui/password :event %)})))
+         :actions [(e/button
+                     {:fill    true
+                      :type    "submit"
+                      :for     form-id
+                      :onClick #(comp/transact! this [{(fetch-bookmarks #:tab{:id id :password password})
+                                                       [:tab/id {:tab/bookmarks (comp/get-query bui/Bookmark)}]}])}
+                     "Unlock this tab!")]}))))
 
 (defsc Tab
   [this
    {:tab/keys [id is-protected? bookmarks]
-    :ui/keys  [password unlocked? error-type show-bookmark-modal? selected-bm-idx edit-mode?]}]
+    :ui/keys  [password loading? unlocked? error-type show-bookmark-modal? selected-bm-idx edit-mode?]}]
   {:ident              :tab/id
    :query              [:tab/id
                         :tab/name
@@ -197,22 +211,22 @@
                         :ui/error-type
                         :ui/show-bookmark-modal?
                         :ui/edit-mode?
-                        :ui/selected-bm-idx]
+                        :ui/selected-bm-idx
+                        :ui/loading?]
    :componentWillMount (fn [this]
                          (log/info "Loading user bookmarks")
                          (let [{:tab/keys [id is-protected?]} (comp/props this)]
                            (if (not is-protected?)
                              (comp/transact! this [{(fetch-bookmarks #:tab{:id id})
                                                     [:tab/id {:tab/bookmarks (comp/get-query bui/Bookmark)}]}]))))}
-
   [(e/spacer {})
    (if show-bookmark-modal?
      (ui-bookmark-modal this id selected-bm-idx bookmarks))
    (let [bookmarks (filter #(not (tempid/tempid? (:bookmark/id %))) bookmarks)]
      (cond
        error-type (ui-error-prompt this error-type)
-       is-protected? (ui-unlock-prompt this id bookmarks unlocked? password edit-mode?)
-       :else (ui-tab-body this id bookmarks edit-mode?)))])
+       is-protected? (ui-unlock-prompt this id bookmarks unlocked? password edit-mode? loading?)
+       :else (ui-tab-body this id bookmarks edit-mode? loading?)))])
 
 (def ui-tab (comp/factory Tab {:keyfn :tab/id}))
 

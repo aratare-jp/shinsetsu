@@ -29,10 +29,10 @@
           tab-ident  (comp/get-ident component tab)]
       (merge/merge-component! app component tab :append [:root/tabs])
       (swap! state #(-> %
-                        (fs/entity->pristine* tab-ident)
                         (dissoc-in (conj tab-ident :ui/password))
                         (assoc-in (conj tab-ident :ui/loading?) false)
-                        (assoc-in (conj main-ident :ui/show-tab-modal?) false)))))
+                        (assoc-in (conj main-ident :ui/show-tab-modal?) false)
+                        (fs/entity->pristine* tab-ident)))))
   (error-action
     [{{{{:keys [error-type error-message]} `create-tab} :body} :result :keys [state ref]}]
     (log/error "Failed to create tab due to:" error-message)
@@ -41,16 +41,17 @@
                       (assoc-in (conj ref :ui/error-type) error-type)))))
 
 (defmutation patch-tab
-  [{:tab/keys [id password]}]
+  [{:tab/keys [id password change-password?]}]
   (action
     [{:keys [state ref]}]
     (log/debug "Patching tab" id)
     (swap! state assoc-in (conj ref :ui/loading?) true))
   (remote
     [{:keys [ast]}]
-    (if (nil? password)
-      (dissoc-in ast [:params :tab/password])
-      ast))
+    (let [ast (dissoc-in ast [:params :tab/change-password?])]
+      (if change-password?
+        ast
+        (dissoc-in ast [:params :tab/password]))))
   (ok-action
     [{{{tab `patch-tab} :body} :result :keys [state ref component]}]
     (log/debug "Tab" id "patched successfully")
@@ -58,10 +59,11 @@
           main-idt (comp/get-ident TabMain {})]
       (merge/merge-component! app component tab)
       (swap! state #(-> %
-                        (fs/entity->pristine* ref)
                         (dissoc-in (conj ref :ui/password))
+                        (assoc-in (conj ref :ui/change-password?) false)
                         (assoc-in (conj ref :ui/loading?) false)
-                        (assoc-in (conj main-idt :ui/show-edit-modal?) false)))))
+                        (assoc-in (conj main-idt :ui/show-edit-modal?) false)
+                        (fs/entity->pristine* ref)))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-tab} :body} :result :keys [state ref]}]
     (log/error "Failed to patch tab" id "due to:" error-message)

@@ -1,7 +1,8 @@
 (ns shinsetsu.mutations.user
   (:require
     [medley.core :refer [dissoc-in]]
-    [shinsetsu.application :refer [app login-token]]
+    [shinsetsu.application :refer [app]]
+    [shinsetsu.store :refer [store get-key set-key]]
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
     [com.fulcrologic.fulcro.components :as comp]
@@ -29,8 +30,7 @@
   (ok-action
     [{{{{:user/keys [token]} `login} :body} :result :keys [ref state]}]
     (log/debug "User logged in successfully")
-    (reset! login-token token)
-    (.setItem js/localStorage "userToken" token)
+    (swap! store set-key :userToken token)
     (swap! state dissoc-in (conj ref :ui/password))
     (move-to-tab))
   (error-action
@@ -50,8 +50,7 @@
   (ok-action
     [{{{{:user/keys [token]} `register} :body} :result :keys [ref state]}]
     (log/debug "User registered successfully")
-    (reset! login-token token)
-    (.setItem js/localStorage "userToken" token)
+    (swap! store set-key :userToken token)
     (swap! state dissoc-in (conj ref :ui/password))
     (move-to-tab))
   (error-action
@@ -65,8 +64,7 @@
   [_]
   (action
     [_]
-    (if-let [token (.getItem js/localStorage "userToken")]
+    (if-let [token (get-key @store :userToken)]
       (do
-        (reset! login-token token)
         (move-to-tab))
       (move-to-login))))

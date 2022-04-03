@@ -150,6 +150,7 @@
        :description   (map
                         (fn [{:tag/keys [name colour]}] (e/badge {:color colour} name))
                         tags)
+       :display       "subdued"
        :onClick       (if (not edit-mode?) #(js/window.open url))
        :onContextMenu (fn [e]
                         (evt/prevent-default! e)

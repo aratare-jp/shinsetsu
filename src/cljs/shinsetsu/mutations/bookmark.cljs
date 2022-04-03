@@ -23,10 +23,10 @@
           TabModal (comp/registry-key->class `shinsetsu.ui.tab/TabModal)]
       (merge/merge-component! app Tab bookmarks)
       (swap! state #(-> %
-                        (fs/add-form-config* TabModal ref)
                         (dissoc-in (conj ref :ui/password))
                         (assoc-in (conj ref :ui/loading?) false)
-                        (assoc-in (conj ref :ui/unlocked?) true)))))
+                        (assoc-in (conj ref :ui/unlocked?) true)
+                        (fs/add-form-config* TabModal ref)))))
   (error-action
     [{{{{:keys [error-type error-message]} `fetch-bookmarks} :body} :result :keys [state ref]}]
     (log/error "Failed to fetch bookmarks due to:" error-message)
@@ -100,8 +100,6 @@
     (log/debug "Bookmark" id "deleted successfully")
     (let [Tab       (comp/registry-key->class `shinsetsu.ui.tab/Tab)
           tab-ident (comp/get-ident Tab {:tab/id tab-id})]
-      #_(swap! state dissoc-in ref)
-      #_(swap! state merge/remove-ident* ref (conj tab-ident :tab/bookmarks))
       (swap! state #(-> %
                         (ns/remove-entity ref)
                         (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)))))
