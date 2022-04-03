@@ -24,6 +24,7 @@
       (merge/merge-component! app Tab bookmarks)
       (swap! state #(-> %
                         (dissoc-in (conj ref :ui/password))
+                        (dissoc-in (conj ref :ui/error-type))
                         (assoc-in (conj ref :ui/loading?) false)
                         (assoc-in (conj ref :ui/unlocked?) true)
                         (fs/add-form-config* TabModal ref)))))
@@ -31,9 +32,12 @@
     [{{{{:keys [error-type error-message]} `fetch-bookmarks} :body} :result :keys [state ref]}]
     (log/error "Failed to fetch bookmarks due to:" error-message)
     (swap! state #(-> %
-                      (dissoc-in (conj ref :ui/password))
                       (assoc-in (conj ref :ui/loading?) false)
-                      (assoc-in (conj ref :ui/error-type) error-type)))))
+                      (assoc-in (conj ref :ui/error-type) error-type)))
+    (if error-type
+      (let [tid (get-in @state (conj ref :ui/load-timer))]
+        (js/clearInterval tid)
+        (swap! state dissoc-in (conj ref :ui/load-timer))))))
 
 (defmutation create-bookmark
   [{:bookmark/keys [tab-id]}]

@@ -84,7 +84,7 @@
     (let [Tab     (comp/registry-key->class `shinsetsu.ui.tab/Tab)
           tab-idt (comp/get-ident Tab tab)]
       (swap! state #(-> %
-                        (assoc-in (conj ref :ui/selected-tab-idx) 0)
+                        (assoc-in (conj ref :ui/selected-idx) 0)
                         (assoc-in (conj ref :ui/loading?) false)
                         (assoc-in (conj ref :ui/show-delete-modal?) false)
                         (ns/remove-entity tab-idt #{:tab/bookmarks})))))
@@ -100,5 +100,9 @@
   (action
     [{:keys [state]}]
     (log/debug "Locking up tab" (:tab/id p))
-    (let [Tab (comp/registry-key->class `shinsetsu.ui.tab/Tab)]
-      (swap! state assoc-in (conj (comp/get-ident Tab p) :ui/unlocked?) false))))
+    (let [Tab     (comp/registry-key->class `shinsetsu.ui.tab/Tab)
+          tab-idt (comp/get-ident Tab p)]
+      (swap! state assoc-in (conj tab-idt :ui/unlocked?) false)
+      (swap! state #(let [tid (get-in % (conj tab-idt :ui/load-timer))]
+                      (js/clearInterval tid)
+                      (dissoc-in % (conj tab-idt :ui/load-timer)))))))
