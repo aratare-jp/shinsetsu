@@ -39,7 +39,8 @@
                             EuiListGroupItem
                             EuiBadge
                             EuiComboBox
-                            EuiProgress]]))
+                            EuiProgress
+                            EuiPanel]]))
 
 (def provider (ri/react-factory EuiProvider))
 (def empty-prompt (ri/react-factory EuiEmptyPrompt))
@@ -50,6 +51,7 @@
 (def image (ri/react-factory EuiImage))
 (def badge (ri/react-factory EuiBadge))
 (def progress (ri/react-factory EuiProgress))
+(def panel (ri/react-factory EuiPanel))
 
 ;; List
 (def list-group (ri/react-factory EuiListGroup))

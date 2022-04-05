@@ -42,16 +42,22 @@
                      :ui/dark-mode?   true
                      :ui/selected-idx "tab"})}
   (e/provider {:colorMode (if dark-mode? "dark" "light")}
-    [(e/switch {:checked dark-mode? :onChange #(m/toggle! this :ui/dark-mode?)})
-     (e/button-group
-       {:legend     "Main menu"
-        :size       "l"
-        :idSelected selected-idx
-        :options    [{:id "tab" :label "Tab" :value "tab"}
-                     {:id "tag" :label "Tag" :value "tag"}]
-        :onChange   (fn [id value]
-                      (m/set-value! this :ui/selected-idx id)
-                      (dr/change-route app [value]))})
+    [(e/panel {}
+       (e/flex-group {}
+         (e/flex-item {})
+         (e/flex-item {}
+           (div
+             (e/button-group
+               {:legend      "Main menu"
+                :isFullWidth true
+                :buttonSize  "s"
+                :idSelected  selected-idx
+                :options     [{:id "tab" :label "Tab" :value "tab"}
+                              {:id "tag" :label "Tag" :value "tag"}]
+                :onChange    (fn [id value]
+                               (m/set-value! this :ui/selected-idx id)
+                               (dr/change-route app [value]))})))
+         (e/flex-item {})))
      (ui-root-router router)]))
 
 (def ui-root-body (comp/factory RootBody))

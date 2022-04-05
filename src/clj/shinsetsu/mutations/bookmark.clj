@@ -88,7 +88,7 @@
   (let [bookmark (-> bookmark
                      (assoc :bookmark/user-id user-id)
                      (dissoc :bookmark/tags user-id))]
-    (if-let [err (or (m/explain s/bookmark-patch-spec bookmark) (m/explain [:vector :uuid] tags))]
+    (if-let [err (or (m/explain s/bookmark-patch-spec bookmark) (m/explain [:maybe [:vector :uuid]] tags))]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "User with id" user-id "is attempting to patch bookmark" id)

@@ -7,15 +7,14 @@
     [taoensso.timbre :as log]))
 
 (defn wrap-auth-token
-  ([token] (wrap-auth-token identity token))
-  ([handler token]
+  ([handler store]
    (fn [req]
-     (handler (assoc-in req [:headers "Authorization"] (str "Bearer " token))))))
+     (handler (assoc-in req [:headers "Authorization"] (str "Bearer " (get-key @store :userToken)))))))
 
 (def req-middleware
   (-> (http/wrap-fulcro-request)
       fu/wrap-file-upload
-      (wrap-auth-token (get-key @store :userToken))))
+      (wrap-auth-token store)))
 
 (defn contain-errors?
   [body]
