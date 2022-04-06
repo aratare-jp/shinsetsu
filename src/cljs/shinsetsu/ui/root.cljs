@@ -5,6 +5,7 @@
     [shinsetsu.ui.login :refer [Login]]
     [shinsetsu.ui.tab :refer [TabMain]]
     [shinsetsu.ui.tag :refer [TagMain]]
+    [shinsetsu.store :refer [store get-key]]
     [com.fulcrologic.fulcro.dom :refer [div h2 p]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :refer [defrouter]]
@@ -42,23 +43,24 @@
                      :ui/dark-mode?   true
                      :ui/selected-idx "tab"})}
   (e/provider {:colorMode (if dark-mode? "dark" "light")}
-    [(e/panel {}
-       (e/flex-group {}
-         (e/flex-item {})
-         (e/flex-item {}
-           (div
-             (e/button-group
-               {:legend      "Main menu"
-                :isFullWidth true
-                :buttonSize  "s"
-                :idSelected  selected-idx
-                :options     [{:id "tab" :label "Tab" :value "tab"}
-                              {:id "tag" :label "Tag" :value "tag"}]
-                :onChange    (fn [id value]
-                               (m/set-value! this :ui/selected-idx id)
-                               (dr/change-route app [value]))})))
-         (e/flex-item {})))
-     (ui-root-router router)]))
+    (if (get-key @store :userToken)
+      (e/panel {}
+        (e/flex-group {}
+          (e/flex-item {})
+          (e/flex-item {}
+            (div
+              (e/button-group
+                {:legend      "Main menu"
+                 :isFullWidth true
+                 :buttonSize  "s"
+                 :idSelected  selected-idx
+                 :options     [{:id "tab" :label "Tab" :value "tab"}
+                               {:id "tag" :label "Tag" :value "tag"}]
+                 :onChange    (fn [id value]
+                                (m/set-value! this :ui/selected-idx id)
+                                (dr/change-route app [value]))})))
+          (e/flex-item {}))))
+    (ui-root-router router)))
 
 (def ui-root-body (comp/factory RootBody))
 

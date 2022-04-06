@@ -1,6 +1,8 @@
 (ns shinsetsu.ui.tab
   (:require
     [shinsetsu.application :refer [app]]
+    [shinsetsu.mutations.common :refer [set-root]]
+    [clojure.browser.dom :refer [get-element]]
     [shinsetsu.ui.elastic :as e]
     [shinsetsu.mutations.tab :refer [create-tab patch-tab delete-tab lock-tab]]
     [shinsetsu.mutations.bookmark :refer [fetch-bookmarks]]
@@ -20,10 +22,6 @@
     [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
     [com.fulcrologic.fulcro.data-fetch :as df]
     [com.fulcrologic.fulcro.dom.events :as evt]))
-
-(defn- ui-edit-switch
-  [this edit-mode?]
-  (e/switch {:label "Edit" :checked edit-mode? :onChange #(m/toggle! this :ui/edit-mode?)}))
 
 (defsc TabModal
   [this
@@ -143,8 +141,9 @@
       (bui/ui-bookmark-modal (comp/computed new-bookmark {:on-close on-close})))))
 
 (defn- ui-tab-body
-  [this id bookmarks edit-mode? loading?]
-  (let [add-bm-fn  (fn []
+  [this]
+  (let [{:tab/keys [id bookmarks] :ui/keys [loading?]} (comp/props this)
+        add-bm-fn  (fn []
                      (merge/merge-component!
                        app bui/BookmarkModal
                        (comp/get-initial-state bui/BookmarkModal {:bookmark/tab-id id})
@@ -157,26 +156,23 @@
        (e/empty-prompt {:title   (p "Seems like you don't have any bookmark")
                         :body    (p "Let's add your first bookmark!")
                         :actions [add-bm-btn]})
-       (div
-         (ui-edit-switch this edit-mode?)
-         (e/spacer)
-         (e/flex-grid {:columns 3}
-           (e/spacer {})
-           (map-indexed
-             (fn [i {bookmark-id :bookmark/id :as bookmark}]
-               (let [on-click (fn []
-                                (m/set-integer! this :ui/selected-idx :value i)
-                                (m/set-value! this :ui/show-bookmark-modal? true))
-                     bookmark (merge bookmark {:bookmark/tab-id id :ui/edit-mode? edit-mode?})]
-                 (e/flex-item {:key bookmark-id}
-                   (bui/ui-bookmark (comp/computed bookmark {:on-click on-click})))))
-             bookmarks)
-           (e/flex-item {:key "new-bookmark"}
-             (bui/ui-new-bookmark (comp/computed {} {:on-click add-bm-fn}))))))]))
+       (e/flex-grid {:columns 3}
+         (e/spacer {})
+         (map-indexed
+           (fn [i {bookmark-id :bookmark/id :as bookmark}]
+             (let [on-click (fn []
+                              (m/set-integer! this :ui/selected-idx :value i)
+                              (m/set-value! this :ui/show-bookmark-modal? true))
+                   bookmark (merge bookmark {:bookmark/tab-id id})]
+               (e/flex-item {:key bookmark-id}
+                 (bui/ui-bookmark (comp/computed bookmark {:on-click on-click})))))
+           bookmarks)
+         (e/flex-item {:key "new-bookmark"}
+           (bui/ui-new-bookmark (comp/computed {} {:on-click add-bm-fn})))))]))
 
 (defn- ui-unlock-prompt
   [this]
-  (let [{:tab/keys [id bookmarks] :ui/keys [loading? edit-mode? unlocked? password error-type]} (comp/props this)]
+  (let [{:tab/keys [id bookmarks] :ui/keys [loading? unlocked? password error-type]} (comp/props this)]
     (if-not unlocked?
       (let [form-id (str "tab-" id "-unlock-form")
             errors  (case error-type
@@ -208,14 +204,14 @@
                                       (do
                                         (load-fn)
                                         ;; FIXME: Magic number!
-                                        (m/set-value! this :ui/load-timer (js/setInterval load-fn 10000))))}
+                                        #_(m/set-value! this :ui/load-timer (js/setInterval load-fn 10000))))}
                        "Unlock this tab!")]}))
-      (ui-tab-body this id bookmarks edit-mode? loading?))))
+      (ui-tab-body this))))
 
 (defsc Tab
   [this
    {:tab/keys [id is-protected? bookmarks]
-    :ui/keys  [loading? error-type show-bookmark-modal? selected-idx edit-mode?]}]
+    :ui/keys  [loading? show-bookmark-modal? selected-idx]}]
   {:ident                :tab/id
    :query                [:tab/id
                           :tab/name
@@ -226,7 +222,6 @@
                           :ui/change-password?
                           :ui/error-type
                           :ui/show-bookmark-modal?
-                          :ui/edit-mode?
                           :ui/selected-idx
                           :ui/loading?
                           :ui/load-timer]
@@ -242,7 +237,7 @@
                                (do
                                  (load-fn)
                                  ;; FIXME: Magic number!
-                                 (m/set-value! this :ui/load-timer (js/setInterval load-fn 10000))))))
+                                 #_(m/set-value! this :ui/load-timer (js/setInterval load-fn 10000))))))
    :componentWillUnmount (fn [this]
                            (if-let [tid (:ui/load-timer (comp/props this))]
                              (js/clearInterval tid))
@@ -253,7 +248,7 @@
    (let [bookmarks (filter #(not (tempid/tempid? (:bookmark/id %))) bookmarks)]
      (cond
        is-protected? (ui-unlock-prompt this)
-       :else (ui-tab-body this id bookmarks edit-mode? loading?)))])
+       :else (ui-tab-body this)))])
 
 (def ui-tab (comp/factory Tab {:keyfn :tab/id}))
 
@@ -270,22 +265,53 @@
            btn))))))
 
 (defn- ui-tab-headers
-  [this tabs selected-idx]
-  (map-indexed
-    (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?]}]
-      (e/tab
-        {:id            id
-         :prepend       (if is-protected?
-                          (if unlocked?
-                            (e/icon {:type "lockOpen"})
-                            (e/icon {:type "lock"})))
-         :onContextMenu (fn [e]
-                          (evt/prevent-default! e)
-                          (js/console.log "Hello"))
-         :onClick       #(m/set-integer! this :ui/selected-idx :value i)
-         :isSelected    (= i selected-idx)}
-        name))
-    tabs))
+  [this]
+  (let [{:root/keys [tabs tab-ctx-menu-id] :ui/keys [selected-idx]} (comp/props this)
+        close-ctx-menu-fn #(comp/transact! this [(set-root {:k :root/tab-ctx-menu-id :v nil})])]
+    (map-indexed
+      (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?]}]
+        [(if (= id tab-ctx-menu-id (->> selected-idx (nth tabs) :tab/id))
+           (let [el (get-element (str "tab-" id))]
+             (e/wrapping-popover
+               {:button           el
+                :initialFocus     false
+                :anchorPosition   "upCenter"
+                :panelPaddingSize "s"
+                :isOpen           (= id tab-ctx-menu-id)
+                :closePopover     close-ctx-menu-fn}
+               (e/flex-group {:gutterSize "none" :justifyContent "spaceAround"}
+                 (e/flex-item {:grow false}
+                   (e/button-icon
+                     {:aria-label "edit"
+                      :size       "s"
+                      :iconType   "pencil"
+                      :onClick    (fn []
+                                    (m/set-value! this :ui/show-edit-modal? true)
+                                    (close-ctx-menu-fn))}))
+                 (e/flex-item {:grow false}
+                   (e/button-icon
+                     {:aria-label "delete"
+                      :size       "s"
+                      :iconType   "trash"
+                      :onClick    (fn []
+                                    (m/set-value! this :ui/show-delete-modal? true)
+                                    (close-ctx-menu-fn))
+                      :color      "danger"}))))))
+         (e/tab
+           {:prepend       (if is-protected?
+                             (if unlocked?
+                               (e/icon {:type "lockOpen"})
+                               (e/icon {:type "lock"})))
+            :onContextMenu (fn [e]
+                             (evt/prevent-default! e)
+                             (if (= id (->> selected-idx (nth tabs) :tab/id))
+                               (comp/transact! this [(set-root {:k :root/tab-ctx-menu-id :v id})])))
+            :onClick       #(m/set-integer! this :ui/selected-idx :value i)
+            :isSelected    (= i selected-idx)}
+           (div
+             (div {:id (str "tab-" id)})
+             (p name)))])
+      tabs)))
 
 (defn- ui-new-tab
   [this]
@@ -321,60 +347,33 @@
   [this]
   (let [{:root/keys [tabs] :ui/keys [selected-idx]} (comp/props this)
         tabs             (filter #(not (tempid/tempid? (:tab/id %))) tabs)
-        right-side-items (->> [(e/button-icon
-                                 {:fill     true
-                                  :size     "m"
-                                  :onClick  (fn []
-                                              (m/set-value! this :ui/show-tab-modal? true)
-                                              (merge/merge-component!
-                                                app TabModal (comp/get-initial-state TabModal)
-                                                :append [:root/tabs]))
-                                  :iconType "plus"})
-                               (show-if-unlocked
-                                 tabs
-                                 selected-idx
-                                 (e/button-icon
-                                   {:fill     true
-                                    :size     "m"
-                                    :onClick  #(m/set-value! this :ui/show-edit-modal? true)
-                                    :iconType "pencil"}))
-                               (show-if-unlocked
-                                 tabs
-                                 selected-idx
-                                 (e/button-icon
-                                   {:fill     true
-                                    :size     "m"
-                                    :color    "danger"
-                                    :onClick  #(m/set-value! this :ui/show-delete-modal? true)
-                                    :iconType "trash"}))
-                               (show-if-unlocked
-                                 tabs
-                                 selected-idx
-                                 (e/button-icon
-                                   {:fill     true
-                                    :size     "m"
-                                    :iconType "lock"
-                                    :onClick  #(if-let [curr-tab (nth tabs selected-idx)]
-                                                 (comp/transact! this [(lock-tab curr-tab)]))})
-                                 false)]
-                              (filter #(not (nil? %))))]
+        right-side-items [(e/button-icon
+                            {:fill     true
+                             :size     "m"
+                             :onClick  (fn []
+                                         (m/set-value! this :ui/show-tab-modal? true)
+                                         (merge/merge-component!
+                                           app TabModal (comp/get-initial-state TabModal)
+                                           :append [:root/tabs]))
+                             :iconType "plus"})]]
     (e/page-template
       {:pageHeader {:pageTitle      (if (empty? tabs)
                                       "Welcome!"
                                       (-> tabs (nth selected-idx) :tab/name))
                     :rightSideItems right-side-items}}
       (e/tabs {:size "xl"}
-        (ui-tab-headers this tabs selected-idx))
+        (ui-tab-headers this))
       (if (empty? tabs)
         (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
                          :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
         (ui-tab (nth tabs selected-idx))))))
 
 (defsc TabMain
-  [this {:ui/keys [show-tab-modal? show-edit-modal? show-delete-modal?]}]
+  [this {:ui/keys [show-tab-modal? show-edit-modal? show-delete-modal?] :root/keys [tab-ctx-menu-id] :as props}]
   {:ident         (fn [] [:component/id ::tab])
    :route-segment ["tab"]
    :query         [{[:root/tabs '_] (comp/get-query Tab)}
+                   [:root/tab-ctx-menu-id '_]
                    :ui/selected-idx
                    :ui/show-edit-modal?
                    :ui/show-delete-modal?

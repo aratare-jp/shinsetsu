@@ -9,7 +9,6 @@
     [mount.core :refer [defstate]]
     [ring.middleware.multipart-params :refer [wrap-multipart-params]]
     [com.fulcrologic.fulcro.networking.file-upload :as fu]
-    [taoensso.timbre :as log]
     [puget.printer :refer [pprint]]))
 
 (defstate app

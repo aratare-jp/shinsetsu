@@ -1,7 +1,10 @@
 (ns shinsetsu.ui.elastic
   (:require
     [com.fulcrologic.fulcro.algorithms.react-interop :as ri]
-    ["@elastic/eui" :refer [EuiProvider
+    ["@elastic/eui" :refer [EuiContextMenu
+                            EuiPopover
+                            EuiWrappingPopover
+                            EuiProvider
                             EuiButton
                             EuiForm
                             EuiFormRow
@@ -52,6 +55,9 @@
 (def badge (ri/react-factory EuiBadge))
 (def progress (ri/react-factory EuiProgress))
 (def panel (ri/react-factory EuiPanel))
+(def context-menu (ri/react-factory EuiContextMenu))
+(def popover (ri/react-factory EuiPopover))
+(def wrapping-popover (ri/react-factory EuiWrappingPopover))
 
 ;; List
 (def list-group (ri/react-factory EuiListGroup))

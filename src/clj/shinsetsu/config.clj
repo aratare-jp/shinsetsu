@@ -4,7 +4,7 @@
     [cprop.source :as source]
     [mount.core :refer [args defstate]]))
 
-(defstate env
+(defstate ^{:on-reload :noop} env
   :start
   (load-config
     :merge

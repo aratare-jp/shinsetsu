@@ -10,3 +10,9 @@
   (action
     [{:keys [state]}]
     (swap! state ns/remove-entity ident)))
+
+(defmutation set-root
+  [{:keys [k v]}]
+  (action
+    [{:keys [state]}]
+    (swap! state assoc k v)))

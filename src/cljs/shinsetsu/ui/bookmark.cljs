@@ -1,9 +1,11 @@
 (ns shinsetsu.ui.bookmark
   (:require
+    [shinsetsu.application :refer [app]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.dom :refer [h1 div]]
     [com.fulcrologic.fulcro.mutations :as m]
+    [clojure.browser.dom :refer [get-element]]
     [malli.core :as mc]
     [shinsetsu.schema :as s]
     [shinsetsu.mutations.bookmark :refer [create-bookmark patch-bookmark delete-bookmark]]
@@ -12,7 +14,8 @@
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
     [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.networking.file-upload :as fu]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [shinsetsu.mutations.common :refer [set-root]]))
 
 (defsc BookmarkModal
   [this
@@ -22,6 +25,7 @@
    {:keys [on-close]}]
   {:ident         :bookmark/id
    :query         [{[:root/tags '_] (comp/get-query tui/TagModal)}
+                   [:root/bookmark-ctx-menu-id '_]
                    :bookmark/id
                    :bookmark/title
                    :bookmark/url
@@ -32,6 +36,7 @@
                    :ui/loading?
                    :ui/error-type
                    :ui/image
+                   :ui/show-ctx-menu?
                    fs/form-config-join]
    :form-fields   #{:bookmark/title :bookmark/url :bookmark/image :bookmark/tags}
    :initial-state (fn [{:bookmark/keys [tab-id]}]
@@ -129,56 +134,74 @@
 
 (defsc Bookmark
   [this
-   {:bookmark/keys [id title image favourite url tab-id tags]
-    :ui/keys       [edit-mode?]}
+   {:bookmark/keys [id title image favourite url tab-id tags] bcmi :root/bookmark-ctx-menu-id}
    {:keys [on-click]}]
   {:ident :bookmark/id
-   :query [:bookmark/id
+   :query [[:root/bookmark-ctx-menu-id '_]
+           :bookmark/id
            :bookmark/title
            :bookmark/url
            :bookmark/favourite
            :bookmark/image
            :bookmark/tab-id
            {:bookmark/tags (comp/get-query tui/TagModal)}
-           :ui/edit-mode?
-           :ui/image]}
-  (let [on-favourite #(comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
-        on-delete    #(comp/transact! this [(delete-bookmark #:bookmark{:id id :tab-id tab-id})])]
-    (e/card
-      {:title         title
-       :titleElement  "h2"
-       :description   (map
-                        (fn [{:tag/keys [name colour]}] (e/badge {:color colour} name))
-                        tags)
-       :display       "subdued"
-       :onClick       (if (not edit-mode?) #(js/window.open url))
-       :onContextMenu (fn [e]
-                        (evt/prevent-default! e)
-                        (js/console.log "Hello"))
-       :image         (e/image
-                        {:height "200vh"
-                         :src    image})
-       :footer        (if edit-mode?
-                        (e/flex-group {:justifyContent "flexEnd"}
-                          (e/flex-item {:grow false}
-                            (e/button-icon
-                              {:aria-label "favourite"
-                               :size       "s"
-                               :iconType   (if favourite "starFilled" "starEmpty")
-                               :onClick    on-favourite}))
-                          (e/flex-item {:grow false}
-                            (e/button-icon
-                              {:aria-label "edit"
-                               :size       "s"
-                               :iconType   "pencil"
-                               :onClick    on-click}))
-                          (e/flex-item {:grow false}
-                            (e/button-icon
-                              {:aria-label "delete"
-                               :size       "s"
-                               :iconType   "trash"
-                               :onClick    on-delete
-                               :color      "danger"}))))})))
+           :ui/image
+           :ui/show-ctx-menu?]}
+  (let [close-ctx-menu-fn #(comp/transact! this [(set-root {:k :root/bookmark-ctx-menu-id :v nil})])
+        on-favourite      (fn []
+                            (comp/transact! this [(patch-bookmark #:bookmark{:id        id
+                                                                             :tab-id    tab-id
+                                                                             :favourite (not favourite)})])
+                            (close-ctx-menu-fn))
+        on-delete         (fn []
+                            (comp/transact! this [(delete-bookmark #:bookmark{:id id :tab-id tab-id})])
+                            (close-ctx-menu-fn))
+        on-edit           (fn []
+                            (on-click)
+                            (close-ctx-menu-fn))]
+    [(if (= id bcmi)
+       (let [el (get-element (str "bookmark-" id))]
+         (e/wrapping-popover
+           {:button           el
+            :initialFocus     false
+            :anchorPosition   "upCenter"
+            :panelPaddingSize "s"
+            :isOpen           (= id bcmi)
+            :closePopover     close-ctx-menu-fn}
+           (e/flex-group {:gutterSize "none"}
+             (e/flex-item {}
+               (e/button-icon
+                 {:aria-label "favourite"
+                  :size       "s"
+                  :iconType   (if favourite "starFilled" "starEmpty")
+                  :onClick    on-favourite}))
+             (e/flex-item {}
+               (e/button-icon
+                 {:aria-label "edit"
+                  :size       "s"
+                  :iconType   "pencil"
+                  :onClick    on-edit}))
+             (e/flex-item {}
+               (e/button-icon
+                 {:aria-label "delete"
+                  :size       "s"
+                  :iconType   "trash"
+                  :onClick    on-delete
+                  :color      "danger"}))))))
+     (e/card
+       {:title         title
+        :titleElement  "h2"
+        :description   (map (fn [{:tag/keys [name colour]}] (e/badge {:color colour} name)) tags)
+        :display       "subdued"
+        :onClick       #(js/window.open url)
+        :onContextMenu (fn [e]
+                         (evt/prevent-default! e)
+                         (comp/transact! this [(set-root {:k :root/bookmark-ctx-menu-id :v id})]))
+        :image         (div
+                         (div {:id (str "bookmark-" id)})
+                         (e/image
+                           {:height "200vh"
+                            :src    image}))})]))
 
 (def ui-bookmark (comp/factory Bookmark {:keyfn :bookmark/id}))
 
