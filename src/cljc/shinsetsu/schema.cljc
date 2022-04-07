@@ -175,8 +175,8 @@
 (def bookmark-tag-fetch-by-bookmark-spec
   [:map
    {:closed true}
-   [:bookmark-tag/bookmark-id :uuid]
-   [:bookmark-tag/user-id :uuid]])
+   [:bookmark/id :uuid]
+   [:bookmark/user-id :uuid]])
 
 (def bookmark-tag-fetch-by-tag-spec
   [:map

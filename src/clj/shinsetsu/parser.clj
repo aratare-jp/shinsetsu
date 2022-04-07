@@ -36,7 +36,6 @@
    tag-resolver/tag-resolver
    tag-resolver/tags-resolver
    bookmark-tag-resolver/bookmark-tag-resolver-by-bookmark
-   bookmark-tag-resolver/bookmark-tag-resolver-by-tag
    tag-mutations/create-tag
    tag-mutations/patch-tag
    tag-mutations/delete-tag])
