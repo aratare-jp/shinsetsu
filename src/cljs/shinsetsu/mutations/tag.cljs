@@ -56,7 +56,7 @@
                         (fs/entity->pristine* ref)
                         (dissoc-in (conj ref :ui/password))
                         (assoc-in (conj ref :ui/loading?) false)
-                        (assoc-in (conj main-idt :ui/show-edit-modal?) false)))))
+                        (dissoc-in (conj main-idt :ui/edit-id))))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-tag} :body} :result :keys [state ref]}]
     (log/error "Failed to patch tag" id "due to:" error-message)

@@ -43,7 +43,8 @@
                             EuiBadge
                             EuiComboBox
                             EuiProgress
-                            EuiPanel]]))
+                            EuiPanel
+                            EuiText]]))
 
 (def provider (ri/react-factory EuiProvider))
 (def empty-prompt (ri/react-factory EuiEmptyPrompt))
@@ -58,6 +59,7 @@
 (def context-menu (ri/react-factory EuiContextMenu))
 (def popover (ri/react-factory EuiPopover))
 (def wrapping-popover (ri/react-factory EuiWrappingPopover))
+(def text (ri/react-factory EuiText))
 
 ;; List
 (def list-group (ri/react-factory EuiListGroup))

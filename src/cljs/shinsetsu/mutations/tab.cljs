@@ -62,7 +62,7 @@
                         (dissoc-in (conj ref :ui/password))
                         (assoc-in (conj ref :ui/change-password?) false)
                         (assoc-in (conj ref :ui/loading?) false)
-                        (assoc-in (conj main-idt :ui/show-edit-modal?) false)
+                        (dissoc-in (conj main-idt :ui/edit-id))
                         (fs/entity->pristine* ref)))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-tab} :body} :result :keys [state ref]}]

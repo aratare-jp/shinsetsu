@@ -91,7 +91,7 @@
 
 (defn- ui-edit-tag
   [this tag]
-  (let [on-close #(m/set-value! this :ui/show-edit-modal? false)]
+  (let [on-close #(m/set-value! this :ui/edit-id nil)]
     (ui-tag-modal (comp/computed tag {:on-close on-close}))))
 
 (defn- ui-delete-tag

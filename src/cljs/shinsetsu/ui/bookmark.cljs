@@ -116,19 +116,23 @@
                                                              :colour color
                                                              :id     value})
                                                      $))]
-                                    (m/set-value! this :bookmark/tags tags)))})))
-        (e/modal-footer {}
-          (e/button {:onClick on-close} "Cancel")
-          (e/button
-            {:type      "submit"
-             :fill      true
-             :onClick   on-save
-             :isLoading loading?
-             :disabled  (not bm-valid?)
-             :iconType  "save"
-             :form      "bookmark-modal-form"}
-            "Save")
-          (e/button {:onClick on-clear} "Clear"))))))
+                                    (m/set-value! this :bookmark/tags tags)))}))))
+      (e/modal-footer {}
+        (e/flex-group {}
+          (e/flex-item {}
+            (e/button {:onClick on-close} "Cancel"))
+          (e/flex-item {}
+            (e/button
+              {:type      "submit"
+               :fill      true
+               :onClick   on-save
+               :isLoading loading?
+               :disabled  (not bm-valid?)
+               :iconType  "save"
+               :form      "bookmark-modal-form"}
+              "Save"))
+          (e/flex-item {}
+            (e/button {:onClick on-clear} "Clear")))))))
 
 (def ui-bookmark-modal (comp/factory BookmarkModal {:keyfn :bookmark/id}))
 
