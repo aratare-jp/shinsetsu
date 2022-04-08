@@ -50,14 +50,11 @@ jobs:
       - name: Run server tests
         run: bin/kaocha --profile ci ${{ matrix.suites }}
 
-      - name: Preparing for Codecov upload
-        run: mv target/coverage/codecov.json target/coverage/codecov-${{ matrix.suites }}.json
-
       - name: Upload test suite Codecov report
         uses: actions/upload-artifact@v3
         with:
-          name: codecov-reports
-          path: target/coverage/codecov-${{ matrix.suites }}.json
+          name: ${{ matrix.suites }}-report
+          path: target/coverage/codecov.json
 
   codecov:
     needs: test
@@ -65,8 +62,6 @@ jobs:
     steps:
       - name: Download Codecov reports
         uses: actions/download-artifact@v3
-        with:
-          name: codecov-reports
 
       - run: ls -R
 
