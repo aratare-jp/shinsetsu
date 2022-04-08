@@ -51,7 +51,7 @@ jobs:
         run: bin/kaocha --profile ci ${{ matrix.suites }}
 
       - name: Preparing for Codecov upload
-      - run: mv target/coverage/codecov.json target/coverage/codecov-${{ matrix.suites }}.json
+        run: mv target/coverage/codecov.json target/coverage/codecov-${{ matrix.suites }}.json
 
       - name: Upload test suite Codecov report
         uses: actions/upload-artifact@v3
