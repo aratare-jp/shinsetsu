@@ -299,7 +299,7 @@
   (try
     (let [bookmark-title "foo"
           bookmark-url   "bar"
-          new-tab-id     (UUID/randomUUID)
+          new-tab-id     (random-uuid)
           bookmark       (bookmark-db/create-bookmark {:bookmark/title   bookmark-title
                                                        :bookmark/url     bookmark-url
                                                        :bookmark/tab-id  @tab1-id
@@ -331,7 +331,7 @@
     (expect (:bookmark/updated bookmark) (:bookmark/updated deleted-bookmark))))
 
 (defexpect normal-delete-nonexistent-bookmark
-  (let [deleted-bookmark (bookmark-db/delete-bookmark {:bookmark/id (UUID/randomUUID) :bookmark/user-id @user-id})]
+  (let [deleted-bookmark (bookmark-db/delete-bookmark {:bookmark/id (random-uuid) :bookmark/user-id @user-id})]
     (expect nil deleted-bookmark)))
 
 (defexpect fail-delete-bookmark-with-invalid-id
@@ -354,7 +354,7 @@
         fetched     (bookmark-db/fetch-bookmark #:bookmark{:id bookmark-id :user-id @user-id})]
     (expect bookmark fetched)))
 
-(defexpect normal-fetch-nonexistent-bookmark nil (bookmark-db/fetch-bookmark {:bookmark/id      (UUID/randomUUID)
+(defexpect normal-fetch-nonexistent-bookmark nil (bookmark-db/fetch-bookmark {:bookmark/id      (random-uuid)
                                                                               :bookmark/user-id @user-id}))
 
 (defexpect fail-fetch-bookmark-without-id
@@ -377,7 +377,7 @@
 
 (defexpect fail-fetch-bookmark-without-user-id
   (try
-    (bookmark-db/fetch-bookmark {:bookmark/id (UUID/randomUUID)})
+    (bookmark-db/fetch-bookmark {:bookmark/id (random-uuid)})
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
@@ -386,7 +386,7 @@
 
 (defexpect fail-fetch-bookmark-with-invalid-user-id
   (try
-    (bookmark-db/fetch-bookmark {:bookmark/id (UUID/randomUUID) :bookmark/user-id "foo"})
+    (bookmark-db/fetch-bookmark {:bookmark/id (random-uuid) :bookmark/user-id "foo"})
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]

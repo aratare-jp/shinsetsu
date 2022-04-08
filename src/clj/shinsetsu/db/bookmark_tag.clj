@@ -54,27 +54,14 @@
           (throw (ex-info "Unknown error" {:error-type :unknown} e)))))))
 
 (defn fetch-tags-by-bookmark
-  [{:bookmark-tag/keys [bookmark-id user-id] :as input}]
+  [{:bookmark/keys [id user-id] :as input}]
   (if-let [err (m/explain s/bookmark-tag-fetch-by-bookmark-spec input)]
     (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
-      (log/info "Fetch tags of bookmark" bookmark-id "for user" user-id)
+      (log/info "Fetch tags of bookmark" id "for user" user-id)
       (jdbc/execute! ds (-> (helpers/select :*)
                             (helpers/from :bookmark-tag)
-                            (helpers/where [:= :bookmark-tag/bookmark-id bookmark-id]
-                                           [:= :bookmark-tag/user-id user-id])
-                            (sql/format))))))
-
-(defn fetch-bookmarks-by-tag
-  [{:bookmark-tag/keys [tag-id user-id] :as input}]
-  (if-let [err (m/explain s/bookmark-tag-fetch-by-tag-spec input)]
-    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
-    (do
-      (log/info "Fetch bookmarks that have tag" tag-id "for user" user-id)
-      (jdbc/execute! ds (-> (helpers/select :*)
-                            (helpers/from :bookmark-tag)
-                            (helpers/where [:= :bookmark-tag/tag-id tag-id]
-                                           [:= :bookmark-tag/user-id user-id])
+                            (helpers/where [:= :bookmark-tag/bookmark-id id] [:= :bookmark-tag/user-id user-id])
                             (sql/format))))))
 
 (defn delete-bookmark-tag

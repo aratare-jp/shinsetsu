@@ -183,7 +183,7 @@
     (expect (:tag/updated tag) (:tag/updated deleted-tag))))
 
 (defexpect normal-delete-tag-with-nonexistent-id
-  (let [tag-id      (UUID/randomUUID)
+  (let [tag-id      (random-uuid)
         query       [{`(tag-mut/delete-tag {:tag/id ~tag-id}) tag-join}]
         result      (protected-parser {:request {:user/id @user-id}} query)
         deleted-tag (get result `tag-mut/delete-tag)]

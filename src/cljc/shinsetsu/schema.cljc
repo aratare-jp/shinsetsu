@@ -1,7 +1,6 @@
 (ns shinsetsu.schema
   (:require
     [malli.core :as m]
-    [malli.error :as me]
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
     [com.fulcrologic.fulcro.networking.file-upload :as fu]))
 
@@ -64,6 +63,11 @@
    [:tab/user-id :uuid]])
 
 ;; BOOKMARK
+
+(def bookmark-form-spec
+  [:map
+   [:bookmark/title non-empty-string]
+   [:bookmark/url non-empty-string]])
 
 (def file-spec
   (m/schema
@@ -153,11 +157,6 @@
 
 ;; BOOKMARK TAG
 
-(def bookmark-form-spec
-  [:map
-   [:bookmark/title non-empty-string]
-   [:bookmark/url non-empty-string]])
-
 (def bookmark-tag-create-spec
   [:map
    {:closed true}
@@ -177,12 +176,6 @@
    {:closed true}
    [:bookmark/id :uuid]
    [:bookmark/user-id :uuid]])
-
-(def bookmark-tag-fetch-by-tag-spec
-  [:map
-   {:closed true}
-   [:bookmark-tag/tag-id :uuid]
-   [:bookmark-tag/user-id :uuid]])
 
 (def bookmark-tag-delete-spec bookmark-tag-create-spec)
 

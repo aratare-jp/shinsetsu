@@ -135,6 +135,17 @@
     (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))
     (expect @user-id (:tab/user-id patched-tab))))
 
+(defexpect normal-patch-tab-with-new-null-password
+  (let [tab         (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
+        tab-id      (:tab/id tab)
+        patched-tab (tab-db/patch-tab #:tab{:id tab-id :password nil :user-id @user-id})]
+    (expect (:tab/id tab) (:tab/id patched-tab))
+    (expect (:tab/name tab) (:tab/name patched-tab))
+    (expect nil (:tab/password patched-tab))
+    (expect (:tab/created tab) (:tab/created patched-tab))
+    (expect #(.after % (:tab/updated tab)) (:tab/updated patched-tab))
+    (expect @user-id (:tab/user-id patched-tab))))
+
 (defexpect normal-patch-tab-without-new-name-and-password
   (let [tab         (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
         tab-id      (:tab/id tab)
@@ -182,18 +193,6 @@
         (expect "Invalid input" message)
         (expect {:error-type :invalid-input :error-data {:tab/name ["should be a string"]}} data)))))
 
-(defexpect fail-to-patch-tab-with-null-password
-  (try
-    (let [tab    (tab-db/create-tab #:tab{:name "foo" :password "bar" :user-id @user-id})
-          tab-id (:tab/id tab)]
-      (tab-db/patch-tab #:tab{:id tab-id :user-id @user-id :password nil})
-      (expect false))
-    (catch Exception e
-      (let [data    (ex-data e)
-            message (ex-message e)]
-        (expect "Invalid input" message)
-        (expect {:error-type :invalid-input :error-data {:tab/password ["should be a string"]}} data)))))
-
 ;; DELETE
 
 (defexpect normal-delete-tab-with-no-bookmarks
@@ -214,7 +213,7 @@
     (expect [] (bookmark-db/fetch-bookmarks {:bookmark/tab-id tab-id :bookmark/user-id @user-id}))))
 
 (defexpect normal-delete-tab-with-nonexistent-id
-  (let [deleted-tab (tab-db/delete-tab {:tab/id (UUID/randomUUID) :tab/user-id @user-id})]
+  (let [deleted-tab (tab-db/delete-tab {:tab/id (random-uuid) :tab/user-id @user-id})]
     (expect nil deleted-tab)))
 
 ;; FETCH TABS
@@ -228,7 +227,7 @@
     (expect [tab1 tab2] fetched-tabs)))
 
 (defexpect normal-fetch-empty-tabs [] (tab-db/fetch-tabs {:tab/user-id @user-id}))
-(defexpect normal-fetch-tabs-from-nonexistent-user [] (tab-db/fetch-tabs {:tab/user-id (UUID/randomUUID)}))
+(defexpect normal-fetch-tabs-from-nonexistent-user [] (tab-db/fetch-tabs {:tab/user-id (random-uuid)}))
 
 ;; FETCH TAB
 
@@ -239,12 +238,12 @@
     (expect tab fetched-tab)))
 
 (defexpect normal-fetch-nonexistent-tab
-  (let [fetched-tab (tab-db/fetch-tab {:tab/id (UUID/randomUUID) :tab/user-id @user-id})]
+  (let [fetched-tab (tab-db/fetch-tab {:tab/id (random-uuid) :tab/user-id @user-id})]
     (expect nil fetched-tab)))
 
 (defexpect fail-to-fetch-tab-with-invalid-id
   (try
-    (tab-db/fetch-tab {:tab/id "foo" :tab/user-id (UUID/randomUUID)})
+    (tab-db/fetch-tab {:tab/id "foo" :tab/user-id (random-uuid)})
     (expect false)
     (catch ExceptionInfo e
       (let [message (ex-message e)
@@ -254,7 +253,7 @@
 
 (defexpect fail-to-fetch-tab-with-invalid-user
   (try
-    (tab-db/fetch-tab {:tab/user-id "not real" :tab/id (UUID/randomUUID)})
+    (tab-db/fetch-tab {:tab/user-id "not real" :tab/id (random-uuid)})
     (expect false)
     (catch ExceptionInfo e
       (let [message (ex-message e)

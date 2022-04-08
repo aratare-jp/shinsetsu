@@ -185,7 +185,7 @@
     (expect (:tab/updated tab) (:tab/updated deleted-tab))))
 
 (defexpect normal-delete-tab-with-nonexistent-id
-  (let [tab-id      (UUID/randomUUID)
+  (let [tab-id      (random-uuid)
         query       [{`(tab-mut/delete-tab {:tab/id ~tab-id}) tab-join}]
         result      (protected-parser {:request {:user/id @user-id}} query)
         deleted-tab (get result `tab-mut/delete-tab)]

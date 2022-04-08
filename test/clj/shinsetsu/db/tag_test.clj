@@ -47,7 +47,7 @@
 
 (defexpect fail-create-tag-without-name
   (try
-    (tag-db/create-tag {:tag/user-id (UUID/randomUUID)})
+    (tag-db/create-tag {:tag/user-id (random-uuid)})
     (expect false)
     (catch Exception e
       (let [message (ex-message e)
@@ -172,14 +172,14 @@
     (expect nil (tag-db/fetch-tag {:tag/id tag-id :user/id @user-id}))))
 
 (defexpect normal-delete-tag-with-nonexistent-id
-  (let [tag-id      (UUID/randomUUID)
+  (let [tag-id      (random-uuid)
         deleted-tag (tag-db/delete-tag {:tag/id tag-id :tag/user-id @user-id})]
     (expect nil deleted-tag)))
 
 (defexpect normal-delete-tag-with-nonexistent-user-id
   (let [tag         (tag-db/create-tag {:tag/name "foo" :tag/colour "#ffffff" :tag/user-id @user-id})
         tag-id      (:tag/id tag)
-        user-id     (UUID/randomUUID)
+        user-id     (random-uuid)
         deleted-tag (tag-db/delete-tag {:tag/id tag-id :tag/user-id user-id})]
     (expect nil deleted-tag)))
 
@@ -232,7 +232,7 @@
     (expect [tag1 tag2] fetched-tags)))
 
 (defexpect normal-fetch-empty-tags [] (tag-db/fetch-tags {:user/id @user-id}))
-(defexpect normal-fetch-tags-from-nonexistent-user [] (tag-db/fetch-tags {:user/id (UUID/randomUUID)}))
+(defexpect normal-fetch-tags-from-nonexistent-user [] (tag-db/fetch-tags {:user/id (random-uuid)}))
 
 (defexpect fail-fetch-tags-without-user
   (try
@@ -263,7 +263,7 @@
     (expect tag fetched-tag)))
 
 (defexpect normal-fetch-nonexistent-tag
-  (let [fetched-tag (tag-db/fetch-tag {:tag/id (UUID/randomUUID) :user/id @user-id})]
+  (let [fetched-tag (tag-db/fetch-tag {:tag/id (random-uuid) :user/id @user-id})]
     (expect nil fetched-tag)))
 
 (defexpect fail-fetch-tag-without-id-and-tag-id
@@ -282,7 +282,7 @@
 
 (defexpect fail-fetch-tag-without-id
   (try
-    (tag-db/fetch-tag {:user/id (UUID/randomUUID)})
+    (tag-db/fetch-tag {:user/id (random-uuid)})
     (expect false)
     (catch Exception e
       (let [message (ex-message e)
@@ -292,7 +292,7 @@
 
 (defexpect fail-fetch-tag-with-invalid-id
   (try
-    (tag-db/fetch-tag {:tag/id "foo" :user/id (UUID/randomUUID)})
+    (tag-db/fetch-tag {:tag/id "foo" :user/id (random-uuid)})
     (expect false)
     (catch ExceptionInfo e
       (let [message (ex-message e)
@@ -302,7 +302,7 @@
 
 (defexpect fail-fetch-tag-without-user
   (try
-    (tag-db/fetch-tag {:tag/id (UUID/randomUUID)})
+    (tag-db/fetch-tag {:tag/id (random-uuid)})
     (expect false)
     (catch Exception e
       (let [message (ex-message e)
@@ -312,7 +312,7 @@
 
 (defexpect fail-fetch-tag-with-invalid-user
   (try
-    (tag-db/fetch-tag {:user/id "not real" :tag/id (UUID/randomUUID)})
+    (tag-db/fetch-tag {:user/id "not real" :tag/id (random-uuid)})
     (expect false)
     (catch ExceptionInfo e
       (let [message (ex-message e)

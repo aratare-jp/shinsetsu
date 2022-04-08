@@ -42,7 +42,7 @@
     (expect {[:tag/id tag-id] tag} fetched-tag)))
 
 (defexpect normal-fetch-empty-tag
-  (let [random-id (UUID/randomUUID)
+  (let [random-id (random-uuid)
         expected  {[:tag/id random-id] {:tag/id random-id}}
         actual    (protected-parser {:request {:user/id @user-id}} [{[:tag/id random-id] tag-join}])]
     (expect expected actual)))

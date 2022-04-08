@@ -36,7 +36,7 @@
     (expect 1 (spy/call-count spy-fn))))
 
 (defexpect fail-auth-with-nonexistent-user
-  (let [user-id   (UUID/randomUUID)
+  (let [user-id   (random-uuid)
         token     (jwt/sign {:user/id user-id} (:secret config/env))
         req       {:headers {"authorization" (str "Bearer " token)}}
         spy-fn    (spy/spy (fn [r] (expect false)))

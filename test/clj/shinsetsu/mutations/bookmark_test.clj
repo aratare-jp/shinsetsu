@@ -111,7 +111,7 @@
 (defexpect fail-create-bookmark-with-nonexistent-tab
   (let [bookmark-title "foo"
         bookmark-url   "bar"
-        tab-id         (UUID/randomUUID)
+        tab-id         (random-uuid)
         query          [{`(bookmark-mut/create-bookmark {:bookmark/title  ~bookmark-title
                                                          :bookmark/url    ~bookmark-url
                                                          :bookmark/tab-id ~tab-id}) bookmark-join}]
@@ -264,7 +264,7 @@
                                                   :bookmark/tab-id  @tab1-id
                                                   :bookmark/user-id @user-id})
         bookmark-id (:bookmark/id bookmark)
-        tab-id      (UUID/randomUUID)
+        tab-id      (random-uuid)
         query       [{`(bookmark-mut/patch-bookmark {:bookmark/id     ~bookmark-id
                                                      :bookmark/tab-id ~tab-id}) bookmark-join}]
         result      (protected-parser {:request {:user/id @user-id}} query)
@@ -293,7 +293,7 @@
     (expect (:bookmark/updated deleted-bookmark) (:bookmark/updated bookmark))))
 
 (defexpect normal-delete-nonexistent-tab
-  (let [bookmark-id (UUID/randomUUID)
+  (let [bookmark-id (random-uuid)
         tab-id      "foo"
         query       [{`(bookmark-mut/delete-bookmark {:bookmark/id ~bookmark-id}) bookmark-join}]
         result      (protected-parser {:request {:user/id @user-id}} query)

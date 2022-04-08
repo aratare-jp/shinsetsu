@@ -45,7 +45,7 @@
     (expect {[:bookmark/id bookmark-id] bookmark} fetch-bookmark)))
 
 (defexpect normal-fetch-empty-bookmark
-  (let [random-id (UUID/randomUUID)
+  (let [random-id (random-uuid)
         expected  {[:bookmark/id random-id] {:bookmark/id random-id}}
         actual    (protected-parser {:request {:user/id @user-id}} [{[:bookmark/id random-id] bookmark-join}])]
     (expect expected actual)))

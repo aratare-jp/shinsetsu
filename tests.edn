@@ -1,2 +1,16 @@
-#kaocha/v1 {:plugins        [:kaocha.plugin/cloverage]
-            :cloverage/opts {:codecov? true}}
+#kaocha/v1 #merge
+    [{:tests [{:id         :db-unit
+               :test-paths ["test/clj/shinsetsu/db"]}
+              {:id         :resolver-unit
+               :test-paths ["test/clj/shinsetsu/resolvers"]}
+              {:id         :mutation-unit
+               :test-paths ["test/clj/shinsetsu/mutations"]}
+              {:id         :middleware-unit
+               :test-paths ["test/clj/shinsetsu/middleware"]}
+              {:id         :schema-unit
+               :test-paths ["test/cljc/shinsetsu"]}]}
+     #profile {:ci      {:plugins         [:kaocha.plugin/cloverage]
+                         :cloverage/opts  {:codecov? true}
+                         :kaocha/reporter [kaocha.report/documentation]
+                         :color?          false}
+               :default {:kaocha/reporter [kaocha.report.progress/report]}}]

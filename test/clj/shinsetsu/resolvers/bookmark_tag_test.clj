@@ -10,8 +10,7 @@
     [shinsetsu.parser :refer [protected-parser]]
     [taoensso.timbre :as log]
     [com.wsscode.pathom.core :as pc]
-    [shinsetsu.db.bookmark-tag :as bookmark-tag-db])
-  (:import [java.util UUID]))
+    [shinsetsu.db.bookmark-tag :as btdb]))
 
 (def user-id (atom nil))
 (def tab-id (atom nil))
@@ -45,19 +44,17 @@
         bookmark-id  (:bookmark/id bookmark)
         tag          (create-tag "foo" @user-id)
         tag-id       (:tag/id tag)
-        bookmark-tag (bookmark-tag-db/create-bookmark-tag #:bookmark-tag{:bookmark-id bookmark-id
-                                                                         :tag-id      tag-id
-                                                                         :user-id     @user-id})
+        bookmark-tag (btdb/create-bookmark-tag #:bookmark-tag{:bookmark-id bookmark-id :tag-id tag-id :user-id @user-id})
         query        [{[:bookmark/id bookmark-id] [:bookmark/tags]}]
         actual       (protected-parser {:request {:user/id @user-id}} query)
         expected     {[:bookmark/id bookmark-id]
-                      {:bookmark/tags (->> #:bookmark-tag{:bookmark-id bookmark-id :user-id @user-id}
-                                           bookmark-tag-db/fetch-tags-by-bookmark
+                      {:bookmark/tags (->> #:bookmark{:id bookmark-id :user-id @user-id}
+                                           btdb/fetch-tags-by-bookmark
                                            (mapv (fn [bt] {:tag/id (:bookmark-tag/tag-id bt)})))}}]
     (expect expected actual)))
 
 (defexpect normal-fetch-empty-bookmark-tags
-  (let [bookmark-id (UUID/randomUUID)
+  (let [bookmark-id (random-uuid)
         query       [{[:bookmark/id bookmark-id] [:bookmark/tags]}]
         actual      (protected-parser {:request {:user/id @user-id}} query)
         expected    {[:bookmark/id bookmark-id] {:bookmark/tags []}}]

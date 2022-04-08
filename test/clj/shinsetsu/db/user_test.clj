@@ -140,7 +140,7 @@
 
 (defexpect fail-patch-user-with-invalid-username
   (try
-    (user-db/patch-user {:user/id (UUID/randomUUID) :user/username ""})
+    (user-db/patch-user {:user/id (random-uuid) :user/username ""})
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
@@ -149,7 +149,7 @@
 
 (defexpect fail-patch-user-with-invalid-password
   (try
-    (user-db/patch-user {:user/id (UUID/randomUUID) :user/password ""})
+    (user-db/patch-user {:user/id (random-uuid) :user/password ""})
     (catch Exception e
       (let [data    (ex-data e)
             message (ex-message e)]
@@ -192,7 +192,7 @@
     (let [fetched-user (user-db/fetch-user-by-id {:user/id (:user/id user)})]
       (expect user fetched-user))))
 
-(defexpect fetch-nonexistent-user-by-id nil? (user-db/fetch-user-by-id {:user/id (UUID/randomUUID)}))
+(defexpect fetch-nonexistent-user-by-id nil? (user-db/fetch-user-by-id {:user/id (random-uuid)}))
 
 (defexpect fail-fetch-user-without-id
   (try
