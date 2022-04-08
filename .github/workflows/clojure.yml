@@ -55,6 +55,7 @@ jobs:
       - name: Upload Codecov report
         uses: actions/upload-artifact@v3
         with:
+          name: codecov-reports
           path: target/coverage/codecov-${{ matrix.suites }}.json
 
   codecov:
@@ -63,6 +64,8 @@ jobs:
     steps:
       - name: Download Codecov reports
         uses: actions/download-artifact@v3
+        with:
+          name: codecov-reports
 
       - run: ls -R
 
@@ -70,6 +73,7 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          directory: codecov-reports/
           flags: unittests
           name: shinsetsu-unit
           fail_ci_if_error: true
