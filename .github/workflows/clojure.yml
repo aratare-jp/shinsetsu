@@ -50,9 +50,10 @@ jobs:
       - name: Run server tests
         run: bin/kaocha --profile ci ${{ matrix.suites }}
 
-      - run: cp target/coverage/codecov.json target/coverage/codecov-${{ matrix.suites }}.json
+      - name: Preparing for Codecov upload
+      - run: mv target/coverage/codecov.json target/coverage/codecov-${{ matrix.suites }}.json
 
-      - name: Upload Codecov report
+      - name: Upload test suite Codecov report
         uses: actions/upload-artifact@v3
         with:
           name: codecov-reports
@@ -73,7 +74,6 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: codecov-reports/
           flags: unittests
           name: shinsetsu-unit
           fail_ci_if_error: true
