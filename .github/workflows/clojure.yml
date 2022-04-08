@@ -63,6 +63,8 @@ jobs:
       - name: Download Codecov reports
         uses: actions/download-artifact@v3
 
+      - run: ls -R
+
       - name: Upload code coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
