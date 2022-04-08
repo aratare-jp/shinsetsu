@@ -16,8 +16,7 @@ jobs:
   unit-test:
     strategy:
       matrix:
-        #        suites: [ db-unit, resolver-unit, mutation-unit, schema-unit, middleware-unit ]
-        suites: [ schema-unit, middleware-unit ]
+        suites: [ db-unit, resolver-unit, mutation-unit, schema-unit, middleware-unit ]
     runs-on: ubuntu-latest
     steps:
       - run: env
