@@ -1,6 +1,6 @@
 (ns shinsetsu.db.tab
   (:require
-    [shinsetsu.db.db :refer [ds]]
+    [shinsetsu.db :refer [ds]]
     [next.jdbc :as jdbc]
     [honey.sql.helpers :as helpers]
     [honey.sql :as sql]

@@ -4,7 +4,7 @@
     [honey.sql.helpers :as helpers]
     [honey.sql :as sql]
     [taoensso.timbre :as log]
-    [shinsetsu.db.db :refer [ds]]
+    [shinsetsu.db :refer [ds]]
     [shinsetsu.schema :as s]
     [malli.core :as m]
     [malli.error :as me])

@@ -6,7 +6,7 @@
             [next.jdbc :as jdbc]
             [honey.sql.helpers :as helpers]
             [honey.sql :as sql]
-            [shinsetsu.db.db :refer [ds]]
+            [shinsetsu.db :refer [ds]]
             [clojure.string :as string])
   (:import [org.postgresql.util PSQLException]))
 

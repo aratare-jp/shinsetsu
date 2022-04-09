@@ -1,4 +1,4 @@
-(ns shinsetsu.db.db
+(ns shinsetsu.db
   (:require
     [mount.core :refer [defstate]]
     [next.jdbc :as jdbc]
