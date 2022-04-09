@@ -1,6 +1,6 @@
 (ns shinsetsu.server
   (:require
-    [org.httpkit.server :as http]
+    [aleph.http :as http]
     [mount.core :refer [defstate start start-with-args stop]]
     [clojure.tools.cli :as cli]
     [taoensso.timbre :as log]
@@ -23,7 +23,7 @@
 
 (defstate ^{:on-reload :noop} http-server
   :start
-  (reset! server (http/run-server
+  (reset! server (http/start-server
                    app
                    (-> env
                        (assoc :handler app)

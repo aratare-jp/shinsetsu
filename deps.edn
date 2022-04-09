@@ -7,7 +7,7 @@
          com.wsscode/pathom                {:mvn/version "2.4.0"}
          com.taoensso/timbre               {:mvn/version "5.2.1"}
          ring/ring-core                    {:mvn/version "1.9.5"}
-         http-kit/http-kit                 {:mvn/version "2.5.3"}
+         aleph/aleph                       {:mvn/version "0.4.7"}
          metosin/reitit                    {:mvn/version "0.5.17"}
          metosin/reitit-ring               {:mvn/version "0.5.17"}
          metosin/malli                     {:mvn/version "0.8.4"}
@@ -16,18 +16,18 @@
          org.postgresql/postgresql         {:mvn/version "42.3.3"}
          buddy/buddy                       {:mvn/version "2.0.0"}
          cprop/cprop                       {:mvn/version "0.1.19"}
-         medley/medley                     {:mvn/version "1.4.0"}
-         org.eclipse.jetty/jetty-server    {:mvn/version "10.0.8"}
-         org.eclipse.jetty/jetty-servlet   {:mvn/version "10.0.8"}}
+         medley/medley                     {:mvn/version "1.4.0"}}
  :aliases
  {:dev     {:extra-paths ["src/dev"]
             :extra-deps  {org.clojure/clojurescript   {:mvn/version "1.11.4"}
+                          javax.servlet/servlet-api   {:mvn/version "2.5"}
                           thheller/shadow-cljs        {:mvn/version "2.17.8"}
                           binaryage/devtools          {:mvn/version "1.0.5"}
                           org.clojure/tools.namespace {:mvn/version "1.2.0"}
                           tortue/spy                  {:mvn/version "2.9.0"}}}
   :test    {:extra-paths   ["test/dev" "test/clj" "test/cljs" "test/cljc" "test/resources"]
             :extra-deps    {clj-test-containers/clj-test-containers {:mvn/version "0.6.0"}
+                            javax.servlet/servlet-api               {:mvn/version "2.5"}
                             com.github.seancorfield/expectations    {:mvn/version "2.0.160"}
                             lambdaisland/kaocha                     {:mvn/version "1.64.1010"}
                             lambdaisland/kaocha-cloverage           {:mvn/version "1.0.75"}
