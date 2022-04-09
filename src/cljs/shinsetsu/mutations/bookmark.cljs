@@ -56,6 +56,7 @@
       (merge/merge-component! app Bookmark bookmark :append (conj tab-ident :tab/bookmarks))
       (swap! state #(-> %
                         (fs/entity->pristine* bookmark-ident)
+                        (dissoc-in (conj tab-ident :ui/selected-idx))
                         (assoc-in (conj bookmark-ident :ui/loading?) false)
                         (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)))))
   (error-action
@@ -81,6 +82,7 @@
       (merge/merge-component! app Bookmark bookmark)
       (swap! state #(-> %
                         (fs/entity->pristine* ref)
+                        (dissoc-in (conj tab-ident :ui/selected-idx))
                         (assoc-in (conj ref :ui/loading?) false)
                         (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)))))
   (error-action

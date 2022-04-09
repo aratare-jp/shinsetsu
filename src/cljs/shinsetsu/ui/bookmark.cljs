@@ -1,6 +1,7 @@
 (ns shinsetsu.ui.bookmark
   (:require
     [shinsetsu.application :refer [app]]
+    [lambdaisland.deep-diff2 :refer [diff]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.dom :refer [h1 div]]
@@ -56,16 +57,22 @@
         on-save          (fn [e]
                            (evt/prevent-default! e)
                            (if (tempid/tempid? id)
-                             (let [args #:bookmark{:id id :title title :url url :tab-id tab-id}]
+                             (let [tags (->> (fs/dirty-fields props false) vals first :bookmark/tags (mapv second))
+                                   args #:bookmark{:id id :title title :url url :tab-id tab-id :add-tags tags}]
                                (if image
                                  (comp/transact! this [(create-bookmark (fu/attach-uploads args image))])
                                  (comp/transact! this [(create-bookmark args)])))
-                             (let [args (-> props
-                                            (fs/dirty-fields false)
-                                            vals
-                                            first
-                                            (merge #:bookmark{:id id :tab-id tab-id})
-                                            (update :bookmark/tags #(mapv second %)))]
+                             (let [{:keys [before after]} (->> (fs/dirty-fields props true) vals first :bookmark/tags)
+                                   tag-diff    (diff (mapv second before) (mapv second after))
+                                   add-tags    (->> tag-diff (mapv :+) (filterv some?))
+                                   remove-tags (->> tag-diff (mapv :-) (filterv some?))
+                                   args        (-> props
+                                                   (fs/dirty-fields false)
+                                                   vals
+                                                   first
+                                                   (merge #:bookmark{:id id :tab-id tab-id})
+                                                   (dissoc :bookmark/tags)
+                                                   (assoc :bookmark/add-tags add-tags :bookmark/remove-tags remove-tags))]
                                (if image
                                  (comp/transact! this [(patch-bookmark (fu/attach-uploads args image))])
                                  (comp/transact! this [(patch-bookmark args)])))))
@@ -193,19 +200,21 @@
                   :onClick    on-delete
                   :color      "danger"}))))))
      (e/card
-       {:title         title
-        :titleElement  "h2"
-        :description   (map (fn [{:tag/keys [name colour]}] (e/badge {:color colour} name)) tags)
-        :display       "subdued"
-        :onClick       #(js/window.open url)
-        :onContextMenu (fn [e]
-                         (evt/prevent-default! e)
-                         (comp/transact! this [(set-root {:k :root/bookmark-ctx-menu-id :v id})]))
-        :image         (div
-                         (div {:id (str "bookmark-" id)})
-                         (e/image
-                           {:height "200vh"
-                            :src    image}))})]))
+       {:title          title
+        :titleElement   "h2"
+        :description    (map (fn [{:tag/keys [name colour]}] (e/badge {:color colour} name)) tags)
+        :paddingSize    "s"
+        :display        "transparent"
+        :betaBadgeProps (if favourite {:label (e/icon {:type "starFilled" :size "l" :color "#F3D371" :title "favourite"})})
+        :onClick        #(js/window.open url)
+        :onContextMenu  (fn [e]
+                          (evt/prevent-default! e)
+                          (comp/transact! this [(set-root {:k :root/bookmark-ctx-menu-id :v id})]))
+        :image          (div
+                          (div {:id (str "bookmark-" id)})
+                          (e/image
+                            {:height "200vh"
+                             :src    image}))})]))
 
 (def ui-bookmark (comp/factory Bookmark {:keyfn :bookmark/id}))
 

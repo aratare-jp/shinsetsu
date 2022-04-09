@@ -29,10 +29,12 @@
            (str "data:" type ";base64,")))
 
 (defmutation create-bookmark
-  [{{user-id :user/id} :request} bookmark]
+  [{{user-id :user/id} :request} {:bookmark/keys [add-tags] :as bookmark}]
   {::pc/params bookmark-input
    ::pc/output bookmark-output}
-  (let [{:bookmark/keys [add-tags] :as bookmark} (assoc bookmark :bookmark/user-id user-id)]
+  (let [bookmark (-> bookmark
+                     (assoc :bookmark/user-id user-id)
+                     (dissoc :bookmark/add-tags))]
     (if-let [err (or (m/explain s/bookmark-create-spec bookmark) (m/explain [:maybe [:vector :uuid]] add-tags))]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
     (log/info "User with id" user-id "is attempting to create a new bookmark")
