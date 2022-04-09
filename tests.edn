@@ -1,4 +1,4 @@
-#kaocha/v1 #merge
+#kaocha/v1 #meta-merge
     [{:plugins                [:hooks]
       :kaocha.hooks/pre-test  [shinsetsu.test-utility/db-container-setup]
       :kaocha.hooks/post-test [shinsetsu.test-utility/db-container-teardown]
