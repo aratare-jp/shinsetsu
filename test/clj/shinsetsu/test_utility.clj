@@ -3,10 +3,11 @@
     [clj-test-containers.core :as tc]
     [mount.core :as mount]
     [next.jdbc :as jdbc]
-    [shinsetsu.db.db :as db]
+    [shinsetsu.db :as db]
     [migratus.core :as migratus]
     [kaocha.hierarchy :as kh]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [shinsetsu.server :as server]))
 
 (def db-name "shinsetsu_test")
 (def db-username "shinsetsu")
@@ -52,6 +53,7 @@
 
 (defn db-setup
   [f]
+  (println (-> @db-container :mapped-ports (get 5432)))
   (let [mapped-port (-> @db-container :mapped-ports (get 5432))
         db-spec     {:dbtype   "postgresql"
                      :port     mapped-port
@@ -65,7 +67,8 @@
                                              :subname     (str "//localhost:" mapped-port "/" db-name)
                                              :user        db-username
                                              :password    db-password}})
-    (mount/start-with {#'db/ds (jdbc/with-options (jdbc/get-datasource db-spec) jdbc/snake-kebab-opts)})
+    (mount/start-with {#'server/http-server nil
+                       #'db/ds              (jdbc/with-options (jdbc/get-datasource db-spec) jdbc/snake-kebab-opts)})
     (f)
     (mount/stop #'db/ds)))
 
