@@ -3,14 +3,13 @@
     [clj-test-containers.core :as tc]
     [mount.core :as mount]
     [next.jdbc :as jdbc]
-    [shinsetsu.db.db]
+    [shinsetsu.db.db :as db]
     [migratus.core :as migratus]
     [taoensso.timbre :as log]))
 
 (def db-name "shinsetsu_test")
 (def db-username "shinsetsu")
 (def db-password "shinsetsu")
-
 (def migratus-config (atom nil))
 
 (defn db-setup
@@ -37,14 +36,24 @@
                                              :subname     (str "//localhost:" mapped-port "/" db-name)
                                              :user        db-username
                                              :password    db-password}})
-    (mount/start-with {#'shinsetsu.db.db/ds (jdbc/with-options (jdbc/get-datasource db-spec) jdbc/snake-kebab-opts)})
+    (mount/start-with {#'db/ds (jdbc/with-options (jdbc/get-datasource db-spec) jdbc/snake-kebab-opts)})
     (f)
-    (mount/stop #'shinsetsu.db.db/ds)
+    (mount/stop #'db/ds)
     (tc/stop! container)))
 
 (defn db-cleanup
   [f]
-  ;; Sleep here to wait for the db to get setup properly. Although this should be done in a loop.
-  (Thread/sleep 1000)
+  ;; Continuously check if the database is ready for migration.
+  (let [cnt   (atom 10)
+        break (atom false)]
+    (while (and (not @break) (> @cnt 0))
+      (try
+        (with-open [conn (jdbc/get-connection db/ds)]
+          (if (.isValid conn 1)
+            (reset! break true)
+            (swap! cnt dec)))
+        (catch Exception _ (swap! cnt dec))))
+    (if-not @break
+      (throw (ex-info "Database connection cannot be established" {}))))
   (migratus/reset @migratus-config)
   (f))
