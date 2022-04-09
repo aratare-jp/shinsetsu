@@ -1,14 +1,18 @@
 #kaocha/v1 #merge
-    [{:tests [{:id         :db-unit
-               :test-paths ["test/clj/shinsetsu/db"]}
-              {:id         :resolver-unit
-               :test-paths ["test/clj/shinsetsu/resolvers"]}
-              {:id         :mutation-unit
-               :test-paths ["test/clj/shinsetsu/mutations"]}
-              {:id         :middleware-unit
-               :test-paths ["test/clj/shinsetsu/middleware"]}
-              {:id         :schema-unit
-               :test-paths ["test/cljc/shinsetsu"]}]}
+    [{:plugins                [:hooks]
+      :kaocha.hooks/pre-test  [shinsetsu.test-utility/db-container-setup]
+      :kaocha.hooks/post-test [shinsetsu.test-utility/db-container-teardown]
+      :tests                  [{:id         :db-unit
+                                :test-paths ["test/clj/shinsetsu/db"]}
+                               {:id         :resolver-unit
+                                :test-paths ["test/clj/shinsetsu/resolvers"]}
+                               {:id         :mutation-unit
+                                :test-paths ["test/clj/shinsetsu/mutations"]}
+                               {:id         :middleware-unit
+                                :test-paths ["test/clj/shinsetsu/middleware"]}
+                               {:id         :schema-unit
+                                :test-paths ["test/cljc/shinsetsu"]
+                                :skip-db    true}]}
      #profile {:ci      {:plugins         [:kaocha.plugin/cloverage]
                          :cloverage/opts  {:codecov? true}
                          :kaocha/reporter [kaocha.report/documentation]
