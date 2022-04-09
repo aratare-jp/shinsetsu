@@ -358,7 +358,7 @@
   [this]
   (let [{:root/keys [tabs] :ui/keys [selected-idx]} (comp/props this)
         tabs             (filter #(not (tempid/tempid? (:tab/id %))) tabs)
-        right-side-items [(e/button-icon
+        right-side-items [(e/button
                             {:fill     true
                              :size     "m"
                              :onClick  (fn []
@@ -366,7 +366,8 @@
                                          (merge/merge-component!
                                            app TabModal (comp/get-initial-state TabModal)
                                            :append [:root/tabs]))
-                             :iconType "plus"})]]
+                             :iconType "plus"}
+                            "Create New Tab")]]
     (e/page-template
       {:pageHeader {:pageTitle      (if (empty? tabs)
                                       "Welcome!"

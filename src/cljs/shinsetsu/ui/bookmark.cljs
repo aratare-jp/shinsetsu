@@ -107,6 +107,7 @@
             (e/combo-box
               {:aria-label      "Select tag for bookmark"
                :placeholder     "Select tags"
+               :isDisabled      loading?
                :selectedOptions (map
                                   (fn [{:tag/keys [id name colour]}]
                                     {:label name :color colour :value id})

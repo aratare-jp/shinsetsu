@@ -31,14 +31,14 @@
    bookmark-mutations/patch-bookmark
    bookmark-mutations/delete-bookmark
    bookmark-mutations/fetch-bookmarks
+   bookmark-tag-resolver/bookmark-tag-resolver-by-bookmark
    bookmark-tag-mutations/create-bookmark-tag
    bookmark-tag-mutations/delete-bookmark-tag
    tag-resolver/tag-resolver
-   tag-resolver/tags-resolver
-   bookmark-tag-resolver/bookmark-tag-resolver-by-bookmark
    tag-mutations/create-tag
    tag-mutations/patch-tag
-   tag-mutations/delete-tag])
+   tag-mutations/delete-tag
+   tag-mutations/fetch-tags])
 
 (defn process-error
   [env err]

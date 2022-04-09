@@ -5,13 +5,10 @@
     [shinsetsu.test-utility :refer [db-setup db-cleanup]]
     [shinsetsu.db.user :as user-db]
     [shinsetsu.db.tag :as tag-db]
-    [shinsetsu.db.bookmark :as bookmark-db]
     [shinsetsu.db.tab :as tab-db]
     [shinsetsu.parser :refer [protected-parser]]
     [taoensso.timbre :as log]
-    [com.wsscode.pathom.core :as pc]
-    [shinsetsu.db.bookmark-tag :as bookmark-tag-db])
-  (:import [java.util UUID]))
+    [com.wsscode.pathom.core :as pc]))
 
 (def user-id (atom nil))
 (def tab-id (atom nil))
@@ -35,19 +32,19 @@
       (tag-db/create-tag)
       (dissoc :tag/user-id)))
 
-(defexpect normal-fetch-tag
+(defexpect ^:db ^:integration ^:tag normal-fetch-tag
   (let [tag         (create-tag {:tag/name "foo" :tag/colour "#ffffff" :tag/user-id @user-id})
         tag-id      (:tag/id tag)
         fetched-tag (protected-parser {:request {:user/id @user-id}} [{[:tag/id tag-id] tag-join}])]
     (expect {[:tag/id tag-id] tag} fetched-tag)))
 
-(defexpect normal-fetch-empty-tag
+(defexpect ^:db ^:integration ^:tag normal-fetch-empty-tag
   (let [random-id (random-uuid)
         expected  {[:tag/id random-id] {:tag/id random-id}}
         actual    (protected-parser {:request {:user/id @user-id}} [{[:tag/id random-id] tag-join}])]
     (expect expected actual)))
 
-(defexpect fail-fetch-invalid-tag
+(defexpect ^:db ^:integration ^:tag fail-fetch-invalid-tag
   (let [random-id   "foo"
         inner-error {:error         true
                      :error-type    :invalid-input
@@ -65,7 +62,7 @@
         actual      (protected-parser {:request {:user/id @user-id}} [{[:tag/id random-id] tag-join}])]
     (expect expected actual)))
 
-(defexpect fail-fetch-null-tag
+(defexpect ^:db ^:integration ^:tag fail-fetch-null-tag
   (let [random-id   nil
         inner-error {:error         true
                      :error-type    :invalid-input
@@ -81,19 +78,6 @@
                                           [[:tag/id random-id] :tag/created] inner-error
                                           [[:tag/id random-id] :tag/updated] inner-error}}
         actual      (protected-parser {:request {:user/id @user-id}} [{[:tag/id random-id] tag-join}])]
-    (expect expected actual)))
-
-(defexpect normal-fetch-tags
-  (let [tag1     (create-tag {:tag/name "foo" :tag/colour "#fff" :tag/user-id @user-id})
-        tag2     (create-tag {:tag/name "foo1" :tag/colour "#000000" :tag/user-id @user-id})
-        tag3     (create-tag {:tag/name "foo1" :tag/colour "#fafafa" :tag/user-id @user-id})
-        expected {:user/tags [tag1 tag2 tag3]}
-        actual   (protected-parser {:request {:user/id @user-id}} [{:user/tags tag-join}])]
-    (expect expected actual)))
-
-(defexpect normal-fetch-empty-tags
-  (let [expected {:user/tags []}
-        actual   (protected-parser {:request {:user/id @user-id}} [{:user/tags tag-join}])]
     (expect expected actual)))
 
 (comment

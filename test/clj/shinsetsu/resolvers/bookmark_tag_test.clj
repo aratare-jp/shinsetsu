@@ -39,7 +39,7 @@
       tag-db/create-tag
       (dissoc :tag/user-id)))
 
-(defexpect normal-fetch-tags-by-bookmark
+(defexpect ^:resolver ^:tag ^:integration normal-fetch-tags-by-bookmark
   (let [bookmark     (create-bookmark "foo" "bar" @tab-id @user-id)
         bookmark-id  (:bookmark/id bookmark)
         tag          (create-tag "foo" @user-id)
@@ -53,14 +53,14 @@
                                            (mapv (fn [bt] {:tag/id (:bookmark-tag/tag-id bt)})))}}]
     (expect expected actual)))
 
-(defexpect normal-fetch-empty-bookmark-tags
+(defexpect ^:resolver ^:tag ^:integration normal-fetch-empty-bookmark-tags
   (let [bookmark-id (random-uuid)
         query       [{[:bookmark/id bookmark-id] [:bookmark/tags]}]
         actual      (protected-parser {:request {:user/id @user-id}} query)
         expected    {[:bookmark/id bookmark-id] {:bookmark/tags []}}]
     (expect expected actual)))
 
-(defexpect fail-fetch-invalid-bookmark-tags
+(defexpect ^:resolver ^:tag ^:integration fail-fetch-invalid-bookmark-tags
   (let [bookmark-id "foo"
         inner-error {:error         true
                      :error-type    :invalid-input

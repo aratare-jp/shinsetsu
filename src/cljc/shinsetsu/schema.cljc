@@ -141,6 +141,19 @@
    [:tag/colour {:optional true} hex-colour-spec]
    [:tag/user-id :uuid]])
 
+(def tag-fetch-spec
+  [:map
+   {:closed true}
+   [:tag/id :uuid]
+   [:tag/user-id :uuid]])
+
+(def tag-multi-fetch-spec
+  [:map
+   {:closed true}
+   [:tag/name {:optional true} [:maybe :string]]
+   [:tag/name-pos {:optional true} [:maybe [:enum :start :end :between]]]
+   [:tag/user-id :uuid]])
+
 (def tag-update-spec
   [:map
    {:closed true}

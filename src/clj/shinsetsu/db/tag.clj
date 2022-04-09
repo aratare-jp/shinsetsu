@@ -45,17 +45,33 @@
                                 (sql/format))))))
 
 (defn fetch-tag
-  [{tag-id :tag/id user-id :user/id :as input}]
-  (if-let [err (m/explain [:map {:closed true} [:tag/id :uuid] [:user/id :uuid]] input)]
+  [{:tag/keys [id user-id] :as input}]
+  (if-let [err (m/explain s/tag-fetch-spec input)]
     (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do
-      (log/info "Fetch tag" tag-id "for user" user-id)
+      (log/info "Fetch tag" id "for user" user-id)
       (jdbc/execute-one! ds (-> (helpers/select :*)
                                 (helpers/from :tag)
-                                (helpers/where [:= :tag/user-id user-id] [:= :tag/id tag-id])
+                                (helpers/where [:= :tag/user-id user-id] [:= :tag/id id])
                                 (sql/format))))))
 
 (defn fetch-tags
+  [{:tag/keys [name user-id name-pos] :as input}]
+  (if-let [err (m/explain s/tag-multi-fetch-spec input)]
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
+  (let [name-query (case name-pos
+                     :start (str name "%")
+                     :end (str "%" name)
+                     (str "%" name "%"))]
+    (log/info "Fetch all tags for user" user-id)
+    (jdbc/execute! ds (-> (helpers/select :*)
+                          (helpers/from :tag)
+                          (helpers/where [:= :tag/user-id user-id]
+                                         [:like :tag/name name-query])
+                          (helpers/order-by [:tag/created :asc])
+                          (sql/format)))))
+
+(defn search-tags
   [{user-id :user/id :as input}]
   (if-let [err (m/explain [:map {:closed true} [:user/id :uuid]] input)]
     (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
