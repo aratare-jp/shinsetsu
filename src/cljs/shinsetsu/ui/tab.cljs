@@ -156,22 +156,22 @@
                         :body    (p "Let's add your first bookmark!")
                         :actions [add-bm-btn]})
        (e/flex-grid {:columns 3}
-         (e/spacer {})
-         (map-indexed
-           (fn [i {bookmark-id :bookmark/id :as bookmark}]
-             (let [on-click (fn []
-                              (m/set-integer! this :ui/selected-idx :value i)
-                              (m/set-value! this :ui/show-bookmark-modal? true))
-                   bookmark (merge bookmark {:bookmark/tab-id id})]
-               (e/flex-item {:key bookmark-id}
-                 (bui/ui-bookmark (comp/computed bookmark {:on-click on-click})))))
-           bookmarks)
+         (->> bookmarks
+              (filter (fn [b] (not (tempid/tempid? (:bookmark/id b)))))
+              (map-indexed
+                (fn [i {bookmark-id :bookmark/id :as bookmark}]
+                  (let [on-click (fn []
+                                   (m/set-integer! this :ui/selected-idx :value i)
+                                   (m/set-value! this :ui/show-bookmark-modal? true))
+                        bookmark (merge bookmark {:bookmark/tab-id id})]
+                    (e/flex-item {:key bookmark-id}
+                      (bui/ui-bookmark (comp/computed bookmark {:on-click on-click})))))))
          (e/flex-item {:key "new-bookmark"}
            (bui/ui-new-bookmark (comp/computed {} {:on-click add-bm-fn})))))]))
 
 (defn- ui-unlock-prompt
   [this]
-  (let [{:tab/keys [id bookmarks] :ui/keys [loading? unlocked? password error-type]} (comp/props this)]
+  (let [{:tab/keys [id] :ui/keys [loading? unlocked? password error-type]} (comp/props this)]
     (if-not unlocked?
       (let [form-id (str "tab-" id "-unlock-form")
             errors  (case error-type
@@ -212,7 +212,7 @@
 (defsc Tab
   [this
    {:tab/keys [id is-protected? bookmarks]
-    :ui/keys  [loading? show-bookmark-modal? selected-idx]}]
+    :ui/keys  [show-bookmark-modal? selected-idx]}]
   {:ident                :tab/id
    :query                [:tab/id
                           :tab/name
