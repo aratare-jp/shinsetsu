@@ -25,12 +25,10 @@
   :start
   (reset! server (http/start-server
                    app
-                   (-> env
-                       (assoc :handler app)
-                       (assoc :port (or (-> env :options :port) 3000)))))
+                   (assoc env :port (or (-> env :options :port) 3000))))
   :stop
   (when @server
-    (@server)
+    (.close @server)
     (reset! server nil)))
 
 (defn stop-app
