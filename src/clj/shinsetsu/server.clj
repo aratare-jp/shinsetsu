@@ -5,7 +5,8 @@
     [clojure.tools.cli :as cli]
     [taoensso.timbre :as log]
     [shinsetsu.config :refer [env]]
-    [shinsetsu.app :refer [app]]))
+    [shinsetsu.app :refer [app]]
+    [shinsetsu.nrepl :as nrepl]))
 
 ;; log uncaught exceptions in threads
 (Thread/setDefaultUncaughtExceptionHandler
@@ -23,13 +24,20 @@
 
 (defstate ^{:on-reload :noop} http-server
   :start
-  (reset! server (http/start-server
-                   app
-                   (assoc env :port (or (-> env :options :port) 3000))))
+  (reset! server (http/start-server app (assoc env :port (or (-> env :options :port) 3000))))
   :stop
   (when @server
     (.close @server)
     (reset! server nil)))
+
+(defstate ^{:on-reload :noop} repl-server
+  :start
+  (when (:nrepl-port env)
+    (nrepl/start {:bind (:nrepl-bind env)
+                  :port (:nrepl-port env)}))
+  :stop
+  (when repl-server
+    (nrepl/stop repl-server)))
 
 (defn stop-app
   "Stops everything and shutdown the web app."
@@ -47,10 +55,10 @@
                          (cli/parse-opts cli-options)
                          start-with-args
                          :started)]
-     (log/info component "started"))
-   (.addShutdownHook (Runtime/getRuntime) (Thread. stop-app))))
+     (log/info component "started"))))
 
 (defn -main [& args]
+  (.addShutdownHook (Runtime/getRuntime) (Thread. stop-app))
   (start-app args))
 
 (comment

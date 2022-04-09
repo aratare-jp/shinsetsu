@@ -1,8 +1,10 @@
 (ns user
   (:require
-    [shinsetsu.server :as server]
+    [shinsetsu.server :refer [repl-server]]
     [clojure.tools.namespace.repl :refer [set-refresh-dirs refresh]]
-    [puget.printer :as puget]))
+    [puget.printer :as puget]
+    [mount.core :as mount]
+    [taoensso.timbre :as log]))
 
 (add-tap (bound-fn* puget/pprint))
 
@@ -13,12 +15,20 @@
 
 (defn start
   []
-  (server/start-app))
+  (log/info "Starting server")
+  (mount/start-without #'repl-server))
+
+(defn stop
+  []
+  (log/info "Stopping server")
+  (mount/stop-except #'repl-server))
 
 (defn restart
   []
-  (server/stop-app)
+  (stop)
+  (log/info "Refreshing all files")
   (refresh :after 'user/start))
 
 (comment
-  (start))
+  (start)
+  (restart))
