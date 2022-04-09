@@ -76,3 +76,16 @@
                                                [:= :bookmark-tag/user-id user-id])
                                 (helpers/returning :*)
                                 (sql/format))))))
+
+(defn delete-bookmark-tags
+  [{:bookmark-tag/keys [bookmark-id tag-ids user-id] :as input}]
+  (if-let [err (m/explain s/bookmark-tag-multi-delete-spec input)]
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (do
+      (log/info "Delete tags" tag-ids "from bookmark" bookmark-id "for user" user-id)
+      (jdbc/execute! ds (-> (helpers/delete-from :bookmark-tag)
+                            (helpers/where [:= :bookmark-tag/bookmark-id bookmark-id]
+                                           [:= :bookmark-tag/user-id user-id]
+                                           [:in :bookmark-tag/tag-id tag-ids])
+                            (helpers/returning :*)
+                            (sql/format))))))

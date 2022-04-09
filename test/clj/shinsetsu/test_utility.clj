@@ -37,9 +37,7 @@
                                              :subname     (str "//localhost:" mapped-port "/" db-name)
                                              :user        db-username
                                              :password    db-password}})
-    (mount/start-with {#'shinsetsu.db.db/ds (jdbc/with-options
-                                              (jdbc/get-datasource db-spec)
-                                              jdbc/snake-kebab-opts)})
+    (mount/start-with {#'shinsetsu.db.db/ds (jdbc/with-options (jdbc/get-datasource db-spec) jdbc/snake-kebab-opts)})
     (f)
     (mount/stop #'shinsetsu.db.db/ds)
     (tc/stop! container)))

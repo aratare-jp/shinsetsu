@@ -16,5 +16,5 @@
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
     (log/info "Fetching tags for bookmark" id "for user" user-id)
     (let [tags (bookmark-tag-db/fetch-tags-by-bookmark input)]
-      (log/info "All tags assigned to bookmark" id "fetched successfully for user" user-id)
+      (log/info "All tags from bookmark" id "fetched successfully for user" user-id)
       {:bookmark/tags (mapv (fn [e] {:tag/id (:bookmark-tag/tag-id e)}) tags)})))

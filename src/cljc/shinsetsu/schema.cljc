@@ -179,6 +179,13 @@
 
 (def bookmark-tag-delete-spec bookmark-tag-create-spec)
 
+(def bookmark-tag-multi-delete-spec
+  [:map
+   {:closed true}
+   [:bookmark-tag/bookmark-id :uuid]
+   [:bookmark-tag/tag-ids [:vector :uuid]]
+   [:bookmark-tag/user-id :uuid]])
+
 (comment
   (println #:foo{:a 1 :foo/b 2})
   (println #:foo{:a 1 :foo/b 2})
