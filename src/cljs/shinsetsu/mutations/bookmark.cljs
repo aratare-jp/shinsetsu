@@ -54,9 +54,8 @@
           tab-ident      (comp/get-ident Tab {:tab/id tab-id})]
       (swap! state #(-> %
                         (merge/merge-component component bookmark)
-                        (dissoc-in (conj tab-ident :ui/selected-idx))
+                        (dissoc-in (conj tab-ident :ui/edit-bm-id))
                         (assoc-in (conj bookmark-ident :ui/loading?) false)
-                        (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)
                         (fs/entity->pristine* bookmark-ident)))))
   (error-action
     [{{{{:keys [error-type error-message]} `create-bookmark} :body} :result :keys [ref state]}]
@@ -79,9 +78,8 @@
           tab-ident (comp/get-ident Tab {:tab/id tab-id})]
       (swap! state #(-> %
                         (merge/merge-component component bookmark)
-                        (dissoc-in (conj tab-ident :ui/selected-idx))
+                        (dissoc-in (conj tab-ident :ui/edit-bm-id))
                         (assoc-in (conj ref :ui/loading?) false)
-                        (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)
                         (fs/entity->pristine* ref)))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-bookmark} :body} :result :keys [ref state]}]
@@ -105,8 +103,9 @@
     (let [Tab       (comp/registry-key->class `shinsetsu.ui.tab/Tab)
           tab-ident (comp/get-ident Tab {:tab/id tab-id})]
       (swap! state #(-> %
-                        (ns/remove-entity ref)
-                        (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)))))
+                        (ns/remove-entity [:bookmark/id id])
+                        (dissoc-in (conj tab-ident :ui/delete-bm-id))
+                        (assoc-in (conj tab-ident :ui/loading?) false)))))
   (error-action
     [{{{{:keys [error-type error-message]} `delete-bookmark} :body} :result :keys [ref state]}]
     (log/error "Failed to delete bookmark" id "due to" error-message)

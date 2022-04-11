@@ -32,16 +32,16 @@
 (defsc RootBody
   [this
    {:root/keys [router]
-    :ui/keys   [dark-mode? selected-idx]}]
+    :ui/keys   [dark-mode? selected-tab-id]}]
   {:ident         (fn [] [:component/id ::root])
    :query         [:root/ready?
                    {:root/router (comp/get-query RootRouter)}
                    :ui/dark-mode?
-                   :ui/selected-idx]
+                   :ui/selected-tab-id]
    :initial-state (fn [_]
-                    {:root/router     (comp/get-initial-state RootRouter)
-                     :ui/dark-mode?   true
-                     :ui/selected-idx "tab"})}
+                    {:root/router        (comp/get-initial-state RootRouter)
+                     :ui/dark-mode?      true
+                     :ui/selected-tab-id "tab"})}
   (e/provider {:colorMode (if dark-mode? "dark" "light")}
     (if (get-key @store :userToken)
       (e/panel {}
@@ -53,11 +53,11 @@
                 {:legend      "Main menu"
                  :isFullWidth true
                  :buttonSize  "s"
-                 :idSelected  selected-idx
+                 :idSelected  selected-tab-id
                  :options     [{:id "tab" :label "Tab" :value "tab"}
                                {:id "tag" :label "Tag" :value "tag"}]
                  :onChange    (fn [id value]
-                                (m/set-value! this :ui/selected-idx id)
+                                (m/set-value! this :ui/selected-tab-id id)
                                 (dr/change-route app [value]))})))
           (e/flex-item {}))))
     (ui-root-router router)))

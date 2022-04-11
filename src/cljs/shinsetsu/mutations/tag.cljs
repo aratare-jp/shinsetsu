@@ -6,7 +6,6 @@
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]
     [com.fulcrologic.fulcro.components :as comp]
-    [com.fulcrologic.fulcro.mutations :as m]
     [taoensso.timbre :as log]
     [com.fulcrologic.fulcro.algorithms.normalized-state :as ns]))
 
@@ -50,7 +49,7 @@
       (swap! state #(-> %
                         (merge/merge-component component tag)
                         (assoc-in (conj ref :ui/loading?) false)
-                        (dissoc-in (conj main-idt :ui/edit-id))
+                        (dissoc-in (conj main-idt :ui/edit-tag-id))
                         (fs/entity->pristine* ref)))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-tag} :body} :result :keys [state ref]}]
@@ -114,7 +113,7 @@
     (let [Tag     (comp/registry-key->class `shinsetsu.ui.tag/TagModal)
           tag-idt (comp/get-ident Tag tag)]
       (swap! state #(-> %
-                        (assoc-in (conj ref :ui/selected-idx) 0)
+                        (assoc-in (conj ref :ui/current-tag-idx) 0)
                         (assoc-in (conj ref :ui/loading?) false)
                         (assoc-in (conj ref :ui/show-delete-modal?) false)
                         (ns/remove-entity tag-idt #{:tag/bookmarks})))))

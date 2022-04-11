@@ -5,7 +5,7 @@
     [shinsetsu.mutations.tag :refer [fetch-tag-options]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
-    [com.fulcrologic.fulcro.dom :refer [h1 div]]
+    [com.fulcrologic.fulcro.dom :refer [p h1 div]]
     [com.fulcrologic.fulcro.mutations :as m]
     [clojure.browser.dom :refer [get-element]]
     [malli.core :as mc]
@@ -159,7 +159,7 @@
   [this
    {:bookmark/keys [id title image favourite url tab-id tags]
     bcmi           :ui/bookmark-ctx-menu-id}
-   {:keys [on-click]}]
+   {:keys [on-edit on-delete]}]
   {:ident :bookmark/id
    :query [:bookmark/id
            :bookmark/title
@@ -178,10 +178,13 @@
                             (comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
                             (close-ctx-menu-fn))
         on-delete         (fn []
-                            (comp/transact! this [(delete-bookmark #:bookmark{:id id :tab-id tab-id})])
+                            (on-delete)
                             (close-ctx-menu-fn))
         on-edit           (fn []
-                            (on-click)
+                            (on-edit)
+                            (close-ctx-menu-fn))
+        on-move           (fn []
+                            (m/set-value! this :ui/move-id true)
                             (close-ctx-menu-fn))]
     [(if (= id bcmi)
        (let [el (get-element (str "bookmark-" id))]
@@ -205,6 +208,12 @@
                   :size       "s"
                   :iconType   "pencil"
                   :onClick    on-edit}))
+             (e/flex-item {}
+               (e/button-icon
+                 {:aria-label "move"
+                  :size       "s"
+                  :iconType   "merge"
+                  :onClick    on-move}))
              (e/flex-item {}
                (e/button-icon
                  {:aria-label "delete"
@@ -234,7 +243,7 @@
 (def ui-bookmark (comp/factory Bookmark {:keyfn :bookmark/id}))
 
 (defsc NewBookmark
-  [_ _ {:keys [on-click]}]
+  [_ _ {:keys [on-edit]}]
   {}
   (e/card
     {:title        "Add New"
@@ -243,6 +252,35 @@
      :display      "transparent"
      :image        (e/image {:height "200vh"})
      :icon         (e/icon {:size "xxl" :type "plus"})
-     :onClick      on-click}))
+     :onClick      on-edit}))
 
 (def ui-new-bookmark (comp/factory NewBookmark))
+
+(defn ui-new-bookmark-modal
+  [this]
+  (let [{:tab/keys [id bookmarks] :ui/keys [edit-bm-id]} (comp/props this)
+        bookmark (->> bookmarks (filter #(= edit-bm-id (:bookmark/id %))) first (merge {:bookmark/tab-id id}))
+        on-close #(m/set-value! this :ui/edit-bm-id nil)]
+    (ui-bookmark-modal (comp/computed bookmark {:on-close on-close}))))
+
+(defn ui-edit-bookmark-modal
+  [this]
+  (let [{:tab/keys [bookmarks] :ui/keys [edit-bm-id]} (comp/props this)
+        bookmark (first (filter #(= edit-bm-id (:bookmark/id %)) bookmarks))
+        on-close #(m/set-value! this :ui/edit-bm-id nil)]
+    (ui-bookmark-modal (comp/computed bookmark {:on-close on-close}))))
+
+(defn ui-delete-bookmark-modal
+  [this]
+  (let [{:ui/keys [delete-bm-id] :tab/keys [bookmarks] tab-id :tab/id} (comp/props this)
+        {:bookmark/keys [id title]} (->> bookmarks (filter #(= delete-bm-id (:bookmark/id %))) first)]
+    (e/confirm-modal
+      {:title             (str "Delete bookmark " title)
+       :onCancel          #(m/set-value! this :ui/delete-bm-id nil)
+       :onConfirm         #(comp/transact! this [(delete-bookmark #:bookmark{:id id :tab-id tab-id})])
+       :cancelButtonText  "Cancel"
+       :confirmButtonText "Yes, I'm sure!"
+       :buttonColor       "danger"}
+      (p "Delete this bookmark will permanently remove it from this tab")
+      (p "Are you sure you want to delete this bookmark?"))))
+

@@ -62,7 +62,7 @@
                         (dissoc-in (conj ref :ui/password))
                         (assoc-in (conj ref :ui/change-password?) false)
                         (assoc-in (conj ref :ui/loading?) false)
-                        (dissoc-in (conj main-idt :ui/edit-id))
+                        (dissoc-in (conj main-idt :ui/edit-tab-id))
                         (fs/entity->pristine* ref)))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-tab} :body} :result :keys [state ref]}]
@@ -84,9 +84,9 @@
     (let [Tab     (comp/registry-key->class `shinsetsu.ui.tab/Tab)
           tab-idt (comp/get-ident Tab tab)]
       (swap! state #(-> %
-                        (assoc-in (conj ref :ui/selected-idx) 0)
+                        (assoc-in (conj ref :ui/current-tab-idx) 0)
                         (assoc-in (conj ref :ui/loading?) false)
-                        (assoc-in (conj ref :ui/show-delete-modal?) false)
+                        (dissoc-in (conj ref :ui/delete-tab-id))
                         (ns/remove-entity tab-idt #{:tab/bookmarks})))))
   (error-action
     [{{{{:keys [error-message error-type]} `delete-tab} :body} :result :keys [state ref]}]

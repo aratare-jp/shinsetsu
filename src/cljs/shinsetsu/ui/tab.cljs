@@ -4,7 +4,7 @@
     [clojure.browser.dom :refer [get-element]]
     [shinsetsu.ui.elastic :as e]
     [shinsetsu.mutations.tab :refer [create-tab patch-tab delete-tab lock-tab]]
-    [shinsetsu.mutations.bookmark :refer [fetch-bookmarks]]
+    [shinsetsu.mutations.bookmark :refer [fetch-bookmarks delete-bookmark]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.mutations :as m]
     [shinsetsu.ui.bookmark :as bui]
@@ -104,50 +104,13 @@
 
 (def ui-tab-modal (comp/factory TabModal {:keyfn :tab/id}))
 
-(defn- ui-error-prompt
-  [this error-type]
-  (let [back-fn #(m/set-value! this :ui/error-type nil)]
-    (case error-type
-      :wrong-password (e/empty-prompt {:color    "danger"
-                                       :iconType "alert"
-                                       :title    (h2 "Wrong Password!")
-                                       :body     (p "Please try again")
-                                       :actions  [(e/button {:fill true :onClick back-fn} "Back")]})
-      :internal-server-error (e/empty-prompt {:color    "danger"
-                                              :iconType "alert"
-                                              :title    (h2 "Internal Server Error")
-                                              :body     (p "Please try again")
-                                              :actions  [(e/button {:fill true :onClick back-fn} "Back")]})
-      (e/empty-prompt {:color    "danger"
-                       :iconType "alert"
-                       :title    (h2 "I have no idea what's going on either!")
-                       :body     (p "Please try again")
-                       :actions  [(e/button {:fill true :onClick back-fn} "Back")]}))))
-
-(defn- ui-bookmark-modal
-  [this id selected-idx bookmarks]
-  (if selected-idx
-    (let [bookmark (merge (nth bookmarks selected-idx) {:bookmark/tab-id id})
-          on-close (fn []
-                     (m/set-value! this :ui/show-bookmark-modal? false)
-                     (m/set-value! this :ui/selected-idx nil))]
-      (bui/ui-bookmark-modal (comp/computed bookmark {:on-close on-close})))
-    (let [new-bookmark (first (filter (fn [b] (tempid/tempid? (:bookmark/id b))) bookmarks))
-          bm-ident     (comp/get-ident bui/BookmarkModal new-bookmark)
-          on-close     (fn []
-                         (m/set-value! this :ui/show-bookmark-modal? false)
-                         (comp/transact! this [(remove-ident {:ident bm-ident})]))]
-      (bui/ui-bookmark-modal (comp/computed new-bookmark {:on-close on-close})))))
-
 (defn- ui-tab-body
   [this]
   (let [{:tab/keys [id bookmarks] :ui/keys [loading?]} (comp/props this)
         add-bm-fn  (fn []
-                     (merge/merge-component!
-                       app bui/BookmarkModal
-                       (comp/get-initial-state bui/BookmarkModal {:bookmark/tab-id id})
-                       :append [:tab/id id :tab/bookmarks])
-                     (m/set-value! this :ui/show-bookmark-modal? true))
+                     (let [new-bookmark (comp/get-initial-state bui/BookmarkModal {:bookmark/tab-id id})]
+                       (merge/merge-component! app bui/BookmarkModal new-bookmark :append [:tab/id id :tab/bookmarks])
+                       (m/set-value! this :ui/edit-bm-id (:bookmark/id new-bookmark))))
         add-bm-btn (e/button {:fill true :iconType "plus" :onClick add-bm-fn} "Add Bookmark")]
     [(if loading?
        (e/progress {:size "xs" :color "ascent"}))
@@ -160,16 +123,15 @@
               (filter (fn [b] (not (tempid/tempid? (:bookmark/id b)))))
               (map-indexed
                 (fn [i {bookmark-id :bookmark/id :as bookmark}]
-                  (let [on-click (fn []
-                                   (m/set-integer! this :ui/selected-idx :value i)
-                                   (m/set-value! this :ui/show-bookmark-modal? true))
-                        bookmark (merge bookmark {:bookmark/tab-id id})]
+                  (let [bookmark  (assoc bookmark :bookmark/tab-id id)
+                        on-edit   #(m/set-value! this :ui/edit-bm-id bookmark-id)
+                        on-delete #(m/set-value! this :ui/delete-bm-id bookmark-id)]
                     (e/flex-item {:key bookmark-id}
-                      (bui/ui-bookmark (comp/computed bookmark {:on-click on-click})))))))
+                      (bui/ui-bookmark (comp/computed bookmark {:on-edit on-edit :on-delete on-delete})))))))
          (e/flex-item {:key "new-bookmark"}
-           (bui/ui-new-bookmark (comp/computed {} {:on-click add-bm-fn})))))]))
+           (bui/ui-new-bookmark (comp/computed {} {:on-edit add-bm-fn})))))]))
 
-(defn- ui-unlock-prompt
+(defn- ui-locked-tab-body
   [this]
   (let [{:tab/keys [id] :ui/keys [loading? unlocked? password error-type]} (comp/props this)]
     (if-not unlocked?
@@ -210,9 +172,7 @@
       (ui-tab-body this))))
 
 (defsc Tab
-  [this
-   {:tab/keys [id is-protected? bookmarks]
-    :ui/keys  [show-bookmark-modal? selected-idx]}]
+  [this {:tab/keys [is-protected?] :ui/keys [edit-bm-id delete-bm-id]}]
   {:ident                :tab/id
    :query                [:tab/id
                           :tab/name
@@ -222,10 +182,11 @@
                           :ui/password
                           :ui/change-password?
                           :ui/error-type
-                          :ui/show-bookmark-modal?
-                          :ui/selected-idx
+                          :ui/edit-bm-id
+                          :ui/current-tab-idx
                           :ui/loading?
-                          :ui/load-timer]
+                          :ui/load-timer
+                          :ui/delete-bm-id]
    :componentWillMount   (fn [this]
                            (let [{:tab/keys [id is-protected?]} (comp/props this)
                                  load-fn (fn []
@@ -243,30 +204,51 @@
                            (if-let [tid (:ui/load-timer (comp/props this))]
                              (js/clearInterval tid))
                            (m/set-value! this :ui/load-timer nil))}
-  [(e/spacer {})
-   (if show-bookmark-modal?
-     (ui-bookmark-modal this id selected-idx bookmarks))
+  [(if edit-bm-id
+     (if (tempid/tempid? edit-bm-id)
+       (bui/ui-new-bookmark-modal this)
+       (bui/ui-edit-bookmark-modal this)))
+   (if delete-bm-id
+     (bui/ui-delete-bookmark-modal this))
    (cond
-     is-protected? (ui-unlock-prompt this)
+     is-protected? (ui-locked-tab-body this)
      :else (ui-tab-body this))])
 
 (def ui-tab (comp/factory Tab {:keyfn :tab/id}))
 
-(defn- show-if-unlocked
-  ([tabs selected-idx btn] (show-if-unlocked tabs selected-idx btn true))
-  ([tabs selected-idx btn show-if-public?]
-   (if-let [curr-tab (and (not (empty? tabs)) (nth tabs selected-idx))]
-     (let [is-protected? (:tab/is-protected? curr-tab)
-           unlocked?     (:ui/unlocked? curr-tab)]
-       (if is-protected?
-         (if unlocked?
-           btn)
-         (if show-if-public?
-           btn))))))
+(defn- ui-new-tab-modal
+  [this]
+  (let [{:ui/keys [tabs]} (comp/props this)
+        new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
+        on-close (fn []
+                   (comp/transact! this [(remove-ident {:ident (comp/get-ident TabModal new-tab)})])
+                   (m/set-value! this :ui/show-tab-modal? false))]
+    (ui-tab-modal (comp/computed new-tab {:on-close on-close}))))
+
+(defn- ui-edit-tab-modal
+  [this]
+  (let [{:ui/keys [tabs edit-tab-id]} (comp/props this)
+        tab (->> tabs (filter #(= edit-tab-id (:tab/id %))) first)]
+    (let [on-close #(m/set-value! this :ui/edit-tab-id nil)]
+      (ui-tab-modal (comp/computed tab {:on-close on-close})))))
+
+(defn- ui-delete-tab-modal
+  [this]
+  (let [{:ui/keys [tabs delete-tab-id]} (comp/props this)
+        {:tab/keys [id name]} (->> tabs (filter #(= delete-tab-id (:tab/id %))) first)]
+    (e/confirm-modal
+      {:title             (str "Delete tab " name)
+       :onCancel          #(m/set-value! this :ui/delete-tab-id nil)
+       :onConfirm         #(comp/transact! this [(delete-tab {:tab/id id})])
+       :cancelButtonText  "Cancel"
+       :confirmButtonText "Yes, I'm sure!"
+       :buttonColor       "danger"}
+      (p "Deleting this tab will also delete all the bookmarks within it!")
+      (p "Are you sure you want to delete this tab?"))))
 
 (defn- ui-tab-headers
   [this]
-  (let [{:ui/keys [tabs selected-idx tab-ctx-menu-id]} (comp/props this)
+  (let [{:ui/keys [tabs current-tab-idx tab-ctx-menu-id]} (comp/props this)
         close-ctx-menu-fn #(m/set-value! this :ui/tab-ctx-menu-id nil)]
     (map-indexed
       (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?] :as tab}]
@@ -296,7 +278,7 @@
                         :size       "s"
                         :iconType   "pencil"
                         :onClick    (fn []
-                                      (m/set-value! this :ui/edit-id id)
+                                      (m/set-value! this :ui/edit-tab-id id)
                                       (close-ctx-menu-fn))}))
                    (e/flex-item {:grow false}
                      (e/button-icon
@@ -304,7 +286,7 @@
                         :size       "s"
                         :iconType   "trash"
                         :onClick    (fn []
-                                      (m/set-value! this :ui/show-delete-modal? true)
+                                      (m/set-value! this :ui/delete-tab-id id)
                                       (close-ctx-menu-fn))
                         :color      "danger"})))
                  (e/text {} "This tab is currently locked!")))))
@@ -315,48 +297,17 @@
                                (e/icon {:type "lock"})))
             :onContextMenu (fn [e]
                              (evt/prevent-default! e)
-                             ;; Only allow context menu for unlocked or public tabs
                              (m/set-value! this :ui/tab-ctx-menu-id (:tab/id tab)))
-            :onClick       #(m/set-integer! this :ui/selected-idx :value i)
-            :isSelected    (= i selected-idx)}
+            :onClick       #(m/set-integer! this :ui/current-tab-idx :value i)
+            :isSelected    (= i current-tab-idx)}
            (div
              (div {:id (str "tab-" id)})
              (p name)))])
       tabs)))
 
-(defn- ui-new-tab
-  [this]
-  (let [{:ui/keys [tabs]} (comp/props this)
-        new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
-        on-close (fn []
-                   (comp/transact! this [(remove-ident {:ident (comp/get-ident TabModal new-tab)})])
-                   (m/set-value! this :ui/show-tab-modal? false))]
-    (ui-tab-modal (comp/computed new-tab {:on-close on-close}))))
-
-(defn ui-edit-tab
-  [this]
-  (let [{:ui/keys [tabs edit-id]} (comp/props this)
-        tab (->> tabs (filter #(= edit-id (:tab/id %))) first)]
-    (let [on-close #(m/set-value! this :ui/edit-id nil)]
-      (ui-tab-modal (comp/computed tab {:on-close on-close})))))
-
-(defn- ui-delete-tab
-  [this]
-  (let [{:ui/keys [tabs selected-idx]} (comp/props this)
-        {:tab/keys [id name]} (nth tabs selected-idx)]
-    (e/confirm-modal
-      {:title             (str "Delete tab " name)
-       :onCancel          #(m/set-value! this :ui/show-delete-modal? false)
-       :onConfirm         #(comp/transact! this [(delete-tab {:tab/id id})])
-       :cancelButtonText  "Cancel"
-       :confirmButtonText "Yes, I'm sure!"
-       :buttonColor       "danger"}
-      (p "Deleting this tab will also delete all the bookmarks within it!")
-      (p "Are you sure you want to delete this tab?"))))
-
 (defn- ui-tab-main-body
   [this]
-  (let [{:ui/keys [tabs selected-idx]} (comp/props this)
+  (let [{:ui/keys [tabs current-tab-idx]} (comp/props this)
         tabs             (filter #(not (tempid/tempid? (:tab/id %))) tabs)
         right-side-items [(e/button
                             {:fill     true
@@ -371,29 +322,27 @@
     (e/page-template
       {:pageHeader {:pageTitle      (if (empty? tabs)
                                       "Welcome!"
-                                      (-> tabs (nth selected-idx) :tab/name))
+                                      (-> tabs (nth current-tab-idx) :tab/name))
                     :rightSideItems right-side-items}}
       (e/tabs {:size "xl"}
         (ui-tab-headers this))
+      (e/spacer {})
       (if (empty? tabs)
         (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
                          :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-        (ui-tab (nth tabs selected-idx))))))
+        (ui-tab (nth tabs current-tab-idx))))))
 
 (defsc TabMain
-  [this {:ui/keys [show-tab-modal? show-delete-modal? edit-id]}]
+  [this {:ui/keys [edit-tab-id delete-tab-id]}]
   {:ident         (fn [] [:component/id ::tab])
    :route-segment ["tab"]
    :query         [{:ui/tabs (comp/get-query Tab)}
-                   :ui/selected-idx
-                   :ui/show-delete-modal?
-                   :ui/show-tab-modal?
-                   :ui/edit-id
+                   :ui/current-tab-idx
+                   :ui/edit-tab-id
+                   :ui/delete-tab-id
                    :ui/tab-ctx-menu-id]
-   :initial-state {:ui/tabs               []
-                   :ui/selected-idx       0
-                   :ui/show-tab-modal?    false
-                   :ui/show-delete-modal? false}
+   :initial-state {:ui/tabs            []
+                   :ui/current-tab-idx 0}
    :will-enter    (fn [app _]
                     (log/info "Loading user tabs")
                     (dr/route-deferred
@@ -403,10 +352,10 @@
                          (df/load! app :user/tabs Tab {:target               load-target
                                                        :post-mutation        `dr/target-ready
                                                        :post-mutation-params {:target [:component/id ::tab]}}))))}
-  [(if show-tab-modal?
-     (ui-new-tab this))
-   (if edit-id
-     (ui-edit-tab this))
-   (if show-delete-modal?
-     (ui-delete-tab this))
+  [(if edit-tab-id
+     (if (tempid/tempid? edit-tab-id)
+       (ui-new-tab-modal this)
+       (ui-edit-tab-modal this)))
+   (if delete-tab-id
+     (ui-delete-tab-modal this))
    (ui-tab-main-body this)])

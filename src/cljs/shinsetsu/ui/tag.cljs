@@ -91,7 +91,7 @@
 
 (defn- ui-edit-tag
   [this tag]
-  (let [on-close #(m/set-value! this :ui/edit-id nil)]
+  (let [on-close #(m/set-value! this :ui/edit-tag-id nil)]
     (ui-tag-modal (comp/computed tag {:on-close on-close}))))
 
 (defn- ui-delete-tag
@@ -130,28 +130,26 @@
             (e/list-group-item
               {:label       (e/badge {:color colour} name)
                :size        "l"
-               :onClick     (fn []
-                              (m/set-value! this :ui/selected-idx i)
-                              (m/set-value! this :ui/edit-id id))
+               :onClick     #(m/set-value! this :ui/edit-tag-id id)
                :extraAction {:iconType "cross"
                              :iconSize "m"
                              :onClick  (fn []
-                                         (m/set-value! this :ui/selected-idx i)
+                                         (m/set-value! this :ui/edit-tag-id id)
                                          (m/toggle! this :ui/show-delete-modal?))}}))
           tags)))))
 
 (defsc TagMain
   [this
-   {:ui/keys [tags selected-idx show-create-modal? edit-id show-delete-modal?]}]
+   {:ui/keys [tags current-tag-idx show-create-modal? edit-tag-id show-delete-modal?]}]
   {:ident              (fn [] [:component/id ::tag])
    :route-segment      ["tag"]
-   :query              [:ui/selected-idx
+   :query              [:ui/current-tag-idx
                         :ui/show-create-modal?
-                        :ui/edit-id
+                        :ui/edit-tag-id
                         :ui/show-delete-modal?
                         {:ui/tags (comp/get-query TagModal)}]
    :initial-state      {:ui/tags               []
-                        :ui/selected-idx       0
+                        :ui/current-tag-idx       0
                         :ui/show-create-modal? false
                         :ui/show-delete-modal? false}
    :componentWillMount (fn [this]
@@ -159,10 +157,10 @@
                          (comp/transact! this [{(fetch-tags {}) [:user/tags]}]))}
   [(if show-create-modal?
      (ui-new-tag this tags))
-   (if edit-id
-     (ui-edit-tag this (nth tags selected-idx)))
+   (if edit-tag-id
+     (ui-edit-tag this (nth tags current-tag-idx)))
    (if show-delete-modal?
-     (ui-delete-tag this (nth tags selected-idx)))
+     (ui-delete-tag this (nth tags current-tag-idx)))
    (->> tags
         (filter #(not (tempid/tempid? (:tag/id %))))
         (ui-tag-main-body this))])
