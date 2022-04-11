@@ -27,8 +27,8 @@
     (let [TabMain    (comp/registry-key->class `shinsetsu.ui.tab/TabMain)
           main-ident (comp/get-ident TabMain {})
           tab-ident  (comp/get-ident component tab)]
-      (merge/merge-component! app component tab :append [:root/tabs])
       (swap! state #(-> %
+                        (merge/merge-component component tab)
                         (dissoc-in (conj tab-ident :ui/password))
                         (assoc-in (conj tab-ident :ui/loading?) false)
                         (assoc-in (conj main-ident :ui/show-tab-modal?) false)
@@ -57,8 +57,8 @@
     (log/debug "Tab" id "patched successfully")
     (let [TabMain  (comp/registry-key->class `shinsetsu.ui.tab/TabMain)
           main-idt (comp/get-ident TabMain {})]
-      (merge/merge-component! app component tab)
       (swap! state #(-> %
+                        (merge/merge-component component tab)
                         (dissoc-in (conj ref :ui/password))
                         (assoc-in (conj ref :ui/change-password?) false)
                         (assoc-in (conj ref :ui/loading?) false)

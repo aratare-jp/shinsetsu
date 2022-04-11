@@ -266,8 +266,8 @@
 
 (defn- ui-tab-headers
   [this]
-  (let [{:root/keys [tabs tab-ctx-menu-id] :ui/keys [selected-idx]} (comp/props this)
-        close-ctx-menu-fn #(comp/transact! this [(set-root {:k :root/tab-ctx-menu-id :v nil})])]
+  (let [{:ui/keys [tabs selected-idx tab-ctx-menu-id]} (comp/props this)
+        close-ctx-menu-fn #(m/set-value! this :ui/tab-ctx-menu-id nil)]
     (map-indexed
       (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?] :as tab}]
         [(if (= id tab-ctx-menu-id)
@@ -316,7 +316,7 @@
             :onContextMenu (fn [e]
                              (evt/prevent-default! e)
                              ;; Only allow context menu for unlocked or public tabs
-                             (comp/transact! this [(set-root {:k :root/tab-ctx-menu-id :v (:tab/id tab)})]))
+                             (m/set-value! this :ui/tab-ctx-menu-id (:tab/id tab)))
             :onClick       #(m/set-integer! this :ui/selected-idx :value i)
             :isSelected    (= i selected-idx)}
            (div
@@ -326,7 +326,7 @@
 
 (defn- ui-new-tab
   [this]
-  (let [{:root/keys [tabs]} (comp/props this)
+  (let [{:ui/keys [tabs]} (comp/props this)
         new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
         on-close (fn []
                    (comp/transact! this [(remove-ident {:ident (comp/get-ident TabModal new-tab)})])
@@ -335,14 +335,14 @@
 
 (defn ui-edit-tab
   [this]
-  (let [{:root/keys [tabs] :ui/keys [edit-id]} (comp/props this)
+  (let [{:ui/keys [tabs edit-id]} (comp/props this)
         tab (->> tabs (filter #(= edit-id (:tab/id %))) first)]
     (let [on-close #(m/set-value! this :ui/edit-id nil)]
       (ui-tab-modal (comp/computed tab {:on-close on-close})))))
 
 (defn- ui-delete-tab
   [this]
-  (let [{:root/keys [tabs] :ui/keys [selected-idx]} (comp/props this)
+  (let [{:ui/keys [tabs selected-idx]} (comp/props this)
         {:tab/keys [id name]} (nth tabs selected-idx)]
     (e/confirm-modal
       {:title             (str "Delete tab " name)
@@ -356,7 +356,7 @@
 
 (defn- ui-tab-main-body
   [this]
-  (let [{:root/keys [tabs] :ui/keys [selected-idx]} (comp/props this)
+  (let [{:ui/keys [tabs selected-idx]} (comp/props this)
         tabs             (filter #(not (tempid/tempid? (:tab/id %))) tabs)
         right-side-items [(e/button
                             {:fill     true
@@ -365,7 +365,7 @@
                                          (m/set-value! this :ui/show-tab-modal? true)
                                          (merge/merge-component!
                                            app TabModal (comp/get-initial-state TabModal)
-                                           :append [:root/tabs]))
+                                           :append (conj (comp/get-ident this) :ui/tabs)))
                              :iconType "plus"}
                             "Create New Tab")]]
     (e/page-template
@@ -384,13 +384,13 @@
   [this {:ui/keys [show-tab-modal? show-delete-modal? edit-id]}]
   {:ident         (fn [] [:component/id ::tab])
    :route-segment ["tab"]
-   :query         [{[:root/tabs '_] (comp/get-query Tab)}
-                   [:root/tab-ctx-menu-id '_]
+   :query         [{:ui/tabs (comp/get-query Tab)}
                    :ui/selected-idx
                    :ui/show-delete-modal?
                    :ui/show-tab-modal?
-                   :ui/edit-id]
-   :initial-state {:root/tabs             []
+                   :ui/edit-id
+                   :ui/tab-ctx-menu-id]
+   :initial-state {:ui/tabs               []
                    :ui/selected-idx       0
                    :ui/show-tab-modal?    false
                    :ui/show-delete-modal? false}
@@ -398,7 +398,7 @@
                     (log/info "Loading user tabs")
                     (dr/route-deferred
                       [:component/id ::tab]
-                      #(let [load-target (targeting/replace-at [:root/tabs])]
+                      #(let [load-target (targeting/replace-at [:component/id ::tab :ui/tabs])]
                          ;; FIXME: Needs to load from local storage first before fetching from remote.
                          (df/load! app :user/tabs Tab {:target               load-target
                                                        :post-mutation        `dr/target-ready

@@ -2,6 +2,7 @@
   (:require
     [shinsetsu.application :refer [app]]
     [lambdaisland.deep-diff2 :refer [diff]]
+    [shinsetsu.mutations.tag :refer [fetch-tag-options]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.dom :refer [h1 div]]
@@ -16,28 +17,29 @@
     [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.networking.file-upload :as fu]
     [taoensso.timbre :as log]
+    [goog.functions :as gf]
     [shinsetsu.mutations.common :refer [set-root]]))
 
 (defsc BookmarkModal
   [this
    {:bookmark/keys [id title url tab-id tags]
-    all-tags       :root/tags
-    :ui/keys       [image loading? error-type] :as props}
+    :ui/keys       [image loading? error-type tag-options tags-loading?] :as props}
    {:keys [on-close]}]
   {:ident         :bookmark/id
-   :query         [{[:root/tags '_] (comp/get-query tui/TagModal)}
-                   [:root/bookmark-ctx-menu-id '_]
-                   :bookmark/id
+   :query         [:bookmark/id
                    :bookmark/title
                    :bookmark/url
                    :bookmark/image
                    :bookmark/tab-id
                    :bookmark/favourite
                    {:bookmark/tags (comp/get-query tui/TagModal)}
+                   :ui/bookmark-ctx-menu-id
                    :ui/loading?
                    :ui/error-type
                    :ui/image
                    :ui/show-ctx-menu?
+                   {:ui/tag-options (comp/get-query tui/TagModal)}
+                   :ui/tags-loading?
                    fs/form-config-join]
    :form-fields   #{:bookmark/title :bookmark/url :bookmark/image :bookmark/tags}
    :initial-state (fn [{:bookmark/keys [tab-id]}]
@@ -60,8 +62,8 @@
                              (let [tags (->> (fs/dirty-fields props false) vals first :bookmark/tags (mapv second))
                                    args #:bookmark{:id id :title title :url url :tab-id tab-id :add-tags tags}]
                                (if image
-                                 (comp/transact! this [(create-bookmark (fu/attach-uploads args image))])
-                                 (comp/transact! this [(create-bookmark args)])))
+                                 (comp/transact! this [{(create-bookmark (fu/attach-uploads args image)) (comp/get-query this)}])
+                                 (comp/transact! this [{(create-bookmark args) (comp/get-query this)}])))
                              (let [{:keys [before after]} (->> (fs/dirty-fields props true) vals first :bookmark/tags)
                                    tag-diff    (diff (mapv second before) (mapv second after))
                                    add-tags    (->> tag-diff (mapv :+) (filterv some?))
@@ -74,8 +76,8 @@
                                                    (dissoc :bookmark/tags)
                                                    (assoc :bookmark/add-tags add-tags :bookmark/remove-tags remove-tags))]
                                (if image
-                                 (comp/transact! this [(patch-bookmark (fu/attach-uploads args image))])
-                                 (comp/transact! this [(patch-bookmark args)])))))
+                                 (comp/transact! this [{(patch-bookmark (fu/attach-uploads args image)) (comp/get-query this)}])
+                                 (comp/transact! this [{(patch-bookmark args) (comp/get-query this)}])))))
         on-clear         #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
         errors           (case error-type
                            :invalid-input ["Unable to create new tab." "Please try again."]
@@ -106,24 +108,33 @@
           (e/form-row {:label "Tags"}
             (e/combo-box
               {:aria-label      "Select tag for bookmark"
-               :placeholder     "Select tags"
+               :placeholder     "Start adding tags by searching"
                :isDisabled      loading?
+               :isLoading       tags-loading?
+               :async           true
                :selectedOptions (map
                                   (fn [{:tag/keys [id name colour]}]
-                                    {:label name :color colour :value id})
+                                    {:key (str "tag-option-" id) :label name :color colour :value id})
                                   tags)
-               :options         (map (fn [{:tag/keys [id name colour]}]
-                                       {:label name :color colour :value id})
-                                     all-tags)
-               :onChange        (fn [os]
-                                  (let [tags (as-> os $
+               :options         (map
+                                  (fn [{:tag/keys [id name colour]}]
+                                    {:key (str "tag-option-" id) :label name :color colour :value id})
+                                  tag-options)
+               :onSearchChange  (letfn []
+                                  (gf/debounce
+                                    (fn [name-tag]
+                                      (if (not (empty? name-tag))
+                                        (comp/transact! this [{(fetch-tag-options #:tag{:name name-tag})
+                                                               [{:user/tags [:tag/id :tag/name :tag/colour]}]}])))
+                                    500))
+               :onChange        (fn [opts]
+                                  (let [tags (as-> opts $
                                                    (js->clj $ :keywordize-keys true)
                                                    (mapv
                                                      (fn [{:keys [label color value]}]
-                                                       #:tag{:name   label
-                                                             :colour color
-                                                             :id     value})
+                                                       #:tag{:name label :colour color :id value})
                                                      $))]
+                                    (m/set-value! this :ui/tag-options nil)
                                     (m/set-value! this :bookmark/tags tags)))}))))
       (e/modal-footer {}
         (e/flex-group {}
@@ -146,24 +157,25 @@
 
 (defsc Bookmark
   [this
-   {:bookmark/keys [id title image favourite url tab-id tags] bcmi :root/bookmark-ctx-menu-id}
+   {:bookmark/keys [id title image favourite url tab-id tags]
+    bcmi           :ui/bookmark-ctx-menu-id}
    {:keys [on-click]}]
   {:ident :bookmark/id
-   :query [[:root/bookmark-ctx-menu-id '_]
-           :bookmark/id
+   :query [:bookmark/id
            :bookmark/title
            :bookmark/url
            :bookmark/favourite
            :bookmark/image
            :bookmark/tab-id
            {:bookmark/tags (comp/get-query tui/TagModal)}
+           :ui/bookmark-ctx-menu-id
            :ui/image
-           :ui/show-ctx-menu?]}
-  (let [close-ctx-menu-fn #(comp/transact! this [(set-root {:k :root/bookmark-ctx-menu-id :v nil})])
+           :ui/show-ctx-menu?
+           :ui/tags-loading?
+           {:ui/tag-options (comp/get-query tui/TagModal)}]}
+  (let [close-ctx-menu-fn #(m/set-value! this :ui/bookmark-ctx-menu-id nil)
         on-favourite      (fn []
-                            (comp/transact! this [(patch-bookmark #:bookmark{:id        id
-                                                                             :tab-id    tab-id
-                                                                             :favourite (not favourite)})])
+                            (comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
                             (close-ctx-menu-fn))
         on-delete         (fn []
                             (comp/transact! this [(delete-bookmark #:bookmark{:id id :tab-id tab-id})])
@@ -210,7 +222,9 @@
         :onClick        #(js/window.open url)
         :onContextMenu  (fn [e]
                           (evt/prevent-default! e)
-                          (comp/transact! this [(set-root {:k :root/bookmark-ctx-menu-id :v id})]))
+                          (if bcmi
+                            (m/set-value! this :ui/bookmark-ctx-menu-id nil)
+                            (m/set-value! this :ui/bookmark-ctx-menu-id id)))
         :image          (div
                           (div {:id (str "bookmark-" id)})
                           (e/image

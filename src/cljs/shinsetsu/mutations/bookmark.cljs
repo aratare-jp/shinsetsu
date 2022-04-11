@@ -17,12 +17,11 @@
     (swap! state assoc-in (conj ref :ui/loading?) true))
   (remote [_] true)
   (ok-action
-    [{{{bookmarks `fetch-bookmarks} :body} :result :keys [state ref]}]
+    [{{{bookmarks `fetch-bookmarks} :body} :result :keys [state ref component]}]
     (log/debug "Bookmarks for tab" id "fetched successfully")
-    (let [Tab      (comp/registry-key->class `shinsetsu.ui.tab/Tab)
-          TabModal (comp/registry-key->class `shinsetsu.ui.tab/TabModal)]
-      (merge/merge-component! app Tab bookmarks)
+    (let [TabModal (comp/registry-key->class `shinsetsu.ui.tab/TabModal)]
       (swap! state #(-> %
+                        (merge/merge-component component bookmarks)
                         (dissoc-in (conj ref :ui/password))
                         (dissoc-in (conj ref :ui/error-type))
                         (assoc-in (conj ref :ui/loading?) false)
@@ -47,18 +46,18 @@
     (swap! state assoc-in (conj ref :ui/loading?) true))
   (remote [_] true)
   (ok-action
-    [{{{{:bookmark/keys [id] :as bookmark} `create-bookmark} :body} :result :keys [state]}]
+    [{{{{:bookmark/keys [id] :as bookmark} `create-bookmark} :body} :result :keys [state component]}]
     (log/debug "Bookmark" id "created for tab" tab-id "successfully")
     (let [Bookmark       (comp/registry-key->class `shinsetsu.ui.bookmark/Bookmark)
           Tab            (comp/registry-key->class `shinsetsu.ui.tab/Tab)
           bookmark-ident (comp/get-ident Bookmark bookmark)
           tab-ident      (comp/get-ident Tab {:tab/id tab-id})]
-      (merge/merge-component! app Bookmark bookmark :append (conj tab-ident :tab/bookmarks))
       (swap! state #(-> %
-                        (fs/entity->pristine* bookmark-ident)
+                        (merge/merge-component component bookmark)
                         (dissoc-in (conj tab-ident :ui/selected-idx))
                         (assoc-in (conj bookmark-ident :ui/loading?) false)
-                        (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)))))
+                        (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)
+                        (fs/entity->pristine* bookmark-ident)))))
   (error-action
     [{{{{:keys [error-type error-message]} `create-bookmark} :body} :result :keys [ref state]}]
     (log/error "Create bookmark failed due to:" error-message)
@@ -74,17 +73,16 @@
     (swap! state assoc-in (conj ref :ui/loading?) true))
   (remote [_] true)
   (ok-action
-    [{{{bookmark `patch-bookmark} :body} :result :keys [state ref]}]
+    [{{{bookmark `patch-bookmark} :body} :result :keys [state ref component]}]
     (log/debug "Bookmark" id "patched successfully")
-    (let [Bookmark  (comp/registry-key->class `shinsetsu.ui.bookmark/Bookmark)
-          Tab       (comp/registry-key->class `shinsetsu.ui.tab/Tab)
+    (let [Tab       (comp/registry-key->class `shinsetsu.ui.tab/Tab)
           tab-ident (comp/get-ident Tab {:tab/id tab-id})]
-      (merge/merge-component! app Bookmark bookmark)
       (swap! state #(-> %
-                        (fs/entity->pristine* ref)
+                        (merge/merge-component component bookmark)
                         (dissoc-in (conj tab-ident :ui/selected-idx))
                         (assoc-in (conj ref :ui/loading?) false)
-                        (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)))))
+                        (assoc-in (conj tab-ident :ui/show-bookmark-modal?) false)
+                        (fs/entity->pristine* ref)))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-bookmark} :body} :result :keys [ref state]}]
     (log/error "Failed to patch bookmark" id "due to:" error-message)

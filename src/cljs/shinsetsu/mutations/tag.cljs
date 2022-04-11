@@ -23,11 +23,11 @@
     (let [TagMain    (comp/registry-key->class `shinsetsu.ui.tag/TagMain)
           main-ident (comp/get-ident TagMain {})
           tag-ident  (comp/get-ident component tag)]
-      (merge/merge-component! app component tag :append [:root/tags])
       (swap! state #(-> %
-                        (fs/entity->pristine* tag-ident)
+                        (merge/merge-component component tag)
                         (assoc-in (conj tag-ident :ui/loading?) false)
-                        (assoc-in (conj main-ident :ui/show-create-modal?) false)))))
+                        (assoc-in (conj main-ident :ui/show-create-modal?) false)
+                        (fs/entity->pristine* tag-ident)))))
   (error-action
     [{{{{:keys [error-type error-message]} `create-tag} :body} :result :keys [state ref]}]
     (log/error "Failed to create tag due to:" error-message)
@@ -36,32 +36,69 @@
                       (assoc-in (conj ref :ui/error-type) error-type)))))
 
 (defmutation patch-tag
-  [{:tag/keys [id password]}]
+  [{:tag/keys [id]}]
   (action
     [{:keys [state ref]}]
     (log/debug "Patching tag" id)
     (swap! state assoc-in (conj ref :ui/loading?) true))
-  (remote
-    [{:keys [ast]}]
-    (if (nil? password)
-      (dissoc-in ast [:params :tag/password])
-      ast))
+  (remote [_] true)
   (ok-action
     [{{{tag `patch-tag} :body} :result :keys [state ref component]}]
-    (log/debug "tag" id "patched successfully")
+    (log/debug "Tag" id "patched successfully")
     (let [TagMain  (comp/registry-key->class `shinsetsu.ui.tag/TagMain)
           main-idt (comp/get-ident TagMain {})]
-      (merge/merge-component! app component tag)
       (swap! state #(-> %
-                        (fs/entity->pristine* ref)
-                        (dissoc-in (conj ref :ui/password))
+                        (merge/merge-component component tag)
                         (assoc-in (conj ref :ui/loading?) false)
-                        (dissoc-in (conj main-idt :ui/edit-id))))))
+                        (dissoc-in (conj main-idt :ui/edit-id))
+                        (fs/entity->pristine* ref)))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-tag} :body} :result :keys [state ref]}]
     (log/error "Failed to patch tag" id "due to:" error-message)
     (swap! state #(-> %
                       (assoc-in (conj ref :ui/loading?) false)
+                      (assoc-in (conj ref :ui/error-type) error-type)))))
+
+(defmutation fetch-tags
+  [_]
+  (action
+    [{:keys [state ref]}]
+    (log/debug "Fetching all tags")
+    (swap! state assoc-in (conj ref :ui/loading?) true))
+  (remote [_] true)
+  (ok-action
+    [{{{{:user/keys [tags]} `fetch-tags} :body} :result :keys [state ref component]}]
+    (log/debug "Tags fetched patched successfully")
+    (swap! state #(-> %
+                      (merge/merge-component component {:ui/tags tags})
+                      (assoc-in (conj ref :ui/loading?) false))))
+  (error-action
+    [{{{{:keys [error-type error-message]} `fetch-tags} :body} :result :keys [state ref]}]
+    (log/error "Failed to fetch tags due to:" error-message)
+    (swap! state #(-> %
+                      (assoc-in (conj ref :ui/loading?) false)
+                      (assoc-in (conj ref :ui/error-type) error-type)))))
+
+(defmutation fetch-tag-options
+  [_]
+  (action
+    [{:keys [state ref]}]
+    (log/debug "Fetching tag options")
+    (swap! state assoc-in (conj ref :ui/tags-loading?) true))
+  (remote
+    [{:keys [ast]}]
+    (assoc ast :key `fetch-tags))
+  (ok-action
+    [{{{{:user/keys [tags]} `fetch-tags} :body} :result :keys [state ref]}]
+    (log/debug "Tag options fetched patched successfully")
+    (swap! state #(-> %
+                      (assoc-in (conj ref :ui/tag-options) tags)
+                      (assoc-in (conj ref :ui/tags-loading?) false))))
+  (error-action
+    [{{{{:keys [error-type error-message]} `fetch-tag-options} :body} :result :keys [state ref]}]
+    (log/error "Failed to fetch tag options due to:" error-message)
+    (swap! state #(-> %
+                      (assoc-in (conj ref :ui/tags-loading?) false)
                       (assoc-in (conj ref :ui/error-type) error-type)))))
 
 (defmutation delete-tag
@@ -87,11 +124,3 @@
     (swap! state #(-> %
                       (assoc-in (conj ref :ui/loading?) false)
                       (assoc-in (conj ref :ui/error-type) error-type)))))
-
-(defmutation lock-tag
-  [p]
-  (action
-    [{:keys [state]}]
-    (log/debug "Locking up tag" (:tag/id p))
-    (let [Tag (comp/registry-key->class `shinsetsu.ui.tag/TagModal)]
-      (swap! state assoc-in (conj (comp/get-ident Tag p) :ui/unlocked?) false))))

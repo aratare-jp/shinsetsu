@@ -6,7 +6,7 @@
     [com.fulcrologic.fulcro.dom :refer [div label input form button h1 h2 nav h5 p span]]
     [com.fulcrologic.fulcro.mutations :as m]
     [shinsetsu.mutations.common :refer [remove-ident]]
-    [shinsetsu.mutations.tag :refer [create-tag patch-tag delete-tag]]
+    [shinsetsu.mutations.tag :refer [create-tag patch-tag delete-tag fetch-tags]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
     [com.fulcrologic.fulcro.data-fetch :as df]
     [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
@@ -119,20 +119,20 @@
                                                     (m/set-value! this :ui/show-create-modal? true)
                                                     (merge/merge-component!
                                                       app TagModal (comp/get-initial-state TagModal)
-                                                      :append [:root/tags]))}
+                                                      :append (conj (comp/get-ident this) :ui/tags)))}
                                      "Create new tag")]}}
     (if (empty? tags)
       (e/empty-prompt {:title (h2 "It seems like you don't have any tag at the moment.")
                        :body  (p "Start enjoying Shinsetsu by add or import your tags")})
       (e/list-group {:bordered true :size "l"}
         (map-indexed
-          (fn [i {:tag/keys [name colour]}]
+          (fn [i {:tag/keys [id name colour]}]
             (e/list-group-item
               {:label       (e/badge {:color colour} name)
                :size        "l"
                :onClick     (fn []
                               (m/set-value! this :ui/selected-idx i)
-                              (m/toggle! this :ui/show-edit-modal?))
+                              (m/set-value! this :ui/edit-id id))
                :extraAction {:iconType "cross"
                              :iconSize "m"
                              :onClick  (fn []
@@ -142,32 +142,24 @@
 
 (defsc TagMain
   [this
-   {:root/keys [tags]
-    :ui/keys   [selected-idx show-create-modal? show-edit-modal? show-delete-modal?]}]
-  {:ident         (fn [] [:component/id ::tag])
-   :route-segment ["tag"]
-   :query         [{[:root/tags '_] (comp/get-query TagModal)}
-                   :ui/selected-idx
-                   :ui/show-create-modal?
-                   :ui/show-edit-modal?
-                   :ui/show-delete-modal?]
-   :initial-state {:root/tags             []
-                   :ui/selected-idx       0
-                   :ui/show-create-modal? false
-                   :ui/show-edit-modal?   false
-                   :ui/show-delete-modal? false}
-   :will-enter    (fn [app _]
-                    (log/info "Loading user tags")
-                    (dr/route-deferred
-                      [:component/id ::tag]
-                      #(let [load-target (targeting/replace-at [:root/tags])]
-                         ;; FIXME: Needs to load from local storage first before fetching from remote.
-                         (df/load! app :user/tags TagModal {:target               load-target
-                                                            :post-mutation        `dr/target-ready
-                                                            :post-mutation-params {:target [:component/id ::tag]}}))))}
+   {:ui/keys [tags selected-idx show-create-modal? edit-id show-delete-modal?]}]
+  {:ident              (fn [] [:component/id ::tag])
+   :route-segment      ["tag"]
+   :query              [:ui/selected-idx
+                        :ui/show-create-modal?
+                        :ui/edit-id
+                        :ui/show-delete-modal?
+                        {:ui/tags (comp/get-query TagModal)}]
+   :initial-state      {:ui/tags               []
+                        :ui/selected-idx       0
+                        :ui/show-create-modal? false
+                        :ui/show-delete-modal? false}
+   :componentWillMount (fn [this]
+                         (log/info "Loading user tags")
+                         (comp/transact! this [{(fetch-tags {}) [:user/tags]}]))}
   [(if show-create-modal?
      (ui-new-tag this tags))
-   (if show-edit-modal?
+   (if edit-id
      (ui-edit-tag this (nth tags selected-idx)))
    (if show-delete-modal?
      (ui-delete-tag this (nth tags selected-idx)))
