@@ -26,21 +26,24 @@
     :ui/keys       [image loading? error-type tag-options tags-loading?] :as props}
    {:keys [on-close]}]
   {:ident         :bookmark/id
-   :query         [:bookmark/id
-                   :bookmark/title
-                   :bookmark/url
-                   :bookmark/image
-                   :bookmark/tab-id
-                   :bookmark/favourite
-                   {:bookmark/tags (comp/get-query tui/TagModal)}
-                   :ui/bookmark-ctx-menu-id
-                   :ui/loading?
-                   :ui/error-type
-                   :ui/image
-                   :ui/show-ctx-menu?
-                   {:ui/tag-options (comp/get-query tui/TagModal)}
-                   :ui/tags-loading?
-                   fs/form-config-join]
+   :query         (fn []
+                    [:bookmark/id
+                     :bookmark/title
+                     :bookmark/url
+                     :bookmark/image
+                     :bookmark/tab-id
+                     :bookmark/favourite
+                     {:bookmark/tags (comp/get-query tui/TagModal)}
+                     :ui/bookmark-ctx-menu-id
+                     (let [TabModal (comp/registry-key->class `shinsetsu.ui.tab/TabModal)]
+                       {[:ui/tabs '_] (comp/get-query TabModal)})
+                     :ui/loading?
+                     :ui/error-type
+                     :ui/image
+                     :ui/show-ctx-menu?
+                     {:ui/tag-options (comp/get-query tui/TagModal)}
+                     :ui/tags-loading?
+                     fs/form-config-join])
    :form-fields   #{:bookmark/title :bookmark/url :bookmark/image :bookmark/tags}
    :initial-state (fn [{:bookmark/keys [tab-id]}]
                     #:bookmark{:id     (tempid/tempid)
@@ -159,7 +162,7 @@
   [this
    {:bookmark/keys [id title image favourite url tab-id tags]
     bcmi           :ui/bookmark-ctx-menu-id}
-   {:keys [on-edit on-delete]}]
+   {:keys [on-edit on-delete on-move]}]
   {:ident :bookmark/id
    :query [:bookmark/id
            :bookmark/title
@@ -173,19 +176,22 @@
            :ui/show-ctx-menu?
            :ui/tags-loading?
            {:ui/tag-options (comp/get-query tui/TagModal)}]}
-  (let [close-ctx-menu-fn #(m/set-value! this :ui/bookmark-ctx-menu-id nil)
-        on-favourite      (fn []
-                            (comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
-                            (close-ctx-menu-fn))
-        on-delete         (fn []
-                            (on-delete)
-                            (close-ctx-menu-fn))
-        on-edit           (fn []
-                            (on-edit)
-                            (close-ctx-menu-fn))
-        on-move           (fn []
-                            (m/set-value! this :ui/move-id true)
-                            (close-ctx-menu-fn))]
+  (let [close-ctx-menu-fn  #(m/set-value! this :ui/bookmark-ctx-menu-id nil)
+        on-favourite       (fn []
+                             (comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
+                             (close-ctx-menu-fn))
+        on-delete          (fn []
+                             (on-delete)
+                             (close-ctx-menu-fn))
+        on-edit            (fn []
+                             (on-edit)
+                             (close-ctx-menu-fn))
+        on-move            (fn []
+                             (on-move #:bookmark{:id id :tab-id tab-id :title title})
+                             (close-ctx-menu-fn))
+        on-open-in-new-tab (fn []
+                             (js/window.open url)
+                             (close-ctx-menu-fn))]
     [(if (= id bcmi)
        (let [el (get-element (str "bookmark-" id))]
          (e/wrapping-popover
@@ -202,6 +208,12 @@
                   :size       "s"
                   :iconType   (if favourite "starFilled" "starEmpty")
                   :onClick    on-favourite}))
+             (e/flex-item {}
+               (e/button-icon
+                 {:aria-label "open in new tab"
+                  :size       "s"
+                  :iconType   "popout"
+                  :onClick    on-open-in-new-tab}))
              (e/flex-item {}
                (e/button-icon
                  {:aria-label "edit"
@@ -228,7 +240,7 @@
         :paddingSize    "s"
         :display        "transparent"
         :betaBadgeProps (if favourite {:label (e/icon {:type "starFilled" :size "l" :color "#F3D371" :title "favourite"})})
-        :onClick        #(js/window.open url)
+        :onClick        #(set! (.. js/window -location -href) url)
         :onContextMenu  (fn [e]
                           (evt/prevent-default! e)
                           (if bcmi
@@ -257,23 +269,20 @@
 (def ui-new-bookmark (comp/factory NewBookmark))
 
 (defn ui-new-bookmark-modal
-  [this]
-  (let [{:tab/keys [id bookmarks] :ui/keys [edit-bm-id]} (comp/props this)
-        bookmark (->> bookmarks (filter #(= edit-bm-id (:bookmark/id %))) first (merge {:bookmark/tab-id id}))
+  [this {:tab/keys [id bookmarks] :ui/keys [edit-bm-id]}]
+  (let [bookmark (->> bookmarks (filter #(= edit-bm-id (:bookmark/id %))) first (merge {:bookmark/tab-id id}))
         on-close #(m/set-value! this :ui/edit-bm-id nil)]
     (ui-bookmark-modal (comp/computed bookmark {:on-close on-close}))))
 
 (defn ui-edit-bookmark-modal
-  [this]
-  (let [{:tab/keys [bookmarks] :ui/keys [edit-bm-id]} (comp/props this)
-        bookmark (first (filter #(= edit-bm-id (:bookmark/id %)) bookmarks))
+  [this {:tab/keys [id bookmarks] :ui/keys [edit-bm-id]}]
+  (let [bookmark (->> bookmarks (filter #(= edit-bm-id (:bookmark/id %))) first (merge {:bookmark/tab-id id}))
         on-close #(m/set-value! this :ui/edit-bm-id nil)]
     (ui-bookmark-modal (comp/computed bookmark {:on-close on-close}))))
 
 (defn ui-delete-bookmark-modal
-  [this]
-  (let [{:ui/keys [delete-bm-id] :tab/keys [bookmarks] tab-id :tab/id} (comp/props this)
-        {:bookmark/keys [id title]} (->> bookmarks (filter #(= delete-bm-id (:bookmark/id %))) first)]
+  [this {:ui/keys [delete-bm-id] :tab/keys [bookmarks] tab-id :tab/id}]
+  (let [{:bookmark/keys [id title]} (->> bookmarks (filter #(= delete-bm-id (:bookmark/id %))) first)]
     (e/confirm-modal
       {:title             (str "Delete bookmark " title)
        :onCancel          #(m/set-value! this :ui/delete-bm-id nil)
@@ -284,3 +293,20 @@
       (p "Delete this bookmark will permanently remove it from this tab")
       (p "Are you sure you want to delete this bookmark?"))))
 
+(defn ui-move-bookmark-modal
+  [this {:ui/keys [tabs destination-tab-id move-bm-id]}]
+  (let [{:bookmark/keys [id tab-id title]} move-bm-id
+        tabs   (filter #(not= (:tab/id %) tab-id) tabs)
+        tab-id (as-> destination-tab-id $
+                     (or $ (-> tabs first :tab/id))
+                     (if (uuid? $) $ (uuid $)))]
+    (e/confirm-modal
+      {:title             (str "Move bookmark " title)
+       :onCancel          #(m/set-value! this :ui/move-bm-id nil)
+       :onConfirm         #(comp/transact! this [{(patch-bookmark #:bookmark{:id id :tab-id tab-id}) (comp/get-query Bookmark)}])
+       :cancelButtonText  "Cancel"
+       :confirmButtonText "Yes, I'm sure!"}
+      (p "Please select your destination tab")
+      (e/select {:options  (mapv (fn [{:tab/keys [id name]}] {:text name :value id}) tabs)
+                 :value    tab-id
+                 :onChange #(m/set-value! this :ui/destination-tab-id (uuid (evt/target-value %)))}))))

@@ -1,7 +1,8 @@
 (ns shinsetsu.ui.elastic
   (:require
     [com.fulcrologic.fulcro.algorithms.react-interop :as ri]
-    ["@elastic/eui" :refer [EuiContextMenu
+    ["@elastic/eui" :refer [EuiSelect
+                            EuiContextMenu
                             EuiPopover
                             EuiWrappingPopover
                             EuiProvider
@@ -79,6 +80,7 @@
 (def file-picker (ri/react-factory EuiFilePicker))
 (def colour-picker (ri/react-factory EuiColorPicker))
 (def combo-box (ri/react-factory EuiComboBox))
+(def select (ri/react-factory EuiSelect))
 
 ;; Flex
 (def flex-group (ri/react-factory EuiFlexGroup))

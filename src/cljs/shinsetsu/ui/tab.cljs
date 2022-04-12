@@ -4,7 +4,7 @@
     [clojure.browser.dom :refer [get-element]]
     [shinsetsu.ui.elastic :as e]
     [shinsetsu.mutations.tab :refer [create-tab patch-tab delete-tab lock-tab]]
-    [shinsetsu.mutations.bookmark :refer [fetch-bookmarks delete-bookmark]]
+    [shinsetsu.mutations.bookmark :refer [fetch-bookmarks]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
     [com.fulcrologic.fulcro.mutations :as m]
     [shinsetsu.ui.bookmark :as bui]
@@ -105,9 +105,8 @@
 (def ui-tab-modal (comp/factory TabModal {:keyfn :tab/id}))
 
 (defn- ui-tab-body
-  [this]
-  (let [{:tab/keys [id bookmarks] :ui/keys [loading?]} (comp/props this)
-        add-bm-fn  (fn []
+  [this {:tab/keys [id bookmarks] :ui/keys [loading?]}]
+  (let [add-bm-fn  (fn []
                      (let [new-bookmark (comp/get-initial-state bui/BookmarkModal {:bookmark/tab-id id})]
                        (merge/merge-component! app bui/BookmarkModal new-bookmark :append [:tab/id id :tab/bookmarks])
                        (m/set-value! this :ui/edit-bm-id (:bookmark/id new-bookmark))))
@@ -125,59 +124,60 @@
                 (fn [i {bookmark-id :bookmark/id :as bookmark}]
                   (let [bookmark  (assoc bookmark :bookmark/tab-id id)
                         on-edit   #(m/set-value! this :ui/edit-bm-id bookmark-id)
-                        on-delete #(m/set-value! this :ui/delete-bm-id bookmark-id)]
+                        on-delete #(m/set-value! this :ui/delete-bm-id bookmark-id)
+                        on-move   #(m/set-value! this :ui/move-bm-id %)]
                     (e/flex-item {:key bookmark-id}
-                      (bui/ui-bookmark (comp/computed bookmark {:on-edit on-edit :on-delete on-delete})))))))
+                      (bui/ui-bookmark (comp/computed bookmark {:on-edit on-edit :on-delete on-delete :on-move on-move})))))))
          (e/flex-item {:key "new-bookmark"}
            (bui/ui-new-bookmark (comp/computed {} {:on-edit add-bm-fn})))))]))
 
 (defn- ui-locked-tab-body
-  [this]
-  (let [{:tab/keys [id] :ui/keys [loading? unlocked? password error-type]} (comp/props this)]
-    (if-not unlocked?
-      (let [form-id (str "tab-" id "-unlock-form")
-            errors  (case error-type
-                      :wrong-password ["Invalid password"]
-                      :internal-server-error ["Internal server error"]
-                      nil)]
-        (e/empty-prompt
-          {:color   "transparent"
-           :title   (h2 "This tab is protected!")
-           :body    (e/form {:id form-id :component "form" :isInvalid (boolean errors) :error errors}
-                      (e/form-row {:label "Password"}
-                        (e/field-password {:type     "dual"
-                                           :name     "password"
-                                           :value    password
-                                           :disabled loading?
-                                           :onChange #(m/set-string! this :ui/password :event %)})))
-           :actions [(e/button
-                       {:fill      true
-                        :type      "submit"
-                        :form      form-id
-                        :disabled  loading?
-                        :isLoading loading?
-                        :onClick   (fn [e]
-                                     (evt/prevent-default! e)
-                                     (let [load-fn (fn []
-                                                     (log/info "Load user bookmarks")
-                                                     (comp/transact!
-                                                       this
-                                                       [{(fetch-bookmarks #:tab{:id id :password password})
-                                                         [:tab/id {:tab/bookmarks (comp/get-query bui/Bookmark)}]}]))]
-                                       (do
-                                         (load-fn)
-                                         ;; FIXME: Magic number!
-                                         #_(m/set-value! this :ui/load-timer (js/setInterval load-fn 10000)))))}
-                       "Unlock this tab!")]}))
-      (ui-tab-body this))))
+  [this {:tab/keys [id] :ui/keys [loading? unlocked? password error-type] :as props}]
+  (if-not unlocked?
+    (let [form-id (str "tab-" id "-unlock-form")
+          errors  (case error-type
+                    :wrong-password ["Invalid password"]
+                    :internal-server-error ["Internal server error"]
+                    nil)]
+      (e/empty-prompt
+        {:color   "transparent"
+         :title   (h2 "This tab is protected!")
+         :body    (e/form {:id form-id :component "form" :isInvalid (boolean errors) :error errors}
+                    (e/form-row {:label "Password"}
+                      (e/field-password {:type     "dual"
+                                         :name     "password"
+                                         :value    password
+                                         :disabled loading?
+                                         :onChange #(m/set-string! this :ui/password :event %)})))
+         :actions [(e/button
+                     {:fill      true
+                      :type      "submit"
+                      :form      form-id
+                      :disabled  loading?
+                      :isLoading loading?
+                      :onClick   (fn [e]
+                                   (evt/prevent-default! e)
+                                   (let [load-fn (fn []
+                                                   (log/info "Load user bookmarks")
+                                                   (comp/transact!
+                                                     this
+                                                     [{(fetch-bookmarks #:tab{:id id :password password})
+                                                       [:tab/id {:tab/bookmarks (comp/get-query bui/Bookmark)}]}]))]
+                                     (do
+                                       (load-fn)
+                                       ;; FIXME: Magic number!
+                                       #_(m/set-value! this :ui/load-timer (js/setInterval load-fn 10000)))))}
+                     "Unlock this tab!")]}))
+    (ui-tab-body this props)))
 
 (defsc Tab
-  [this {:tab/keys [is-protected?] :ui/keys [edit-bm-id delete-bm-id]}]
+  [this {:tab/keys [is-protected?] :ui/keys [edit-bm-id delete-bm-id move-bm-id tabs] :as props}]
   {:ident                :tab/id
    :query                [:tab/id
                           :tab/name
                           :tab/is-protected?
                           {:tab/bookmarks (comp/get-query bui/BookmarkModal)}
+                          {[:ui/tabs '_] [:tab/id :tab/name]}
                           :ui/unlocked?
                           :ui/password
                           :ui/change-password?
@@ -186,7 +186,9 @@
                           :ui/current-tab-idx
                           :ui/loading?
                           :ui/load-timer
-                          :ui/delete-bm-id]
+                          :ui/delete-bm-id
+                          :ui/move-bm-id
+                          :ui/destination-tab-id]
    :componentWillMount   (fn [this]
                            (let [{:tab/keys [id is-protected?]} (comp/props this)
                                  load-fn (fn []
@@ -206,36 +208,35 @@
                            (m/set-value! this :ui/load-timer nil))}
   [(if edit-bm-id
      (if (tempid/tempid? edit-bm-id)
-       (bui/ui-new-bookmark-modal this)
-       (bui/ui-edit-bookmark-modal this)))
+       (bui/ui-new-bookmark-modal this props)
+       (bui/ui-edit-bookmark-modal this props)))
    (if delete-bm-id
-     (bui/ui-delete-bookmark-modal this))
+     (bui/ui-delete-bookmark-modal this props))
+   (if move-bm-id
+     (bui/ui-move-bookmark-modal this props))
    (cond
-     is-protected? (ui-locked-tab-body this)
-     :else (ui-tab-body this))])
+     is-protected? (ui-locked-tab-body this props)
+     :else (ui-tab-body this props))])
 
 (def ui-tab (comp/factory Tab {:keyfn :tab/id}))
 
 (defn- ui-new-tab-modal
-  [this]
-  (let [{:ui/keys [tabs]} (comp/props this)
-        new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
+  [this {:ui/keys [tabs]}]
+  (let [new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
         on-close (fn []
                    (comp/transact! this [(remove-ident {:ident (comp/get-ident TabModal new-tab)})])
                    (m/set-value! this :ui/show-tab-modal? false))]
     (ui-tab-modal (comp/computed new-tab {:on-close on-close}))))
 
 (defn- ui-edit-tab-modal
-  [this]
-  (let [{:ui/keys [tabs edit-tab-id]} (comp/props this)
-        tab (->> tabs (filter #(= edit-tab-id (:tab/id %))) first)]
+  [this {:ui/keys [tabs edit-tab-id]}]
+  (let [tab (->> tabs (filter #(= edit-tab-id (:tab/id %))) first)]
     (let [on-close #(m/set-value! this :ui/edit-tab-id nil)]
       (ui-tab-modal (comp/computed tab {:on-close on-close})))))
 
 (defn- ui-delete-tab-modal
-  [this]
-  (let [{:ui/keys [tabs delete-tab-id]} (comp/props this)
-        {:tab/keys [id name]} (->> tabs (filter #(= delete-tab-id (:tab/id %))) first)]
+  [this {:ui/keys [tabs delete-tab-id]}]
+  (let [{:tab/keys [id name]} (->> tabs (filter #(= delete-tab-id (:tab/id %))) first)]
     (e/confirm-modal
       {:title             (str "Delete tab " name)
        :onCancel          #(m/set-value! this :ui/delete-tab-id nil)
@@ -247,9 +248,8 @@
       (p "Are you sure you want to delete this tab?"))))
 
 (defn- ui-tab-headers
-  [this]
-  (let [{:ui/keys [tabs current-tab-idx tab-ctx-menu-id]} (comp/props this)
-        close-ctx-menu-fn #(m/set-value! this :ui/tab-ctx-menu-id nil)]
+  [this {:ui/keys [tabs current-tab-idx tab-ctx-menu-id]}]
+  (let [close-ctx-menu-fn #(m/set-value! this :ui/tab-ctx-menu-id nil)]
     (map-indexed
       (fn [i {:tab/keys [id name is-protected?] :ui/keys [unlocked?] :as tab}]
         [(if (= id tab-ctx-menu-id)
@@ -306,9 +306,8 @@
       tabs)))
 
 (defn- ui-tab-main-body
-  [this]
-  (let [{:ui/keys [tabs current-tab-idx]} (comp/props this)
-        tabs             (filter #(not (tempid/tempid? (:tab/id %))) tabs)
+  [this {:ui/keys [tabs current-tab-idx] :as props}]
+  (let [tabs             (filter #(not (tempid/tempid? (:tab/id %))) tabs)
         right-side-items [(e/button
                             {:fill     true
                              :size     "m"
@@ -325,37 +324,39 @@
                                       (-> tabs (nth current-tab-idx) :tab/name))
                     :rightSideItems right-side-items}}
       (e/tabs {:size "xl"}
-        (ui-tab-headers this))
+        (ui-tab-headers this props))
       (e/spacer {})
       (if (empty? tabs)
         (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
                          :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-        (ui-tab (nth tabs current-tab-idx))))))
+        (ui-tab (merge (nth tabs current-tab-idx) (:ui/tabs props)))))))
 
 (defsc TabMain
-  [this {:ui/keys [edit-tab-id delete-tab-id]}]
+  [this {:ui/keys [edit-tab-id delete-tab-id] :as props}]
   {:ident         (fn [] [:component/id ::tab])
    :route-segment ["tab"]
-   :query         [{:ui/tabs (comp/get-query Tab)}
+   :query         [{[:ui/tabs '_] (comp/get-query Tab)}
                    :ui/current-tab-idx
                    :ui/edit-tab-id
                    :ui/delete-tab-id
-                   :ui/tab-ctx-menu-id]
+                   :ui/tab-ctx-menu-id
+                   :ui/move-bm-id
+                   :ui/destination-tab-id]
    :initial-state {:ui/tabs            []
                    :ui/current-tab-idx 0}
    :will-enter    (fn [app _]
                     (log/info "Loading user tabs")
                     (dr/route-deferred
                       [:component/id ::tab]
-                      #(let [load-target (targeting/replace-at [:component/id ::tab :ui/tabs])]
+                      #(let [load-target (targeting/replace-at [:ui/tabs])]
                          ;; FIXME: Needs to load from local storage first before fetching from remote.
                          (df/load! app :user/tabs Tab {:target               load-target
                                                        :post-mutation        `dr/target-ready
                                                        :post-mutation-params {:target [:component/id ::tab]}}))))}
   [(if edit-tab-id
      (if (tempid/tempid? edit-tab-id)
-       (ui-new-tab-modal this)
-       (ui-edit-tab-modal this)))
+       (ui-new-tab-modal this props)
+       (ui-edit-tab-modal this props)))
    (if delete-tab-id
-     (ui-delete-tab-modal this))
-   (ui-tab-main-body this)])
+     (ui-delete-tab-modal this props))
+   (ui-tab-main-body this props)])

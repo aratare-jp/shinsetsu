@@ -7,7 +7,8 @@
     [com.fulcrologic.fulcro.algorithms.merge :as merge]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.algorithms.normalized-state :as ns]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]))
 
 (defmutation fetch-bookmarks
   [{:tab/keys [id]}]
@@ -72,15 +73,23 @@
     (swap! state assoc-in (conj ref :ui/loading?) true))
   (remote [_] true)
   (ok-action
-    [{{{bookmark `patch-bookmark} :body} :result :keys [state ref component]}]
+    [{{{bookmark `patch-bookmark} :body} :result :keys [state ref]}]
     (log/debug "Bookmark" id "patched successfully")
-    (let [Tab       (comp/registry-key->class `shinsetsu.ui.tab/Tab)
-          tab-ident (comp/get-ident Tab {:tab/id tab-id})]
+    (let [Tab            (comp/registry-key->class `shinsetsu.ui.tab/Tab)
+          target-tab-idt (comp/get-ident Tab {:tab/id tab-id})
+          Bookmark       (comp/registry-key->class `shinsetsu.ui.bookmark/Bookmark)
+          bm-idt         (comp/get-ident Bookmark bookmark)]
       (swap! state #(-> %
-                        (merge/merge-component component bookmark)
-                        (dissoc-in (conj tab-ident :ui/edit-bm-id))
+                        (merge/merge-component Bookmark bookmark)
+                        (dissoc-in (conj target-tab-idt :ui/edit-bm-id))
+                        (dissoc-in (conj ref :ui/move-bm-id))
                         (assoc-in (conj ref :ui/loading?) false)
-                        (fs/entity->pristine* ref)))))
+                        (fs/entity->pristine* ref)))
+      ;; Check if this mutation is fired by a move op or not.
+      (if (= (first ref) :tab/id)
+        (swap! state #(-> %
+                          (targeting/integrate-ident* bm-idt :append (conj ref :tab/bookmarks))
+                          (merge/remove-ident* bm-idt (conj ref :tab/bookmarks)))))))
   (error-action
     [{{{{:keys [error-type error-message]} `patch-bookmark} :body} :result :keys [ref state]}]
     (log/error "Failed to patch bookmark" id "due to:" error-message)
