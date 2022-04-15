@@ -7,16 +7,15 @@
     [com.fulcrologic.fulcro.mutations :as m]
     [shinsetsu.mutations.common :refer [remove-ident]]
     [shinsetsu.mutations.tag :refer [create-tag patch-tag delete-tag fetch-tags]]
-    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
-    [com.fulcrologic.fulcro.data-fetch :as df]
-    [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]
     [taoensso.timbre :as log]
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
     [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [malli.core :as mc]
-    [shinsetsu.schema :as s]))
+    [shinsetsu.schema :as s]
+    [com.fulcrologic.fulcro.data-fetch :as df]
+    [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]))
 
 (defsc TagModal
   [this
@@ -141,20 +140,22 @@
 (defsc TagMain
   [this
    {:ui/keys [tags current-tag-idx show-create-modal? edit-tag-id show-delete-modal?]}]
-  {:ident              (fn [] [:component/id ::tag])
-   :route-segment      ["tag"]
-   :query              [:ui/current-tag-idx
-                        :ui/show-create-modal?
-                        :ui/edit-tag-id
-                        :ui/show-delete-modal?
-                        {:ui/tags (comp/get-query TagModal)}]
-   :initial-state      {:ui/tags               []
-                        :ui/current-tag-idx       0
-                        :ui/show-create-modal? false
-                        :ui/show-delete-modal? false}
-   :componentWillMount (fn [this]
-                         (log/info "Loading user tags")
-                         (comp/transact! this [{(fetch-tags {}) [:user/tags]}]))}
+  {:ident             (fn [] [:component/id ::tag])
+   :route-segment     ["tag"]
+   :query             [:ui/current-tag-idx
+                       :ui/show-create-modal?
+                       :ui/edit-tag-id
+                       :ui/show-delete-modal?
+                       {:ui/tags (comp/get-query TagModal)}]
+   :initial-state     {:ui/tags               []
+                       :ui/current-tag-idx    0
+                       :ui/show-create-modal? false
+                       :ui/show-delete-modal? false}
+   :componentDidMount (fn [this]
+                        (log/info "Loading user tags")
+                        (m/set-value! this :ui/loading? true)
+                        (df/load! this :user/tags TagModal {:target   (targeting/replace-at [:component/id ::tag :ui/tags])
+                                                            :fallback `shinsetsu.mutations.tag/post-tags-error-load}))}
   [(if show-create-modal?
      (ui-new-tag this tags))
    (if edit-tag-id

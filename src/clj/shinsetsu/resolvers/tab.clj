@@ -1,9 +1,8 @@
 (ns shinsetsu.resolvers.tab
   (:require
-    [com.wsscode.pathom.connect :as pc :refer [defresolver]]
+    [com.wsscode.pathom.connect :as pc]
     [shinsetsu.db.tab :as tab-db]
     [taoensso.timbre :as log]
-    [buddy.hashers :as hashers]
     [malli.core :as m]
     [shinsetsu.schema :as s]
     [malli.error :as me]))
@@ -16,7 +15,7 @@
       (assoc :tab/is-protected? (boolean (:tab/password t)))
       (select-keys tab-output)))
 
-(defresolver tabs-resolver
+(pc/defresolver tabs-resolver
   [{{user-id :user/id} :request} _]
   {::pc/output [{:user/tabs tab-output}]}
   (let [input {:tab/user-id user-id}]

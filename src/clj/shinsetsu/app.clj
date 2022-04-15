@@ -6,12 +6,11 @@
     [ring.middleware.content-type :refer [wrap-content-type]]
     [ring.middleware.resource :refer [wrap-resource]]
     [reitit.ring :as ring]
-    [mount.core :refer [defstate]]
+    [mount.core :as m]
     [ring.middleware.multipart-params :refer [wrap-multipart-params]]
-    [com.fulcrologic.fulcro.networking.file-upload :as fu]
-    [puget.printer :refer [pprint]]))
+    [com.fulcrologic.fulcro.networking.file-upload :as fu]))
 
-(defstate app
+(m/defstate app
   :start
   (ring/ring-handler
     (ring/router

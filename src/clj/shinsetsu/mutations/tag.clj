@@ -53,17 +53,5 @@
           (log/info "User with ID" user-id "deleted tag" id "successfully")
           deleted-tag)))))
 
-(defmutation fetch-tags
-  [{{user-id :user/id} :request} input]
-  {::pc/params #{:tag/name :tag/name-pos}
-   ::pc/output [{:user/tags tag-output}]}
-  (let [input (merge input {:tag/user-id user-id})]
-    (if-let [err (m/explain s/tag-multi-fetch-spec input)]
-      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
-    (log/info "User" user-id "requested all tags")
-    (let [tags (db/fetch-tags input)]
-      (log/info "All tags fetched from user" user-id)
-      {:user/tags (mapv trim-tag tags)})))
-
 (comment
   (str "boo" nil "boo"))

@@ -1,14 +1,12 @@
 (ns shinsetsu.mutations.tab
   (:require
-    [medley.core :refer [dissoc-in]]
-    [shinsetsu.application :refer [app]]
-    [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]
+    [com.fulcrologic.fulcro.algorithms.normalized-state :as ns]
     [com.fulcrologic.fulcro.components :as comp]
-    [com.fulcrologic.fulcro.mutations :as m]
-    [taoensso.timbre :as log]
-    [com.fulcrologic.fulcro.algorithms.normalized-state :as ns]))
+    [com.fulcrologic.fulcro.mutations :refer [defmutation]]
+    [medley.core :refer [dissoc-in]]
+    [taoensso.timbre :as log]))
 
 (defmutation create-tab
   [{:tab/keys [password]}]
@@ -41,7 +39,7 @@
                       (assoc-in (conj ref :ui/error-type) error-type)))))
 
 (defmutation patch-tab
-  [{:tab/keys [id password change-password?]}]
+  [{:tab/keys [id change-password?]}]
   (action
     [{:keys [state ref]}]
     (log/debug "Patching tab" id)
@@ -94,6 +92,15 @@
     (swap! state #(-> %
                       (assoc-in (conj ref :ui/loading?) false)
                       (assoc-in (conj ref :ui/error-type) error-type)))))
+
+(defmutation unlock-tab
+  [p]
+  (action
+    [{:keys [state]}]
+    (log/debug "Unlocking tab" (:tab/id p))
+    (let [Tab     (comp/registry-key->class `shinsetsu.ui.tab/Tab)
+          tab-idt (comp/get-ident Tab p)]
+      (swap! state assoc-in (conj tab-idt :ui/unlocked?) true))))
 
 (defmutation lock-tab
   [p]

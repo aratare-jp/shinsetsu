@@ -64,7 +64,6 @@
   [_]
   (action
     [_]
-    (if-let [token (get-key @store :userToken)]
-      (do
-        (move-to-tab))
+    (if (get-key @store :userToken)
+      (move-to-tab)
       (move-to-login))))

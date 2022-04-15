@@ -1,11 +1,11 @@
 (ns shinsetsu.ui.login
   (:require
-    [shinsetsu.mutations.user :as um]
-    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
-    [com.fulcrologic.fulcro.dom :refer [div label input form button h1 h2]]
-    [com.fulcrologic.fulcro.mutations :as m]
-    [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
+    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+    [com.fulcrologic.fulcro.dom :refer [button div form h1 h2 input label]]
+    [com.fulcrologic.fulcro.dom.events :as evt]
+    [com.fulcrologic.fulcro.mutations :as m]
+    [shinsetsu.mutations.user :as um]
     [shinsetsu.ui.elastic :as e]))
 
 (defn login-valid?

@@ -8,9 +8,8 @@
     [shinsetsu.store :refer [store get-key]]
     [com.fulcrologic.fulcro.dom :refer [div h2 p]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
-    [com.fulcrologic.fulcro.routing.dynamic-routing :refer [defrouter]]
-    [com.fulcrologic.fulcro.mutations :as m]
-    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]))
+    [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
+    [com.fulcrologic.fulcro.mutations :as m]))
 
 (defrouter RootRouter
   [_ {:keys [current-state]}]
@@ -54,8 +53,9 @@
                  :isFullWidth true
                  :buttonSize  "s"
                  :idSelected  selected-tab-id
-                 :options     [{:id "tab" :label "Tab" :value "tab"}
-                               {:id "tag" :label "Tag" :value "tag"}]
+                 :options     [{:id "tab" :label "Tabs" :value "tab"}
+                               {:id "tag" :label "Tags" :value "tag"}
+                               {:id "session" :label "Sessions" :value "session"}]
                  :onChange    (fn [id value]
                                 (m/set-value! this :ui/selected-tab-id id)
                                 (dr/change-route app [value]))})))

@@ -1,7 +1,7 @@
 (ns shinsetsu.server
   (:require
     [aleph.http :as http]
-    [mount.core :refer [defstate start start-with-args stop]]
+    [mount.core :as m]
     [clojure.tools.cli :as cli]
     [taoensso.timbre :as log]
     [shinsetsu.config :refer [env]]
@@ -22,7 +22,7 @@
 
 (defonce server (atom nil))
 
-(defstate ^{:on-reload :noop} http-server
+(m/defstate ^{:on-reload :noop} http-server
   :start
   (reset! server (http/start-server app (assoc env :port (or (-> env :options :port) 3000))))
   :stop
@@ -30,7 +30,7 @@
     (.close @server)
     (reset! server nil)))
 
-(defstate ^{:on-reload :noop} repl-server
+(m/defstate ^{:on-reload :noop} repl-server
   :start
   (when (:nrepl-port env)
     (nrepl/start {:bind (:nrepl-bind env)
@@ -42,7 +42,7 @@
 (defn stop-app
   "Stops everything and shutdown the web app."
   []
-  (doseq [component (:stopped (stop))]
+  (doseq [component (:stopped (m/stop))]
     (log/info component "stopped"))
   (shutdown-agents))
 
@@ -50,10 +50,10 @@
   "Initialise everything and start the web app."
   ([] (start-app {}))
   ([args]
-   (start #'shinsetsu.config/env)
+   (m/start #'shinsetsu.config/env)
    (doseq [component (-> args
                          (cli/parse-opts cli-options)
-                         start-with-args
+                         m/start-with-args
                          :started)]
      (log/info component "started"))))
 
@@ -63,6 +63,6 @@
 
 (comment
   (require '[user])
-  (user/start)
+  (user/restart)
   {:a 1 :b 2 :c {:d 3}}
   (+ 1 2))

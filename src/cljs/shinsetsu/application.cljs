@@ -3,8 +3,7 @@
     [com.fulcrologic.fulcro.application :as app]
     [shinsetsu.store :refer [store get-key set-key]]
     [com.fulcrologic.fulcro.networking.http-remote :as http]
-    [com.fulcrologic.fulcro.networking.file-upload :as fu]
-    [taoensso.timbre :as log]))
+    [com.fulcrologic.fulcro.networking.file-upload :as fu]))
 
 (defn wrap-auth-token
   ([handler store]

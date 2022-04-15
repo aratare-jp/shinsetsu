@@ -1,6 +1,5 @@
 (ns shinsetsu.ui.bookmark
   (:require
-    [shinsetsu.application :refer [app]]
     [lambdaisland.deep-diff2 :refer [diff]]
     [shinsetsu.mutations.tag :refer [fetch-tag-options]]
     [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
@@ -16,9 +15,7 @@
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
     [com.fulcrologic.fulcro.dom.events :as evt]
     [com.fulcrologic.fulcro.networking.file-upload :as fu]
-    [taoensso.timbre :as log]
-    [goog.functions :as gf]
-    [shinsetsu.mutations.common :refer [set-root]]))
+    [goog.functions :as gf]))
 
 (defsc BookmarkModal
   [this
@@ -254,19 +251,17 @@
 
 (def ui-bookmark (comp/factory Bookmark {:keyfn :bookmark/id}))
 
-(defsc NewBookmark
-  [_ _ {:keys [on-edit]}]
-  {}
-  (e/card
-    {:title        "Add New"
-     :titleElement "h2"
-     :paddingSize  "l"
-     :display      "transparent"
-     :image        (e/image {:height "200vh"})
-     :icon         (e/icon {:size "xxl" :type "plus"})
-     :onClick      on-edit}))
-
-(def ui-new-bookmark (comp/factory NewBookmark))
+(defn ui-new-bookmark
+  [props]
+  (let [{:keys [on-edit]} (comp/get-computed props)]
+    (e/card
+      {:title        "Add New"
+       :titleElement "h2"
+       :paddingSize  "l"
+       :display      "transparent"
+       :image        (e/image {:height "200vh"})
+       :icon         (e/icon {:size "xxl" :type "plus"})
+       :onClick      on-edit})))
 
 (defn ui-new-bookmark-modal
   [this {:tab/keys [id bookmarks] :ui/keys [edit-bm-id]}]

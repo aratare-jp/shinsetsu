@@ -58,6 +58,14 @@
                       (assoc-in (conj ref :ui/loading?) false)
                       (assoc-in (conj ref :ui/error-type) error-type)))))
 
+(defmutation post-tags-error-load
+  [p]
+  (action
+    [{:keys [state]}]
+    (let [{:keys [error-type error-message]} (-> p :result :body :user/tags)]
+      (log/error "Failed to fetch tags due to:" error-message)
+      (swap! state assoc-in [:component/id :shinsetsu.ui.tag/tag :ui/error-type] error-type))))
+
 (defmutation fetch-tags
   [_]
   (action
@@ -67,7 +75,7 @@
   (remote [_] true)
   (ok-action
     [{{{{:user/keys [tags]} `fetch-tags} :body} :result :keys [state ref component]}]
-    (log/debug "Tags fetched patched successfully")
+    (log/debug "Tags fetched successfully")
     (swap! state #(-> %
                       (merge/merge-component component {:ui/tags tags})
                       (assoc-in (conj ref :ui/loading?) false))))

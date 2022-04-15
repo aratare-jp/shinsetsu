@@ -1,13 +1,13 @@
 (ns shinsetsu.resolvers.bookmark-tag
   (:require
-    [com.wsscode.pathom.connect :as pc :refer [defresolver]]
+    [com.wsscode.pathom.connect :as pc]
     [taoensso.timbre :as log]
     [shinsetsu.db.bookmark-tag :as bookmark-tag-db]
     [malli.core :as m]
     [shinsetsu.schema :as s]
     [malli.error :as me]))
 
-(defresolver bookmark-tag-resolver-by-bookmark
+(pc/defresolver bookmark-tag-resolver-by-bookmark
   [{{user-id :user/id} :request} {:bookmark/keys [id]}]
   {::pc/input  #{:bookmark/id}
    ::pc/output [{:bookmark/tags [:tag/id]}]}
