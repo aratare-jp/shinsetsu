@@ -1,11 +1,11 @@
 (ns shinsetsu.mutations.tag
   (:require
-    [shinsetsu.db.tag :as db]
     [com.wsscode.pathom.connect :as pc :refer [defmutation]]
-    [taoensso.timbre :as log]
     [malli.core :as m]
+    [malli.error :as me]
+    [shinsetsu.db.tag :as db]
     [shinsetsu.schema :as s]
-    [malli.error :as me]))
+    [taoensso.timbre :as log]))
 
 (def tag-output [:tag/id :tag/name :tag/colour :tag/created :tag/updated])
 (defn trim-tag [tag] (-> tag (dissoc :tag/user-id)))

@@ -1,21 +1,22 @@
 (ns shinsetsu.ui.bookmark
   (:require
-    [lambdaisland.deep-diff2 :refer [diff]]
-    [shinsetsu.mutations.tag :refer [fetch-tag-options]]
-    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
-    [com.fulcrologic.fulcro.algorithms.form-state :as fs]
-    [com.fulcrologic.fulcro.dom :refer [p h1 div]]
-    [com.fulcrologic.fulcro.mutations :as m]
     [clojure.browser.dom :refer [get-element]]
-    [malli.core :as mc]
-    [shinsetsu.schema :as s]
-    [shinsetsu.mutations.bookmark :refer [create-bookmark patch-bookmark delete-bookmark]]
-    [shinsetsu.ui.elastic :as e]
-    [shinsetsu.ui.tag :as tui]
+    [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
+    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+    [com.fulcrologic.fulcro.data-fetch :as df]
+    [com.fulcrologic.fulcro.dom :refer [div h1 p]]
     [com.fulcrologic.fulcro.dom.events :as evt]
+    [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.networking.file-upload :as fu]
-    [goog.functions :as gf]))
+    [goog.functions :as gf]
+    [lambdaisland.deep-diff2 :refer [diff]]
+    [malli.core :as mc]
+    [shinsetsu.mutations.bookmark :refer [create-bookmark delete-bookmark patch-bookmark]]
+    [shinsetsu.mutations.tag :refer [post-options-load]]
+    [shinsetsu.schema :as s]
+    [shinsetsu.ui.elastic :as e]
+    [shinsetsu.ui.tag :as tui]))
 
 (defsc BookmarkModal
   [this
@@ -120,13 +121,19 @@
                                   (fn [{:tag/keys [id name colour]}]
                                     {:key (str "tag-option-" id) :label name :color colour :value id})
                                   tag-options)
-               :onSearchChange  (letfn []
-                                  (gf/debounce
-                                    (fn [name-tag]
-                                      (if (not (empty? name-tag))
-                                        (comp/transact! this [{(fetch-tag-options #:tag{:name name-tag})
-                                                               [{:user/tags [:tag/id :tag/name :tag/colour]}]}])))
-                                    500))
+               :onSearchChange  (gf/debounce
+                                  (fn [name-tag]
+                                    (if (not (empty? name-tag))
+                                      (do
+                                        (m/set-value! this :ui/tags-loading? true)
+                                        (df/load-field! this :ui/tag-options {:update-query         (fn [q]
+                                                                                                      [{:user/tags (-> q
+                                                                                                                       first
+                                                                                                                       :ui/tag-options)}])
+                                                                              :params               {:tag/name name-tag}
+                                                                              :post-mutation        `post-options-load
+                                                                              :post-mutation-params {:ident (comp/get-ident this)}}))))
+                                  500)
                :onChange        (fn [opts]
                                   (let [tags (as-> opts $
                                                    (js->clj $ :keywordize-keys true)
@@ -251,11 +258,19 @@
 
 (def ui-bookmark (comp/factory Bookmark {:keyfn :bookmark/id}))
 
+(defn ui-loading-bookmark
+  []
+  (e/card
+    {:title       (e/loading-content {:lines 1})
+     :description (e/loading-content {:lines 1})
+     :paddingSize "l"
+     :image       (e/image {:height "200vh"})}))
+
 (defn ui-new-bookmark
   [props]
   (let [{:keys [on-edit]} (comp/get-computed props)]
     (e/card
-      {:title        "Add New"
+      {:title        "New Bookmark"
        :titleElement "h2"
        :paddingSize  "l"
        :display      "transparent"

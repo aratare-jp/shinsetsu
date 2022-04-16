@@ -1,11 +1,11 @@
 (ns shinsetsu.client
   (:require
-    [shinsetsu.application :refer [app]]
-    [shinsetsu.ui.root :refer [Root]]
-    [shinsetsu.mutations.user :refer [fetch-current-user]]
-    [com.fulcrologic.fulcro.components :as comp]
     [com.fulcrologic.fulcro.application :as app]
+    [com.fulcrologic.fulcro.components :as comp]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
+    [shinsetsu.application :refer [app]]
+    [shinsetsu.mutations.user :refer [fetch-current-user]]
+    [shinsetsu.ui.root :refer [Root]]
     [taoensso.timbre :as log]))
 
 (defn ^:export init

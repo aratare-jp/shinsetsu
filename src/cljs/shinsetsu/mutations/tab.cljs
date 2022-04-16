@@ -93,14 +93,27 @@
                       (assoc-in (conj ref :ui/loading?) false)
                       (assoc-in (conj ref :ui/error-type) error-type)))))
 
-(defmutation unlock-tab
+(defmutation post-load-locked-bookmarks
   [p]
   (action
     [{:keys [state]}]
-    (log/debug "Unlocking tab" (:tab/id p))
+    (log/debug "Post load protected bookmarks for tab" (:tab/id p))
     (let [Tab     (comp/registry-key->class `shinsetsu.ui.tab/Tab)
           tab-idt (comp/get-ident Tab p)]
-      (swap! state assoc-in (conj tab-idt :ui/unlocked?) true))))
+      (js/setTimeout
+        #(swap! state (fn [s] (-> s
+                                  (assoc-in (conj tab-idt :ui/loading?) false)
+                                  (assoc-in (conj tab-idt :ui/unlocked?) true))))
+        1))))
+
+(defmutation post-load-unlocked-bookmarks
+  [p]
+  (action
+    [{:keys [state]}]
+    (log/debug "Post load unprotected bookmarks for tab" (:tab/id p))
+    (let [Tab     (comp/registry-key->class `shinsetsu.ui.tab/Tab)
+          tab-idt (comp/get-ident Tab p)]
+      (js/setTimeout #(swap! state assoc-in (conj tab-idt :ui/loading?) false) 1))))
 
 (defmutation lock-tab
   [p]

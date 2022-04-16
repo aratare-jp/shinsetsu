@@ -86,27 +86,18 @@
                       (assoc-in (conj ref :ui/loading?) false)
                       (assoc-in (conj ref :ui/error-type) error-type)))))
 
-(defmutation fetch-tag-options
-  [_]
+(defmutation post-options-load
+  [{:keys [ident]}]
   (action
-    [{:keys [state ref]}]
-    (log/debug "Fetching tag options")
-    (swap! state assoc-in (conj ref :ui/tags-loading?) true))
-  (remote
-    [{:keys [ast]}]
-    (assoc ast :key `fetch-tags))
-  (ok-action
-    [{{{{:user/keys [tags]} `fetch-tags} :body} :result :keys [state ref]}]
-    (log/debug "Tag options fetched patched successfully")
-    (swap! state #(-> %
-                      (assoc-in (conj ref :ui/tag-options) tags)
-                      (assoc-in (conj ref :ui/tags-loading?) false))))
-  (error-action
-    [{{{{:keys [error-type error-message]} `fetch-tag-options} :body} :result :keys [state ref]}]
-    (log/error "Failed to fetch tag options due to:" error-message)
-    (swap! state #(-> %
-                      (assoc-in (conj ref :ui/tags-loading?) false)
-                      (assoc-in (conj ref :ui/error-type) error-type)))))
+    [{:keys [state]}]
+    (swap! state #(let [out-idt  (conj ident :user/tags)
+                        in-idt   (conj ident :ui/tag-options)
+                        load-idt (conj ident :ui/tags-loading?)
+                        inner    (get-in % out-idt)]
+                    (-> %
+                        (dissoc-in out-idt)
+                        (assoc-in load-idt false)
+                        (assoc-in in-idt inner))))))
 
 (defmutation delete-tag
   [{:tag/keys [id]}]

@@ -68,7 +68,10 @@
 
 (defn create-parser
   [resolvers]
-  (p/parser {::p/env     {::p/reader                 [pc/open-ident-reader p/map-reader pc/reader2 pc/index-reader]
+  (p/parser {::p/env     {::p/reader                 [pc/open-ident-reader
+                                                      p/map-reader
+                                                      pc/reader2
+                                                      pc/index-reader]
                           ::p/process-error          process-error
                           ::pc/mutation-join-globals [:tempids]}
              ::p/mutate  pc/mutate

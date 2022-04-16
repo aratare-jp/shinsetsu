@@ -1,7 +1,11 @@
 (ns shinsetsu.ui.elastic
   (:require
     [com.fulcrologic.fulcro.algorithms.react-interop :as ri]
-    ["@elastic/eui" :refer [EuiSelect
+    ["@elastic/eui" :refer [EuiSearchBar
+                            EuiSuggest
+                            EuiSuggestItem
+                            EuiLoadingContent
+                            EuiSelect
                             EuiContextMenu
                             EuiPopover
                             EuiWrappingPopover
@@ -61,6 +65,7 @@
 (def popover (ri/react-factory EuiPopover))
 (def wrapping-popover (ri/react-factory EuiWrappingPopover))
 (def text (ri/react-factory EuiText))
+(def loading-content (ri/react-factory EuiLoadingContent))
 
 ;; List
 (def list-group (ri/react-factory EuiListGroup))
@@ -81,6 +86,15 @@
 (def colour-picker (ri/react-factory EuiColorPicker))
 (def combo-box (ri/react-factory EuiComboBox))
 (def select (ri/react-factory EuiSelect))
+(def suggest (ri/react-factory EuiSuggest))
+(def suggest-item (ri/react-factory EuiSuggestItem))
+(def search-bar (ri/react-factory EuiSearchBar))
+(def search-bar-query-match-all (.-MATCH_ALL (.-Query EuiSearchBar)))
+(defn query->EsQuery
+  [q]
+  (as-> q $
+        (.toESQuery (.-Query EuiSearchBar) $)
+        (js->clj $ :keywordize-keys true)))
 
 ;; Flex
 (def flex-group (ri/react-factory EuiFlexGroup))

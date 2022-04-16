@@ -1,13 +1,13 @@
 (ns shinsetsu.db.tab
   (:require
-    [shinsetsu.db :refer [ds]]
-    [next.jdbc :as jdbc]
-    [honey.sql.helpers :as helpers]
     [honey.sql :as sql]
-    [taoensso.timbre :as log]
-    [shinsetsu.schema :as s]
+    [honey.sql.helpers :as helpers]
+    [malli.core :as m]
     [malli.error :as me]
-    [malli.core :as m])
+    [next.jdbc :as jdbc]
+    [shinsetsu.db :refer [ds]]
+    [shinsetsu.schema :as s]
+    [taoensso.timbre :as log])
   (:import [java.time Instant]))
 
 (defn create-tab
@@ -34,6 +34,19 @@
 
 (defn fetch-tabs
   [{:tab/keys [user-id] :as input}]
+  (if-let [err (m/explain s/tab-multi-fetch-spec input)]
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (do
+      (log/info "Fetch tabs for user" user-id)
+      (jdbc/execute! ds (-> (helpers/select :*)
+                            (helpers/from :tab)
+                            (helpers/where [:= :tab/user-id user-id])
+                            (helpers/order-by [:tab/created :asc])
+                            (sql/format :dialect :ansi))))))
+
+(defn fetch-tabs-with-query
+  "Do deep fetch of tabs/bookmarks/tags."
+  [{:tab/keys [user-id query] :as input}]
   (if-let [err (m/explain s/tab-multi-fetch-spec input)]
     (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
     (do

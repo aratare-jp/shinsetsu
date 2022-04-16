@@ -46,7 +46,8 @@
 (def tab-multi-fetch-spec
   [:map
    {:closed true}
-   [:tab/user-id :uuid]])
+   [:tab/user-id :uuid]
+   [:tab/query {:optional true} map?]])
 
 (def tab-patch-spec
   [:map

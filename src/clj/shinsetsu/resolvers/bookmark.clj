@@ -12,6 +12,7 @@
 (def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/created :bookmark/updated])
 (defn trim-bookmark [b] (dissoc b :bookmark/user-id :bookmark/tab-id))
 
+;; FIXME: Currently bookmark is not guarded. Need to find a way to guard it with password.
 (pc/defresolver bookmark-resolver
   [{{user-id :user/id} :request} {bookmark-id :bookmark/id :as input}]
   {::pc/input  #{:bookmark/id}
@@ -30,9 +31,7 @@
   {::pc/input  #{:tab/id}
    ::pc/output [{:tab/bookmarks bookmark-output}]
    ::pc/params [:tab/password]}
-  (log/spy (-> env :query-params))
-  ;; Fetch tab and verify against the provided password.
-  (let [password       (log/spy (-> env :query-params :tab/password))
+  (let [{:tab/keys [password query]} (-> env :query-params)
         tab-input      (if password
                          (merge input {:tab/password password :tab/user-id user-id})
                          (merge input {:tab/user-id user-id}))
@@ -46,10 +45,15 @@
     (if-let [err (or (m/explain s/tab-fetch-spec tab-input) (m/explain s/bookmark-multi-fetch-spec bookmark-input))]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (if-let [pwd (-> tab-input tab-db/fetch-tab :tab/password)]
-        ;; FIXME: Need to do this to continue with development.
-        (if (hashers/check password pwd)
-          ;; Fetch all bookmarks related to this tab.
+        (cond
+          ;; If the bookmark is protected, skip when we are searching.
+          (and query pwd)
+          nil
+
+          (hashers/check password pwd)
           (callback)
+
+          :else
           (do
             (log/warn "User" user-id "attempted to fetch tab" id "with wrong password")
             (throw (ex-info "Invalid input" {:error-type :wrong-password}))))

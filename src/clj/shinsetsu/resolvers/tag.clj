@@ -1,11 +1,11 @@
 (ns shinsetsu.resolvers.tag
   (:require
     [com.wsscode.pathom.connect :as pc :refer [defresolver]]
-    [shinsetsu.db.tag :as tag-db]
-    [taoensso.timbre :as log]
+    [malli.core :as m]
     [malli.error :as me]
+    [shinsetsu.db.tag :as tag-db]
     [shinsetsu.schema :as s]
-    [malli.core :as m]))
+    [taoensso.timbre :as log]))
 
 (def tag-output [:tag/id :tag/name :tag/colour :tag/created :tag/updated])
 (defn trim-tag [tag] (-> tag (dissoc :tag/user-id)))
@@ -26,7 +26,7 @@
 (defresolver tags-resolver
   [{{user-id :user/id} :request :as env} _]
   {::pc/output [{:user/tags tag-output}]}
-  (let [{:tag/keys [name name-pos]} (-> env :ast :params)
+  (let [{:tag/keys [name name-pos]} (-> env :query-params)
         input #:tag{:name name :name-pos name-pos :user-id user-id}]
     (if-let [err (m/explain s/tag-multi-fetch-spec input)]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
