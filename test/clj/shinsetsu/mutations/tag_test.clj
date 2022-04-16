@@ -201,54 +201,10 @@
              :error-data    {:tag/id ["should be a uuid"]}}
             error)))
 
-(defexpect ^:mutation ^:integration ^:tag normal-fetch-tags
-  (let [tag1     (tag-db/create-tag {:tag/name "foo" :tag/colour "#fff" :tag/user-id @user-id})
-        tag2     (tag-db/create-tag {:tag/name "foo1" :tag/colour "#000000" :tag/user-id @user-id})
-        tag3     (tag-db/create-tag {:tag/name "bar" :tag/colour "#fafafa" :tag/user-id @user-id})
-        expected {`tag-mut/fetch-tags {:user/tags (mapv trim-tag [tag1 tag2 tag3])}}
-        query    [{`(tag-mut/fetch-tags {}) [:user/tags]}]
-        actual   (protected-parser {:request {:user/id @user-id}} query)]
-    (expect expected actual)))
-
-(defexpect ^:mutation ^:integration ^:tag normal-fetch-tags-with-name-start
-  (let [tag1     (tag-db/create-tag {:tag/name "foo" :tag/colour "#fff" :tag/user-id @user-id})
-        tag2     (tag-db/create-tag {:tag/name "foo1" :tag/colour "#000000" :tag/user-id @user-id})
-        tag3     (tag-db/create-tag {:tag/name "bar" :tag/colour "#fafafa" :tag/user-id @user-id})
-        expected {`tag-mut/fetch-tags {:user/tags (mapv trim-tag [tag1 tag2])}}
-        query    [{`(tag-mut/fetch-tags #:tag{:name "foo" :name-pos :start}) [:user/tags]}]
-        actual   (protected-parser {:request {:user/id @user-id}} query)]
-    (expect expected actual)))
-
-(defexpect ^:mutation ^:integration ^:tag normal-fetch-tags-with-name-end
-  (let [tag1     (tag-db/create-tag {:tag/name "foo" :tag/colour "#fff" :tag/user-id @user-id})
-        tag2     (tag-db/create-tag {:tag/name "foo1" :tag/colour "#000000" :tag/user-id @user-id})
-        tag3     (tag-db/create-tag {:tag/name "bao1" :tag/colour "#fafafa" :tag/user-id @user-id})
-        expected {`tag-mut/fetch-tags {:user/tags (mapv trim-tag [tag2 tag3])}}
-        query    [{`(tag-mut/fetch-tags #:tag{:name "o1" :name-pos :end}) [:user/tags]}]
-        actual   (protected-parser {:request {:user/id @user-id}} query)]
-    (expect expected actual)))
-
-(defexpect ^:mutation ^:integration ^:tag normal-fetch-tags-with-name-between
-  (let [tag1     (tag-db/create-tag {:tag/name "foo" :tag/colour "#fff" :tag/user-id @user-id})
-        tag2     (tag-db/create-tag {:tag/name "gao1" :tag/colour "#000000" :tag/user-id @user-id})
-        tag3     (tag-db/create-tag {:tag/name "boo1" :tag/colour "#fafafa" :tag/user-id @user-id})
-        expected {`tag-mut/fetch-tags {:user/tags (mapv trim-tag [tag1 tag3])}}
-        query1   [{`(tag-mut/fetch-tags #:tag{:name "oo" :name-pos :between}) [:user/tags]}]
-        actual1  (protected-parser {:request {:user/id @user-id}} query1)
-        query2   [{`(tag-mut/fetch-tags #:tag{:name "oo"}) [:user/tags]}]
-        actual2  (protected-parser {:request {:user/id @user-id}} query1)]
-    (expect expected actual1)
-    (expect expected actual2)))
-
-(defexpect ^:mutation ^:integration ^:tag normal-fetch-empty-tags
-  (let [expected {`tag-mut/fetch-tags {:user/tags []}}
-        query    [{`(tag-mut/fetch-tags #:tag{:name "oo" :name-pos :between}) [:user/tags]}]
-        actual   (protected-parser {:request {:user/id @user-id}} query)]
-    (expect expected actual)))
-
 (comment
   (require '[kaocha.repl :as k])
   (require '[malli.core :as m])
   (m/validate [:map [:a :int] [:b {:optional true} [:maybe :int]]] {:a 3 :b 3})
   (k/run 'shinsetsu.mutations.tag-test)
+  (k/run-all {:fail-fast? true})
   (k/run #'shinsetsu.mutations.tag-test/fail-delete-tag-with-invalid-id))

@@ -43,7 +43,7 @@
 
 (defn process-error
   [_ err]
-  (log/error err)
+  (log/error "An exception has occurred:" err)
   (if (instance? ExceptionInfo err)
     (let [data    (ex-data err)
           message (ex-message err)]

@@ -1,7 +1,6 @@
 (ns shinsetsu.mutations.bookmark
   (:require
     [medley.core :refer [dissoc-in]]
-    [shinsetsu.application :refer [app]]
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.components :as comp]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]
@@ -9,35 +8,6 @@
     [com.fulcrologic.fulcro.algorithms.normalized-state :as ns]
     [taoensso.timbre :as log]
     [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]))
-
-(defmutation fetch-bookmarks
-  [{:tab/keys [id]}]
-  (action
-    [{:keys [state ref]}]
-    (log/debug "Fetching bookmarks for tab" id)
-    (swap! state assoc-in (conj ref :ui/loading?) true))
-  (remote [_] true)
-  (ok-action
-    [{{{bookmarks `fetch-bookmarks} :body} :result :keys [state ref component]}]
-    (log/debug "Bookmarks for tab" id "fetched successfully")
-    (let [TabModal (comp/registry-key->class `shinsetsu.ui.tab/TabModal)]
-      (swap! state #(-> %
-                        (merge/merge-component component bookmarks)
-                        (dissoc-in (conj ref :ui/password))
-                        (dissoc-in (conj ref :ui/error-type))
-                        (assoc-in (conj ref :ui/loading?) false)
-                        (assoc-in (conj ref :ui/unlocked?) true)
-                        (fs/add-form-config* TabModal ref)))))
-  (error-action
-    [{{{{:keys [error-type error-message]} `fetch-bookmarks} :body} :result :keys [state ref]}]
-    (log/error "Failed to fetch bookmarks due to:" error-message)
-    (swap! state #(-> %
-                      (assoc-in (conj ref :ui/loading?) false)
-                      (assoc-in (conj ref :ui/error-type) error-type)))
-    (if error-type
-      (let [tid (get-in @state (conj ref :ui/load-timer))]
-        (js/clearInterval tid)
-        (swap! state dissoc-in (conj ref :ui/load-timer))))))
 
 (defmutation create-bookmark
   [{:bookmark/keys [tab-id]}]

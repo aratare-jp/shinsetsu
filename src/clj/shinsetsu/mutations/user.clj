@@ -10,8 +10,6 @@
     [shinsetsu.schema :as s]
     [malli.error :as me]))
 
-;; TODO: SPEC THESE SUCKERS!
-
 (defn create-token
   [user]
   (let [secret (:secret config/env)]
