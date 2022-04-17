@@ -324,12 +324,13 @@
 (defn- ui-search-bar
   [this {:ui/keys [search-query search-error loading?]}]
   (js/console.log (e/query->EsQuery search-query))
-  (let [schema {:strict true? :fields {:tag {:type "string"}}}]
+  (println (e/query->EsQuery search-query))
+  (let [schema {:strict true? :fields {:tag  {:type "string"}
+                                       :name {:type "string"}}}]
     (e/flex-group {:justifyContent "spaceAround"}
       (e/flex-item {}
         (e/search-bar
           {:defaultQuery search-query
-           :query        search-query
            :box          {:schema      schema
                           :incremental true
                           :isLoading   loading?}
@@ -341,10 +342,10 @@
                                  (do
                                    (m/set-value! this :ui/search-query query)
                                    (m/set-value! this :ui/search-error nil)
-                                   (m/set-value! this :ui/loading? true)
-                                   (df/load! app :user/tabs Tab {:target      (targeting/replace-at [:ui/tabs])
-                                                                 :params      {:tab/query (e/query->EsQuery query)}
-                                                                 :post-action #(m/set-value! this :ui/loading? false)})))))
+                                   #_(m/set-value! this :ui/loading? true)
+                                   #_(df/load! app :user/tabs Tab {:target      (targeting/replace-at [:ui/tabs])
+                                                                   :params      {:tab/query (e/query->EsQuery query)}
+                                                                   :post-action #(m/set-value! this :ui/loading? false)})))))
                            500)})))))
 
 (defn- ui-tab-main-body
@@ -402,7 +403,8 @@
                                                        :without              #{:tab/bookmarks}
                                                        :post-mutation        `dr/target-ready
                                                        :post-mutation-params {:target [:component/id ::tab]}}))))}
-  [(if edit-tab-id
+  [(ui-search-bar this props)
+   (if edit-tab-id
      (if (tempid/tempid? edit-tab-id)
        (ui-new-tab-modal this props)
        (ui-edit-tab-modal this props)))

@@ -39,7 +39,7 @@
         callback       (fn []
                          (log/info "Fetching all bookmarks within tab" id "for user" user-id)
                          (let [bookmarks {:tab/id        id
-                                          :tab/bookmarks (->> bookmark-input db/fetch-bookmarks (mapv trim-bookmark))}]
+                                          :tab/bookmarks (mapv trim-bookmark (db/fetch-bookmarks bookmark-input query))}]
                            (log/info "User" user-id "fetched bookmarks within tab" id "successfully")
                            bookmarks))]
     (if-let [err (or (m/explain s/tab-fetch-spec tab-input) (m/explain s/bookmark-multi-fetch-spec bookmark-input))]
@@ -47,6 +47,7 @@
       (if-let [pwd (-> tab-input tab-db/fetch-tab :tab/password)]
         (cond
           ;; If the bookmark is protected, skip when we are searching.
+          ;; TODO: Should check if the tab is currently unlocked
           (and query pwd)
           nil
 

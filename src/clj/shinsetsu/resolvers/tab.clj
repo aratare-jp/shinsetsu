@@ -16,11 +16,9 @@
       (select-keys tab-output)))
 
 (pc/defresolver tabs-resolver
-  [{{user-id :user/id} :request :as env} _]
-  {::pc/params [:tab/query]
-   ::pc/output [{:user/tabs tab-output}]}
-  (let [query (log/spy (-> env :query-params :tab/query))
-        input {:tab/user-id user-id}]
+  [{{user-id :user/id} :request} _]
+  {::pc/output [{:user/tabs tab-output}]}
+  (let [input {:tab/user-id user-id}]
     (if-let [err (m/explain s/tab-multi-fetch-spec input)]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
