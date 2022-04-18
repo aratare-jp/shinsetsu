@@ -31,30 +31,21 @@
   {::pc/input  #{:tab/id}
    ::pc/output [{:tab/bookmarks bookmark-output}]
    ::pc/params [:tab/password]}
-  (let [{:tab/keys [password query]} (-> env :query-params)
+  (let [{:tab/keys [password]} (-> env :query-params)
         tab-input      (if password
                          (merge input {:tab/password password :tab/user-id user-id})
                          (merge input {:tab/user-id user-id}))
         bookmark-input #:bookmark{:tab-id id :user-id user-id}
         callback       (fn []
                          (log/info "Fetching all bookmarks within tab" id "for user" user-id)
-                         (let [bookmarks {:tab/id        id
-                                          :tab/bookmarks (mapv trim-bookmark (db/fetch-bookmarks bookmark-input query))}]
+                         (let [bookmarks {:tab/id id :tab/bookmarks (mapv trim-bookmark (db/fetch-bookmarks bookmark-input))}]
                            (log/info "User" user-id "fetched bookmarks within tab" id "successfully")
                            bookmarks))]
-    (if-let [err (or (m/explain s/tab-fetch-spec tab-input) (m/explain s/bookmark-multi-fetch-spec bookmark-input))]
+    (if-let [err (or (m/explain s/tab-fetch-spec tab-input) (m/explain s/bookmark-bulk-fetch-spec bookmark-input))]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (if-let [pwd (-> tab-input tab-db/fetch-tab :tab/password)]
-        (cond
-          ;; If the bookmark is protected, skip when we are searching.
-          ;; TODO: Should check if the tab is currently unlocked
-          (and query pwd)
-          nil
-
-          (hashers/check password pwd)
+        (if (hashers/check password pwd)
           (callback)
-
-          :else
           (do
             (log/warn "User" user-id "attempted to fetch tab" id "with wrong password")
             (throw (ex-info "Invalid input" {:error-type :wrong-password}))))

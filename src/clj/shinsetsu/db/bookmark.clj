@@ -104,23 +104,79 @@
       {:must     (inner-simplify (get-in q [:bool :must]))
        :must-not (inner-simplify (get-in q [:bool :must-not]))})))
 
+(defn- query->sql
+  "Given a query after parsed by `simplify-query`, return an SQL"
+  [query user-id]
+  (letfn [(tag-fn [tag-name]
+            [:in :bookmark-tag/tag-id (-> (helpers/select :tag/id)
+                                          (helpers/from :tag)
+                                          (helpers/where [:ilike :tag/name (str "%" tag-name "%")]))])
+          (inner-fn [kw col]
+            (into [kw]
+                  (mapv
+                    (fn [i] [:in :bookmark-tag/bookmark-id (-> (helpers/select-distinct :bookmark-tag/bookmark-id)
+                                                               (helpers/from :bookmark-tag)
+                                                               (helpers/where (tag-fn i)))])
+                    col)))]
+    (into
+      [:and]
+      (reduce
+        (fn [acc [_ v]]
+          (reduce
+            (fn [acc [k {:keys [and or] :as v}]]
+              (case k
+                :simple
+                (conj acc [:ilike :bookmark/title (str "%" v "%")])
+                :name
+                (reduce
+                  (fn [acc [k v]]
+                    (case k
+                      :and (vec (concat acc (mapv (fn [n] [:ilike :bookmark/title (str "%" n "%")]) v)))
+                      :or (conj acc (into [:or] (mapv (fn [n] [:ilike :bookmark/title (str "%" n "%")]) v)))))
+                  acc
+                  v)
+                :tag
+                (conj acc [:in :bookmark/id (-> (helpers/select-distinct :bookmark-tag/bookmark-id)
+                                                (helpers/from :bookmark-tag)
+                                                (helpers/where (inner-fn :and and) (inner-fn :or or)))])))
+            acc
+            v))
+        [[:= :bookmark/user-id user-id]]
+        query))))
+
+(defn test-fetch
+  [q]
+  (jdbc/execute! ds q))
+
 (defn fetch-bookmarks
-  ([input] (fetch-bookmarks input nil))
-  ([{:bookmark/keys [tab-id user-id] :as input} query]
-   (if-let [err (m/explain s/bookmark-multi-fetch-spec input)]
+  [{:bookmark/keys [tab-id user-id] :as input}]
+  (if-let [err (m/explain s/bookmark-bulk-fetch-spec input)]
+    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
+    (do
+      (log/info "Fetch all bookmarks in tab" tab-id "for user" user-id)
+      (jdbc/execute! ds (-> (helpers/select :*)
+                            (helpers/from :bookmark)
+                            (helpers/where [:= :bookmark/user-id user-id] [:= :bookmark/tab-id tab-id])
+                            (helpers/order-by [:bookmark/created :asc])
+                            (sql/format))))))
+
+(defn fetch-bookmarks-with-query
+  ([{:bookmark/keys [user-id] :as input} query]
+   (if-let [err (or (m/explain s/bookmark-bulk-fetch-with-query-spec input) (m/explain :map query))]
      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
      (do
-       (log/info "Fetch all bookmarks in tab" tab-id "for user" user-id)
+       (log/info "Fetch all bookmarks filtered for user" user-id)
        (jdbc/execute! ds (-> (helpers/select :*)
                              (helpers/from :bookmark)
-                             (helpers/where [:= :bookmark/user-id user-id]
-                                            [:= :bookmark/tab-id tab-id]
-                                            (if-let [query (simplify-query query)]
-                                              (into [])))
+                             (helpers/where (query->sql (simplify-query query) user-id))
                              (helpers/order-by [:bookmark/created :asc])
                              (sql/format)))))))
 
 (comment
+  (require '[mount.core :as mount])
+  (require '[shinsetsu.db :refer [ds]])
+  (mount/start)
+  ds
   (let [keywordize (fn [it]
                      (if (map? it)
                        (reduce (fn [acc [k v]] (assoc acc (keyword k) v)) {} it)
@@ -149,65 +205,17 @@
                                                        {:match_phrase {:name "ccc ddd"}}]}}
                                       {:bool {:should [{:match {:tag {:query "world", :operator "or"}}}
                                                        {:match_phrase {:tag "hello world"}}]}}]}}
+        query      {:bool {:must [{:bool {:should [{:match {:name {:query "ne", :operator "or"}}}
+                                                   {:match_phrase {:name "you"}}]}}
+                                  {:bool {:should [{:match {:tag {:query "ent", :operator "or"}}}
+                                                   {:match_phrase {:tag "gam"}}]}}]}}
         sql-fn     #(-> (helpers/select :*)
                         (helpers/from :bookmark)
                         (helpers/where %)
                         (helpers/order-by [:bookmark/created :asc])
                         (sql/format {:pretty true}))]
-    (sql-fn
-      (vec (concat
-             [:and]
-             (reduce
-               (fn [acc [k {:keys [simple name tag] :as v}]]
-                 (reduce
-                   (fn [acc [k v]]
-                     (case k
-                       :simple
-                       (conj acc [:ilike :bookmark/title (str "%" v "%")])
-                       :name
-                       (reduce
-                         (fn [acc [k v]]
-                           (case k
-                             :and
-                             (vec (concat acc (mapv (fn [n] [:ilike :bookmark/title (str "%" n "%")]) v)))
-                             :or
-                             (conj acc (vec (concat [:or] (mapv (fn [n] [:ilike :bookmark/title (str "%" n "%")]) v))))))
-                         acc
-                         v)
-                       :tag
-                       (let [{:keys [and or]} v
-                             tag-fn (fn [a]
-                                      [:in :bookmark-tag/tag-id (-> (helpers/select :tag/id)
-                                                                    (helpers/from :tag)
-                                                                    (helpers/where [:ilike :tag/name (str "%" a "%")]))])]
-                         (conj acc
-                               [:in
-                                :bookmark/id
-                                (-> (helpers/select-distinct :bookmark-tag/bookmark-id)
-                                    (helpers/from :bookmark-tag)
-                                    (helpers/where
-                                      (vec (concat
-                                             [:and]
-                                             (mapv
-                                               (fn [i]
-                                                 [:in
-                                                  :bookmark-tag/bookmark-id
-                                                  (-> (helpers/select-distinct :bookmark-tag/bookmark-id)
-                                                      (helpers/from :bookmark-tag)
-                                                      (helpers/where (tag-fn i)))])
-                                               and)))
-                                      (vec (concat
-                                             [:or]
-                                             (mapv
-                                               (fn [i]
-                                                 [:in
-                                                  :bookmark-tag/bookmark-id
-                                                  (-> (helpers/select-distinct :bookmark-tag/bookmark-id)
-                                                      (helpers/from :bookmark-tag)
-                                                      (helpers/where (tag-fn i)))])
-                                               or)))))]))))
-                   acc
-                   v))
-               [[:= :bookmark/user-id "boo"]
-                [:= :bookmark/tab-id "bar"]]
-               (simplify-query query)))))))
+    (->> (fetch-bookmarks-with-query
+           {:bookmark/user-id (java.util.UUID/fromString "983650c1-5137-4595-8e83-f2aa3a6fc545")}
+           query)
+         (mapv #(dissoc % :bookmark/image))))
+  (into [:a] [1 2 3]))

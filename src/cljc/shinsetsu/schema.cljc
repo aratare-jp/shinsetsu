@@ -96,10 +96,15 @@
    [:bookmark/id :uuid]
    [:bookmark/user-id :uuid]])
 
-(def bookmark-multi-fetch-spec
+(def bookmark-bulk-fetch-spec
   [:map
    {:closed true}
    [:bookmark/tab-id :uuid]
+   [:bookmark/user-id :uuid]])
+
+(def bookmark-bulk-fetch-with-query-spec
+  [:map
+   {:closed true}
    [:bookmark/user-id :uuid]])
 
 (def bookmark-patch-spec

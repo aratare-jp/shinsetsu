@@ -9,4 +9,8 @@
 
 (defstate ^{:on-reload :noop} ds
   :start
-  (reset! ads (jdbc/with-options (jdbc/get-datasource (:db-spec config/env)) jdbc/snake-kebab-opts)))
+  (jdbc/with-options (jdbc/get-datasource (:db-spec config/env)) jdbc/snake-kebab-opts))
+
+(comment
+  (require '[mount.core :as mount])
+  (mount/start ds))
