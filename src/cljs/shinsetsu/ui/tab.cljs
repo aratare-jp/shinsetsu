@@ -1,7 +1,7 @@
 (ns shinsetsu.ui.tab
   (:require
     [clojure.browser.dom :refer [get-element]]
-    [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
+    [com.fulcrologic.fulcro.algorithms.data-targeting]
     [com.fulcrologic.fulcro.algorithms.form-state :as fs]
     [com.fulcrologic.fulcro.algorithms.merge :as merge]
     [com.fulcrologic.fulcro.algorithms.tempid :as tempid]
@@ -12,10 +12,11 @@
     [com.fulcrologic.fulcro.mutations :as m]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]
     [goog.functions :as gf]
+    [com.fulcrologic.fulcro.algorithms.data-targeting :as targeting]
     [malli.core :as mc]
     [shinsetsu.application :refer [app]]
     [shinsetsu.mutations.common :refer [remove-ident set-root]]
-    [shinsetsu.mutations.tab :refer [create-tab delete-tab lock-tab patch-tab post-load-locked-bookmarks post-load-unlocked-bookmarks]]
+    [shinsetsu.mutations.tab :as tab-mut]
     [shinsetsu.schema :as s]
     [shinsetsu.ui.bookmark :as bui]
     [shinsetsu.ui.elastic :as e]
@@ -44,13 +45,13 @@
         on-save     (fn [e]
                       (evt/prevent-default! e)
                       (if new?
-                        (comp/transact! this [(create-tab #:tab{:id id :name name :password password})])
+                        (comp/transact! this [(tab-mut/create-tab #:tab{:id id :name name :password password})])
                         (if change-password?
-                          (comp/transact! this [(patch-tab #:tab{:id               id
-                                                                 :name             name
-                                                                 :password         password
-                                                                 :change-password? true})])
-                          (comp/transact! this [(patch-tab #:tab{:id id :name name})]))))
+                          (comp/transact! this [(tab-mut/patch-tab #:tab{:id               id
+                                                                         :name             name
+                                                                         :password         password
+                                                                         :change-password? true})])
+                          (comp/transact! this [(tab-mut/patch-tab #:tab{:id id :name name})]))))
         on-clear    #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
         errors      (case error-type
                       :invalid-input ["Unable to create new tab." "Please try again."]
@@ -174,8 +175,9 @@
                                                    (log/info "Load user bookmarks")
                                                    (m/set-value! this :ui/loading? true)
                                                    (df/load-field! this :tab/bookmarks {:params               {:tab/password password}
-                                                                                        :post-mutation        `post-load-locked-bookmarks
-                                                                                        :post-mutation-params {:tab/id id}}))]
+                                                                                        :post-mutation        `tab-mut/post-load-locked-bookmarks
+                                                                                        :post-mutation-params {:tab/id id}
+                                                                                        :fallback             `tab-mut/post-load-bookmarks-error}))]
                                      (do
                                        (load-fn)
                                        ;; FIXME: Magic number!
@@ -203,16 +205,18 @@
                           :ui/move-bm-id
                           :ui/destination-tab-id]
    :componentWillMount   (fn [this]
-                           (let [{:tab/keys [id is-protected?] :ui/keys [unlocked?]} (comp/props this)
+                           (let [{:tab/keys [id is-protected? search-query] :ui/keys [unlocked?]} (comp/props this)
                                  load-fn (fn []
                                            (log/info "Load user bookmarks")
                                            (m/set-value! this :ui/loading? true)
                                            (df/load-field! this :tab/bookmarks {:without              #{:bookmark/tab-id}
-                                                                                :post-mutation        `post-load-unlocked-bookmarks
+                                                                                :post-mutation        `tab-mut/post-load-unlocked-bookmarks
                                                                                 :post-mutation-params {:tab/id id}}))]
                              (if (or (and is-protected? unlocked?) (not is-protected?))
                                (do
-                                 (load-fn)
+                                 (js/console.log search-query)
+                                 (if-not search-query
+                                   (load-fn))
                                  ;; FIXME: Magic number!
                                  #_(m/set-value! this :ui/load-timer (js/setInterval load-fn 10000))))))
    :componentWillUnmount (fn [this]
@@ -256,7 +260,7 @@
     (e/confirm-modal
       {:title             (str "Delete tab " name)
        :onCancel          #(m/set-value! this :ui/delete-tab-id nil)
-       :onConfirm         #(comp/transact! this [(delete-tab {:tab/id id})])
+       :onConfirm         #(comp/transact! this [(tab-mut/delete-tab {:tab/id id})])
        :cancelButtonText  "Cancel"
        :confirmButtonText "Yes, I'm sure!"
        :buttonColor       "danger"}
@@ -286,7 +290,7 @@
                           :size       "s"
                           :iconType   "lock"
                           :onClick    (fn []
-                                        (comp/transact! this [(lock-tab tab)])
+                                        (comp/transact! this [(tab-mut/lock-tab tab)])
                                         (close-ctx-menu-fn))})))
                    (e/flex-item {:grow false}
                      (e/button-icon
@@ -322,31 +326,38 @@
       tabs)))
 
 (defn- ui-search-bar
-  [this {:ui/keys [search-query search-error loading?]}]
-  (js/console.log (e/query->EsQuery search-query))
-  (println (e/query->EsQuery search-query))
-  (let [schema {:strict true? :fields {:tag  {:type "string"}
-                                       :name {:type "string"}}}]
+  [this {:ui/keys [search-query search-error-type loading?]}]
+  (let [schema  {:strict true? :fields {:tag  {:type "string"}
+                                        :name {:type "string"}}}
+        load-fn (gf/debounce
+                  (fn [query]
+                    (m/set-value! this :ui/loading? true)
+                    (m/set-value! this :ui/search-error-type nil)
+                    (df/load! app :user/tabs Tab {:target        (targeting/replace-at [:ui/tabs])
+                                                  :params        {:tab/query (e/query->EsQuery query)}
+                                                  :post-mutation `tab-mut/post-load-query-bookmarks
+                                                  :fallback      `tab-mut/post-query-bookmarks-error}))
+                  500)]
     (e/flex-group {:justifyContent "spaceAround"}
       (e/flex-item {}
-        (e/search-bar
-          {:defaultQuery search-query
-           :box          {:schema      schema
-                          :incremental true
-                          :isLoading   loading?}
-           :onChange     (gf/debounce
-                           (fn [q]
-                             (let [{:keys [query error]} (js->clj q :keywordize-keys true)]
-                               (if error
-                                 (m/set-value! this :ui/search-error error)
-                                 (do
-                                   (m/set-value! this :ui/search-query query)
-                                   (m/set-value! this :ui/search-error nil)
-                                   #_(m/set-value! this :ui/loading? true)
-                                   #_(df/load! app :user/tabs Tab {:target      (targeting/replace-at [:ui/tabs])
-                                                                   :params      {:tab/query (e/query->EsQuery query)}
-                                                                   :post-action #(m/set-value! this :ui/loading? false)})))))
-                           500)})))))
+        (e/input-popover
+          {:isOpen search-error-type
+           :input  (e/search-bar
+                     {:defaultQuery search-query
+                      :box          {:schema      schema
+                                     :incremental true
+                                     :isLoading   loading?}
+                      :onChange     (gf/debounce
+                                      (fn [q]
+                                        (let [{:keys [query error]} (js->clj q :keywordize-keys true)]
+                                          (if error
+                                            (m/set-value! this :ui/search-error-type error)
+                                            (do
+                                              (m/set-value! this :ui/search-query query)
+                                              (m/set-value! this :ui/search-error-type nil)
+                                              (load-fn query)))))
+                                      500)})}
+          "Your query seems to be incorrect")))))
 
 (defn- ui-tab-main-body
   [this {:ui/keys [tabs current-tab-idx] :as props}]
@@ -373,7 +384,7 @@
       (if (empty? tabs)
         (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
                          :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-        (ui-tab (merge (nth tabs current-tab-idx) (:ui/tabs props)))))))
+        (ui-tab (merge (nth tabs current-tab-idx) {:ui/tabs (:ui/tabs props)}))))))
 
 (defsc TabMain
   [this {:ui/keys [edit-tab-id delete-tab-id] :as props}]
@@ -387,7 +398,7 @@
                    :ui/move-bm-id
                    :ui/destination-tab-id
                    :ui/search-query
-                   :ui/search-error
+                   :ui/search-error-type
                    :ui/loading?]
    :initial-state {:ui/tabs            []
                    :ui/current-tab-idx 0

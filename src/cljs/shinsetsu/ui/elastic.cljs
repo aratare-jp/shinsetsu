@@ -1,7 +1,8 @@
 (ns shinsetsu.ui.elastic
   (:require
     [com.fulcrologic.fulcro.algorithms.react-interop :as ri]
-    ["@elastic/eui" :refer [EuiSearchBar
+    ["@elastic/eui" :refer [EuiInputPopover
+                            EuiSearchBar
                             EuiSuggest
                             EuiSuggestItem
                             EuiLoadingContent
@@ -51,6 +52,8 @@
                             EuiPanel
                             EuiText]]))
 
+
+(def input-popover (ri/react-factory EuiInputPopover))
 (def provider (ri/react-factory EuiProvider))
 (def empty-prompt (ri/react-factory EuiEmptyPrompt))
 (def spacer (ri/react-factory EuiSpacer))

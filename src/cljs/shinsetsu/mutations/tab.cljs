@@ -6,7 +6,8 @@
     [com.fulcrologic.fulcro.components :as comp]
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [medley.core :refer [dissoc-in]]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [com.fulcrologic.fulcro.data-fetch :as df]))
 
 (defmutation create-tab
   [{:tab/keys [password]}]
@@ -93,6 +94,18 @@
                       (assoc-in (conj ref :ui/loading?) false)
                       (assoc-in (conj ref :ui/error-type) error-type)))))
 
+(defmutation post-load-query-bookmarks
+  [p]
+  (action
+    [{:keys [state]}]
+    (log/debug "Post queried bookmarks")
+    (let [TabMain (comp/registry-key->class `shinsetsu.ui.tab/TabMain)
+          tab-idt (comp/get-ident TabMain {})]
+      (swap! state #(-> %
+                        (assoc-in (conj tab-idt :ui/current-tab-idx) 0)
+                        (assoc-in (conj tab-idt :ui/loading?) false)
+                        (assoc-in (conj tab-idt :ui/unlocked?) true))))))
+
 (defmutation post-load-locked-bookmarks
   [p]
   (action
@@ -100,11 +113,25 @@
     (log/debug "Post load protected bookmarks for tab" (:tab/id p))
     (let [Tab     (comp/registry-key->class `shinsetsu.ui.tab/Tab)
           tab-idt (comp/get-ident Tab p)]
-      (js/setTimeout
-        #(swap! state (fn [s] (-> s
-                                  (assoc-in (conj tab-idt :ui/loading?) false)
-                                  (assoc-in (conj tab-idt :ui/unlocked?) true))))
-        1))))
+      (swap! state #(-> %
+                        (assoc-in (conj tab-idt :ui/loading?) false)
+                        (assoc-in (conj tab-idt :ui/unlocked?) true))))))
+
+(defmutation post-load-bookmarks-error
+  [{{:keys [source-key]} :load-params :keys [result]}]
+  (action
+    [{:keys [state]}]
+    (swap! state #(-> %
+                      (assoc-in (conj source-key :ui/error-type) (get-in result [:body source-key :error-type]))
+                      (assoc-in (conj source-key :ui/loading?) false)))))
+
+(defmutation post-query-bookmarks-error
+  [{{:keys [source-key]} :load-params :keys [result]}]
+  (action
+    [{:keys [state]}]
+    (swap! state #(-> %
+                      (assoc-in (conj source-key :ui/search-error-type) (get-in result [:body source-key :error-type]))
+                      (assoc-in (conj source-key :ui/loading?) false)))))
 
 (defmutation post-load-unlocked-bookmarks
   [p]
@@ -113,7 +140,7 @@
     (log/debug "Post load unprotected bookmarks for tab" (:tab/id p))
     (let [Tab     (comp/registry-key->class `shinsetsu.ui.tab/Tab)
           tab-idt (comp/get-ident Tab p)]
-      (js/setTimeout #(swap! state assoc-in (conj tab-idt :ui/loading?) false) 1))))
+      (swap! state assoc-in (conj tab-idt :ui/loading?) false))))
 
 (defmutation lock-tab
   [p]

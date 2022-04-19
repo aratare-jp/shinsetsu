@@ -92,7 +92,9 @@
                   (assoc acc :simple title-query)
                   (if-let [inner-query (get-in it [:bool :must])]
                     (inner-reduce acc inner-query :and)
-                    (inner-reduce acc (get-in it [:bool :should]) :or))))
+                    (if-let [inner-query (get-in it [:bool :should])]
+                      (inner-reduce acc inner-query :or)
+                      (inner-reduce acc [it] (-> it vals first vals first :operator keyword))))))
               {}
               q))]
     (cond
@@ -112,14 +114,17 @@
                                           (helpers/from :tag)
                                           (helpers/where [:ilike :tag/name (str "%" tag-name "%")]))])
           (inner-fn [kw col]
-            (into [kw]
-                  (mapv
-                    (fn [i] [:in :bookmark-tag/bookmark-id (-> (helpers/select-distinct :bookmark-tag/bookmark-id)
-                                                               (helpers/from :bookmark-tag)
-                                                               (helpers/where (tag-fn i)))])
-                    col)))]
+            (if-not (empty? col)
+              (into [kw]
+                    (mapv
+                      (fn [i]
+                        [:in :bookmark-tag/bookmark-id (-> (helpers/select-distinct :bookmark-tag/bookmark-id)
+                                                           (helpers/from :bookmark-tag)
+                                                           (helpers/where (tag-fn i)))])
+                      col))))]
     (into
-      [:and]
+      [:and
+       [:= :tab/password nil]]
       (reduce
         (fn [acc [_ v]]
           (reduce
@@ -144,10 +149,6 @@
         [[:= :bookmark/user-id user-id]]
         query))))
 
-(defn test-fetch
-  [q]
-  (jdbc/execute! ds q))
-
 (defn fetch-bookmarks
   [{:bookmark/keys [tab-id user-id] :as input}]
   (if-let [err (m/explain s/bookmark-bulk-fetch-spec input)]
@@ -166,9 +167,10 @@
      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
      (do
        (log/info "Fetch all bookmarks filtered for user" user-id)
-       (jdbc/execute! ds (-> (helpers/select :*)
+       (jdbc/execute! ds (-> (helpers/select :bookmark/*)
                              (helpers/from :bookmark)
-                             (helpers/where (query->sql (simplify-query query) user-id))
+                             (helpers/join :tab [:= :bookmark/tab-id :tab/id])
+                             (helpers/where (-> query simplify-query (query->sql user-id) (log/spy)))
                              (helpers/order-by [:bookmark/created :asc])
                              (sql/format)))))))
 
@@ -209,13 +211,19 @@
                                                    {:match_phrase {:name "you"}}]}}
                                   {:bool {:should [{:match {:tag {:query "ent", :operator "or"}}}
                                                    {:match_phrase {:tag "gam"}}]}}]}}
+        query      {:bool {:must [{:simple_query_string {:query "net"}}]}}
+        query      {:bool {:must [{:match {:tag {:query "ent gam", :operator "and"}}}]}}
         sql-fn     #(-> (helpers/select :*)
                         (helpers/from :bookmark)
                         (helpers/where %)
                         (helpers/order-by [:bookmark/created :asc])
                         (sql/format {:pretty true}))]
+
     (->> (fetch-bookmarks-with-query
-           {:bookmark/user-id (java.util.UUID/fromString "983650c1-5137-4595-8e83-f2aa3a6fc545")}
-           query)
-         (mapv #(dissoc % :bookmark/image))))
+             {:bookmark/user-id (java.util.UUID/fromString "983650c1-5137-4595-8e83-f2aa3a6fc545")}
+             query)
+           (mapv #(dissoc % :bookmark/image))))
   (into [:a] [1 2 3]))
+
+(comment
+  (user/restart))

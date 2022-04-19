@@ -5,8 +5,6 @@
     [next.jdbc.date-time]
     [shinsetsu.config :as config]))
 
-(def ads (atom nil))
-
 (defstate ^{:on-reload :noop} ds
   :start
   (jdbc/with-options (jdbc/get-datasource (:db-spec config/env)) jdbc/snake-kebab-opts))

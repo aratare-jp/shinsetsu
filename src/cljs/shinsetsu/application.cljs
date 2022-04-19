@@ -1,9 +1,9 @@
 (ns shinsetsu.application
   (:require
     [com.fulcrologic.fulcro.application :as app]
-    [shinsetsu.store :refer [store get-key set-key]]
+    [com.fulcrologic.fulcro.networking.file-upload :as fu]
     [com.fulcrologic.fulcro.networking.http-remote :as http]
-    [com.fulcrologic.fulcro.networking.file-upload :as fu]))
+    [shinsetsu.store :refer [get-key set-key store]]))
 
 (defn wrap-auth-token
   ([handler store]
@@ -16,18 +16,15 @@
       (wrap-auth-token store)))
 
 (defn contain-errors?
-  [body]
-  (let [values (vals body)]
-    (reduce (fn [acc {:keys [error]}]
-              (if error
-                (reduced true)
-                acc))
-            false
-            values)))
+  "Recursively traverse down the pathom path and check if the given Pathom response is an error response."
+  [it]
+  (cond
+    (map? it) (or (:error it) (some (fn [v] (contain-errors? (second v))) it))
+    (coll? it) (some #(contain-errors? %) it)
+    :else false))
 
 (defonce app (app/fulcro-app {:remote-error? (fn [{:keys [body] :as result}]
-                                               (or (app/default-remote-error? result)
-                                                   (contain-errors? body)))
+                                               (or (app/default-remote-error? result) (contain-errors? body)))
                               :remotes
                               {:auth   (http/fulcro-http-remote {:url "auth"})
                                :remote (http/fulcro-http-remote {:request-middleware req-middleware})}}))

@@ -31,8 +31,9 @@
 (pc/defresolver tabs-resolver
   [{{user-id :user/id} :request :as env} _]
   {::pc/output [{:user/tabs tab-output}]}
-  (let [{:keys [query]} (:query-params env)
+  (let [{:tab/keys [query]} (:query-params env)
         input {:tab/user-id user-id}]
+    (log/info query)
     (if-let [err (m/explain s/tab-multi-fetch-spec input)]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
@@ -46,7 +47,20 @@
 (comment
   (require '[user])
   (user/restart)
-  (mapv (fn [[k v]] v) {:a 1 :b 2})
+  (some #(println %) {:a 1 :b 2})
+  (coll? {:a 1})
+  (letfn [(dfs [it]
+            (cond
+              (map? it) (or (:error it) (some (fn [v] (dfs (second v))) it))
+              (coll? it) (some #(dfs %) it)
+              :else false))]
+    (dfs {:com.wsscode.pathom.core/errors                        {[[:tab/id
+                                                                    #uuid "bc1599de-e58a-4d3b-b61b-b0e50b6a2749"]
+                                                                   :tab/bookmarks] {}},
+          [:tab/id #uuid "bc1599de-e58a-4d3b-b61b-b0e50b6a2749"] {:tab/bookmarks :com.wsscode.pathom.core/reader-error
+                                                                  :tab/foo       ["hello" "there"]}}))
+
+  (loop [i [1 2 3]] (if (odd? (first i)) true (recur (rest i))))
   (let [query {:bool {:must [{:bool {:should [{:match {:name {:query "fe", :operator "or"}}}
                                               {:match_phrase {:name "net"}}]}}
                              {:bool {:should [{:match {:tag {:query "ent", :operator "or"}}}

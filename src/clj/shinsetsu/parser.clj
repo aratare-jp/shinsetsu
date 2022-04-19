@@ -59,12 +59,23 @@
        (let [children     (-> tx eql/query->ast :children)
              query-params (reduce
                             (fn [qps {:keys [type params] :as x}]
-                              (cond-> qps
-                                      (and (not= :call type) (seq params)) (merge params)))
+                              (cond-> qps (and (not= :call type) (seq params)) (merge params)))
                             {}
                             children)
              env          (assoc env :query-params query-params)]
          (parser env tx))))})
+
+(defn- raise-error
+  [input]
+  (if-let [errors (::p/errors input)]
+    (reduce
+      (fn [acc [k v]]
+        (if (coll? k)
+          (assoc acc (first k) v)
+          (assoc acc k v)))
+      {}
+      errors)
+    input))
 
 (defn create-parser
   [resolvers]
@@ -79,7 +90,7 @@
                           (pc/connect-plugin {::pc/register resolvers})
                           p/error-handler-plugin
                           p/trace-plugin
-                          (p/post-process-parser-plugin p/elide-not-found)]}))
+                          (p/post-process-parser-plugin (comp raise-error p/elide-not-found))]}))
 
 (def public-parser (create-parser public-resolvers))
 (def protected-parser (create-parser protected-resolvers))
@@ -101,5 +112,6 @@
 (comment
   (let [query '[({[:tab/id "a7cd12da-1596-4158-9e1d-63a26d24efd4"] [:tab/bookmarks]} {:tab/password "boo"})]]
     (protected-parser {} query))
+
   (user/start)
   (user/restart))
