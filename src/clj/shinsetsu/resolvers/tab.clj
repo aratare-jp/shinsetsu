@@ -21,12 +21,15 @@
   (let [bookmarks (->> (bookmark-db/fetch-bookmarks-with-query {:bookmark/user-id user-id} query)
                        (mapv #(dissoc % :bookmark/image)))
         bookmarks (reduce
-                    (fn [acc {:bookmark/keys [tab-id] :as it}]
+                    (fn [acc {:bookmark/keys [tab-id] :tab/keys [name] :as it}]
                       (let [bookmark (dissoc it :bookmark/tab-id :bookmark/user-id)]
-                        (update-in acc [tab-id :tab/bookmarks] conj bookmark)))
+                        (-> acc
+                            (assoc-in [tab-id :tab/name] name)
+                            (assoc-in [tab-id :tab/is-protected?] false)
+                            (update-in [tab-id :tab/bookmarks] conj bookmark))))
                     {}
                     bookmarks)]
-    (mapv (fn [[k v]] {:tab/id k :tab/bookmarks (vec (:tab/bookmarks v))}) bookmarks)))
+    (mapv (fn [[k v]] (merge {:tab/id k} (update v :tab/bookmarks vec))) bookmarks)))
 
 (pc/defresolver tabs-resolver
   [{{user-id :user/id} :request :as env} _]

@@ -29,8 +29,7 @@
 (pc/defresolver bookmarks-resolver
   [{{user-id :user/id} :request :as env} {:tab/keys [id] :as input}]
   {::pc/input  #{:tab/id}
-   ::pc/output [{:tab/bookmarks bookmark-output}]
-   ::pc/params [:tab/password]}
+   ::pc/output [{:tab/bookmarks bookmark-output} :tab/bookmark-count]}
   (let [{:tab/keys [password]} (-> env :query-params)
         tab-input      (if password
                          (merge input {:tab/password password :tab/user-id user-id})

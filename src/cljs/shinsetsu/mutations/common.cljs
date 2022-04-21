@@ -12,7 +12,7 @@
     (swap! state ns/remove-entity ident)))
 
 (defmutation set-root
-  [{:keys [k v]}]
+  [m]
   (action
     [{:keys [state]}]
-    (swap! state assoc k v)))
+    (swap! state merge m)))

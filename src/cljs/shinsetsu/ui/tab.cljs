@@ -193,6 +193,7 @@
                           :tab/is-protected?
                           {:tab/bookmarks (comp/get-query bui/Bookmark)}
                           {[:ui/tabs '_] [:tab/id :tab/name]}
+                          [:ui/search-query '_]
                           :ui/unlocked?
                           :ui/password
                           :ui/change-password?
@@ -205,7 +206,7 @@
                           :ui/move-bm-id
                           :ui/destination-tab-id]
    :componentWillMount   (fn [this]
-                           (let [{:tab/keys [id is-protected? search-query] :ui/keys [unlocked?]} (comp/props this)
+                           (let [{:tab/keys [id is-protected?] :ui/keys [unlocked? search-query]} (comp/props this)
                                  load-fn (fn []
                                            (log/info "Load user bookmarks")
                                            (m/set-value! this :ui/loading? true)
@@ -214,8 +215,7 @@
                                                                                 :post-mutation-params {:tab/id id}}))]
                              (if (or (and is-protected? unlocked?) (not is-protected?))
                                (do
-                                 (js/console.log search-query)
-                                 (if-not search-query
+                                 (if (or (not search-query) (:match_all search-query))
                                    (load-fn))
                                  ;; FIXME: Magic number!
                                  #_(m/set-value! this :ui/load-timer (js/setInterval load-fn 10000))))))
@@ -326,37 +326,34 @@
       tabs)))
 
 (defn- ui-search-bar
-  [this {:ui/keys [search-query search-error-type loading?]}]
-  (let [schema  {:strict true? :fields {:tag  {:type "string"}
-                                        :name {:type "string"}}}
+  [this {:ui/keys [search-error-type loading?]}]
+  (let [schema  {:strict true? :fields {:tag {:type "string"} :name {:type "string"}}}
         load-fn (gf/debounce
                   (fn [query]
-                    (m/set-value! this :ui/loading? true)
-                    (m/set-value! this :ui/search-error-type nil)
-                    (df/load! app :user/tabs Tab {:target        (targeting/replace-at [:ui/tabs])
-                                                  :params        {:tab/query (e/query->EsQuery query)}
-                                                  :post-mutation `tab-mut/post-load-query-bookmarks
-                                                  :fallback      `tab-mut/post-query-bookmarks-error}))
+                    (comp/transact! this [(set-root {:ui/loading? true})])
+                    (if (:match_all query)
+                      (df/load! app :user/tabs Tab {:target        (targeting/replace-at [:ui/tabs])
+                                                    :without       #{:tab/bookmarks}
+                                                    :post-mutation `tab-mut/post-load-query-bookmarks
+                                                    :fallback      `tab-mut/post-query-bookmarks-error})
+                      (df/load! app :user/tabs Tab {:target        (targeting/replace-at [:ui/tabs])
+                                                    :params        {:tab/query query}
+                                                    :post-mutation `tab-mut/post-load-query-bookmarks
+                                                    :fallback      `tab-mut/post-query-bookmarks-error})))
                   500)]
     (e/flex-group {:justifyContent "spaceAround"}
       (e/flex-item {}
         (e/input-popover
           {:isOpen search-error-type
            :input  (e/search-bar
-                     {:defaultQuery search-query
-                      :box          {:schema      schema
-                                     :incremental true
-                                     :isLoading   loading?}
-                      :onChange     (gf/debounce
-                                      (fn [q]
-                                        (let [{:keys [query error]} (js->clj q :keywordize-keys true)]
-                                          (if error
-                                            (m/set-value! this :ui/search-error-type error)
-                                            (do
-                                              (m/set-value! this :ui/search-query query)
-                                              (m/set-value! this :ui/search-error-type nil)
-                                              (load-fn query)))))
-                                      500)})}
+                     {:box      {:schema schema :incremental true :isLoading loading?}
+                      :onChange (fn [q]
+                                  (let [{:keys [query error]} (js->clj q :keywordize-keys true)]
+                                    (if error
+                                      (comp/transact! this [(set-root {:ui/search-error-type error})])
+                                      (let [query (e/query->EsQuery query)]
+                                        (comp/transact! this [(set-root {:ui/search-query query :ui/search-error-type nil})])
+                                        (load-fn query)))))})}
           "Your query seems to be incorrect")))))
 
 (defn- ui-tab-main-body
@@ -377,6 +374,7 @@
       {:pageHeader {:pageTitle      (if (empty? tabs)
                                       "Welcome!"
                                       (-> tabs (nth current-tab-idx) :tab/name))
+                    :description    "1,000 items"
                     :rightSideItems right-side-items}}
       (e/tabs {:size "xl"}
         (ui-tab-headers this props))
@@ -397,12 +395,10 @@
                    :ui/tab-ctx-menu-id
                    :ui/move-bm-id
                    :ui/destination-tab-id
-                   :ui/search-query
-                   :ui/search-error-type
+                   [:ui/search-query '_]
+                   [:ui/search-error-type '_]
                    :ui/loading?]
-   :initial-state {:ui/tabs            []
-                   :ui/current-tab-idx 0
-                   :ui/search-query    e/search-bar-query-match-all
+   :initial-state {:ui/current-tab-idx 0
                    :ui/loading?        false}
    :will-enter    (fn [app _]
                     (log/info "Loading user tabs")
@@ -414,8 +410,7 @@
                                                        :without              #{:tab/bookmarks}
                                                        :post-mutation        `dr/target-ready
                                                        :post-mutation-params {:target [:component/id ::tab]}}))))}
-  [(ui-search-bar this props)
-   (if edit-tab-id
+  [(if edit-tab-id
      (if (tempid/tempid? edit-tab-id)
        (ui-new-tab-modal this props)
        (ui-edit-tab-modal this props)))

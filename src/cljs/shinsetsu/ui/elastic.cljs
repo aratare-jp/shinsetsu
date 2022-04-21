@@ -1,7 +1,8 @@
 (ns shinsetsu.ui.elastic
   (:require
     [com.fulcrologic.fulcro.algorithms.react-interop :as ri]
-    ["@elastic/eui" :refer [EuiInputPopover
+    ["@elastic/eui" :refer [EuiTitle
+                            EuiInputPopover
                             EuiSearchBar
                             EuiSuggest
                             EuiSuggestItem
@@ -69,6 +70,7 @@
 (def wrapping-popover (ri/react-factory EuiWrappingPopover))
 (def text (ri/react-factory EuiText))
 (def loading-content (ri/react-factory EuiLoadingContent))
+(def title (ri/react-factory EuiTitle))
 
 ;; List
 (def list-group (ri/react-factory EuiListGroup))

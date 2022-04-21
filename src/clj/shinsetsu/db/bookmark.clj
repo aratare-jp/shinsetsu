@@ -167,7 +167,7 @@
      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
      (do
        (log/info "Fetch all bookmarks filtered for user" user-id)
-       (jdbc/execute! ds (-> (helpers/select :bookmark/*)
+       (jdbc/execute! ds (-> (helpers/select :bookmark/* :tab/name)
                              (helpers/from :bookmark)
                              (helpers/join :tab [:= :bookmark/tab-id :tab/id])
                              (helpers/where (-> query simplify-query (query->sql user-id) (log/spy)))
@@ -220,9 +220,9 @@
                         (sql/format {:pretty true}))]
 
     (->> (fetch-bookmarks-with-query
-             {:bookmark/user-id (java.util.UUID/fromString "983650c1-5137-4595-8e83-f2aa3a6fc545")}
-             query)
-           (mapv #(dissoc % :bookmark/image))))
+           {:bookmark/user-id (java.util.UUID/fromString "983650c1-5137-4595-8e83-f2aa3a6fc545")}
+           query)
+         (mapv #(dissoc % :bookmark/image))))
   (into [:a] [1 2 3]))
 
 (comment
