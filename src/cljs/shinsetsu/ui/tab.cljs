@@ -20,7 +20,8 @@
     [shinsetsu.schema :as s]
     [shinsetsu.ui.bookmark :as bui]
     [shinsetsu.ui.elastic :as e]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [clojure.string :as string]))
 
 (defsc TabModal
   [this
@@ -245,7 +246,7 @@
   (let [new-tab  (first (filter #(tempid/tempid? (:tab/id %)) tabs))
         on-close (fn []
                    (comp/transact! this [(remove-ident {:ident (comp/get-ident TabModal new-tab)})])
-                   (m/set-value! this :ui/show-tab-modal? false))]
+                   (m/set-value! this :ui/edit-tab-id nil))]
     (ui-tab-modal (comp/computed new-tab {:on-close on-close}))))
 
 (defn- ui-edit-tab-modal
@@ -341,41 +342,42 @@
                                                     :post-mutation `tab-mut/post-load-query-bookmarks
                                                     :fallback      `tab-mut/post-query-bookmarks-error})))
                   500)]
-    (e/flex-group {:justifyContent "spaceAround"}
-      (e/flex-item {}
-        (e/input-popover
-          {:isOpen search-error-type
-           :input  (e/search-bar
-                     {:box      {:schema schema :incremental true :isLoading loading?}
-                      :onChange (fn [q]
-                                  (let [{:keys [query error]} (js->clj q :keywordize-keys true)]
-                                    (if error
-                                      (comp/transact! this [(set-root {:ui/search-error-type error})])
-                                      (let [query (e/query->EsQuery query)]
-                                        (comp/transact! this [(set-root {:ui/search-query query :ui/search-error-type nil})])
-                                        (load-fn query)))))})}
-          "Your query seems to be incorrect")))))
+    (e/input-popover
+      {:isOpen search-error-type
+       :input  (e/search-bar
+                 {:box      {:schema schema :incremental true :isLoading loading?}
+                  :onChange (fn [q]
+                              (let [{:keys [query error]} (js->clj q :keywordize-keys true)]
+                                (if error
+                                  (comp/transact! this [(set-root {:ui/search-error-type error})])
+                                  (let [query (e/query->EsQuery query)]
+                                    (comp/transact! this [(set-root {:ui/search-query query :ui/search-error-type nil})])
+                                    (load-fn query)))))})}
+      "Your query seems to be incorrect")))
 
 (defn- ui-tab-main-body
   [this {:ui/keys [tabs current-tab-idx] :as props}]
   (let [tabs             (filter #(not (tempid/tempid? (:tab/id %))) tabs)
-        right-side-items [(ui-search-bar this props)
-                          (e/button
+        right-side-items [(e/button
                             {:fill     true
                              :size     "m"
                              :onClick  (fn []
-                                         (m/set-value! this :ui/show-tab-modal? true)
-                                         (merge/merge-component!
-                                           app TabModal (comp/get-initial-state TabModal)
-                                           :append (conj (comp/get-ident this) :ui/tabs)))
+                                         (let [new-tab (comp/get-initial-state TabModal)]
+                                           (merge/merge-component!
+                                             app TabModal new-tab
+                                             :append [:ui/tabs])
+                                           (m/set-value! this :ui/edit-tab-id (:tab/id new-tab))))
                              :iconType "plus"}
                             "New Tab")]]
-    (e/page-template
-      {:pageHeader {:pageTitle      (if (empty? tabs)
-                                      "Welcome!"
-                                      (-> tabs (nth current-tab-idx) :tab/name))
-                    :description    "1,000 items"
-                    :rightSideItems right-side-items}}
+    (e/page-template {:pageHeader {:pageTitle      (if (empty? tabs)
+                                                     "Welcome!"
+                                                     (e/description-list {}
+                                                       (e/description-list-title {}
+                                                         (e/title {:size "l"} (h1 (-> tabs (nth current-tab-idx) :tab/name))))
+                                                       (e/description-list-description {}
+                                                         (e/title {:size "xs"} (h2 "1,000 items")))))
+                                   :rightSideItems right-side-items}}
+      (e/spacer {})
       (e/tabs {:size "xl"}
         (ui-tab-headers this props))
       (e/spacer {})
@@ -385,7 +387,7 @@
         (ui-tab (merge (nth tabs current-tab-idx) {:ui/tabs (:ui/tabs props)}))))))
 
 (defsc TabMain
-  [this {:ui/keys [edit-tab-id delete-tab-id] :as props}]
+  [this {:ui/keys [edit-tab-id delete-tab-id sort-option] :as props}]
   {:ident         (fn [] [:component/id ::tab])
    :route-segment ["tab"]
    :query         [{[:ui/tabs '_] (comp/get-query Tab)}
@@ -396,11 +398,13 @@
                    :ui/move-bm-id
                    :ui/destination-tab-id
                    [:ui/search-query '_]
+                   [:ui/sort-option '_]
                    [:ui/search-error-type '_]
                    :ui/loading?]
    :initial-state {:ui/current-tab-idx 0
                    :ui/loading?        false}
    :will-enter    (fn [app _]
+                    (comp/transact! app [(set-root {:ui/sort-option [:bookmark/created :asc]})])
                     (log/info "Loading user tabs")
                     (dr/route-deferred
                       [:component/id ::tab]
@@ -410,10 +414,27 @@
                                                        :without              #{:tab/bookmarks}
                                                        :post-mutation        `dr/target-ready
                                                        :post-mutation-params {:target [:component/id ::tab]}}))))}
-  [(if edit-tab-id
-     (if (tempid/tempid? edit-tab-id)
-       (ui-new-tab-modal this props)
-       (ui-edit-tab-modal this props)))
-   (if delete-tab-id
-     (ui-delete-tab-modal this props))
-   (ui-tab-main-body this props)])
+  (let [sort-options [{:value "title-asc" :inputDisplay (p "Title (A-Z)")}
+                      {:value "title-desc" :inputDisplay (p "Title (Z-A)")}
+                      {:value "created-asc" :inputDisplay (p "Created date (New to Old)")}
+                      {:value "created-desc" :inputDisplay (p "Created date (Old to New)")}]]
+    [(e/flex-group {:justifyContent "spaceAround" :alignItems "center"}
+       (e/flex-item {})
+       (e/flex-item {}
+         (ui-search-bar this props))
+       (e/flex-item {:grow false}
+         (e/super-select {:options         sort-options
+                          :prepend         "Sort by"
+                          :valueOfSelected (str (-> sort-option first name) "-" (-> sort-option second name))
+                          :onChange        (fn [value]
+                                             (let [[k v] (string/split value #"-")]
+                                               (comp/transact! this [(set-root {:ui/sort-option [(keyword "bookmark" k)
+                                                                                                 (keyword v)]})])))}))
+       (e/flex-item {}))
+     (when edit-tab-id
+       (if (tempid/tempid? edit-tab-id)
+         (ui-new-tab-modal this props)
+         (ui-edit-tab-modal this props)))
+     (when delete-tab-id
+       (ui-delete-tab-modal this props))
+     (ui-tab-main-body this props)]))

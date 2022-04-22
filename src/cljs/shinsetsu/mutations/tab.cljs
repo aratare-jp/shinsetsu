@@ -30,7 +30,7 @@
                         (merge/merge-component component tab)
                         (dissoc-in (conj tab-ident :ui/password))
                         (assoc-in (conj tab-ident :ui/loading?) false)
-                        (assoc-in (conj main-ident :ui/show-tab-modal?) false)
+                        (assoc-in (conj main-ident :ui/edit-tab-id) nil)
                         (fs/entity->pristine* tab-ident)))))
   (error-action
     [{{{{:keys [error-type error-message]} `create-tab} :body} :result :keys [state ref]}]

@@ -1,7 +1,10 @@
 (ns shinsetsu.ui.elastic
   (:require
     [com.fulcrologic.fulcro.algorithms.react-interop :as ri]
-    ["@elastic/eui" :refer [EuiTitle
+    ["@elastic/eui" :refer [EuiDescriptionList
+                            EuiDescriptionListTitle
+                            EuiDescriptionListDescription
+                            EuiTitle
                             EuiInputPopover
                             EuiSearchBar
                             EuiSuggest
@@ -51,7 +54,8 @@
                             EuiComboBox
                             EuiProgress
                             EuiPanel
-                            EuiText]]))
+                            EuiText
+                            EuiSuperSelect]]))
 
 
 (def input-popover (ri/react-factory EuiInputPopover))
@@ -94,6 +98,7 @@
 (def suggest (ri/react-factory EuiSuggest))
 (def suggest-item (ri/react-factory EuiSuggestItem))
 (def search-bar (ri/react-factory EuiSearchBar))
+(def super-select (ri/react-factory EuiSuperSelect))
 (def search-bar-query-match-all (.-MATCH_ALL (.-Query EuiSearchBar)))
 (defn query->EsQuery
   [q]
@@ -125,3 +130,8 @@
 ;; Tab
 (def tabs (ri/react-factory EuiTabs))
 (def tab (ri/react-factory EuiTab))
+
+;; Description list
+(def description-list (ri/react-factory EuiDescriptionList))
+(def description-list-title (ri/react-factory EuiDescriptionListTitle))
+(def description-list-description (ri/react-factory EuiDescriptionListDescription))

@@ -34,14 +34,12 @@
 (pc/defresolver tabs-resolver
   [{{user-id :user/id} :request :as env} _]
   {::pc/output [{:user/tabs tab-output}]}
-  (let [{:tab/keys [query]} (:query-params env)
-        input {:tab/user-id user-id}]
-    (log/info query)
+  (let [input {:tab/user-id user-id}]
     (if-let [err (m/explain s/tab-multi-fetch-spec input)]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
       (do
         (log/info "Fetching all tabs for user" user-id)
-        (let [tabs {:user/tabs (if query
+        (let [tabs {:user/tabs (if-let [query (-> env :query-params :tab/query)]
                                  (process-queried-tabs query user-id)
                                  (map trim-tab (tab-db/fetch-tabs {:tab/user-id user-id})))}]
           (log/info "User" user-id "fetched tabs successfully")
