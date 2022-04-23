@@ -40,7 +40,7 @@
   [:map
    {:closed true}
    [:tab/id :uuid]
-   [:tab/password {:optional true} :string]
+   [:tab/password {:optional true} [:maybe :string]]
    [:tab/user-id :uuid]])
 
 (def tab-multi-fetch-spec
@@ -102,10 +102,12 @@
    [:bookmark/tab-id :uuid]
    [:bookmark/user-id :uuid]])
 
-(def bookmark-bulk-fetch-with-query-spec
+(def bookmark-fetch-opts-spec
   [:map
-   {:closed true}
-   [:bookmark/user-id :uuid]])
+   [:query {:optional true} [:maybe :map]]
+   [:sort {:optional true} [:maybe [:map
+                                    [:field :keyword]
+                                    [:direction :keyword]]]]])
 
 (def bookmark-patch-spec
   [:map

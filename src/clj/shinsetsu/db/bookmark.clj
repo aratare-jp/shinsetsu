@@ -70,7 +70,7 @@
                                 (helpers/where [:= :bookmark/user-id user-id] [:= :bookmark/id id])
                                 (sql/format))))))
 
-(defn- simplify-query
+(defn simplify-query
   [q]
   (letfn [(inner-reduce [acc inner-query kw]
             (reduce
@@ -94,21 +94,22 @@
                     (inner-reduce acc inner-query :and)
                     (if-let [inner-query (get-in it [:bool :should])]
                       (inner-reduce acc inner-query :or)
-                      (inner-reduce acc [it] (-> it vals first vals first :operator keyword))))))
+                      (if-let [inner-query (get-in it [:match_phrase])]
+                        (inner-reduce acc [it] :and)
+                        (inner-reduce acc [it] (-> it vals first vals first :operator keyword)))))))
               {}
               q))]
-    (cond
-      (nil? q)
-      nil
-      (:match_all q)
-      {:match_all true}
-      :else
+    (if-not (or (nil? q) (not (map? q)) (:match_all q))
       {:must     (inner-simplify (get-in q [:bool :must]))
        :must-not (inner-simplify (get-in q [:bool :must-not]))})))
 
+(comment
+  (simplify-query {:bool {:must [{:match {:tag {:query "ent" :operator "and"}}}]}})
+  (simplify-query {:bool {:must [{:match_phrase {:tag "wish list"}}]}}))
+
 (defn- query->sql
   "Given a query after parsed by `simplify-query`, return an SQL"
-  [query user-id]
+  [query user-id tab-id]
   (letfn [(tag-fn [tag-name]
             [:in :bookmark-tag/tag-id (-> (helpers/select :tag/id)
                                           (helpers/from :tag)
@@ -123,8 +124,7 @@
                                                            (helpers/where (tag-fn i)))])
                       col))))]
     (into
-      [:and
-       [:= :tab/password nil]]
+      [:and]
       (reduce
         (fn [acc [_ v]]
           (reduce
@@ -146,33 +146,23 @@
                                                 (helpers/where (inner-fn :and and) (inner-fn :or or)))])))
             acc
             v))
-        [[:= :bookmark/user-id user-id]]
+        [[:= :bookmark/user-id user-id]
+         [:= :bookmark/tab-id tab-id]]
         query))))
 
 (defn fetch-bookmarks
-  [{:bookmark/keys [tab-id user-id] :as input}]
-  (if-let [err (m/explain s/bookmark-bulk-fetch-spec input)]
-    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
-    (do
-      (log/info "Fetch all bookmarks in tab" tab-id "for user" user-id)
-      (jdbc/execute! ds (-> (helpers/select :*)
-                            (helpers/from :bookmark)
-                            (helpers/where [:= :bookmark/user-id user-id] [:= :bookmark/tab-id tab-id])
-                            (helpers/order-by [:bookmark/created :asc])
-                            (sql/format))))))
-
-(defn fetch-bookmarks-with-query
-  ([{:bookmark/keys [user-id] :as input} query]
-   (if-let [err (or (m/explain s/bookmark-bulk-fetch-with-query-spec input) (m/explain :map query))]
-     (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
-     (do
-       (log/info "Fetch all bookmarks filtered for user" user-id)
-       (jdbc/execute! ds (-> (helpers/select :bookmark/* :tab/name)
-                             (helpers/from :bookmark)
-                             (helpers/join :tab [:= :bookmark/tab-id :tab/id])
-                             (helpers/where (-> query simplify-query (query->sql user-id) (log/spy)))
-                             (helpers/order-by [:bookmark/created :asc])
-                             (sql/format)))))))
+  ([bookmark] (fetch-bookmarks bookmark nil))
+  ([{:bookmark/keys [tab-id user-id] :as input} {:keys [query sort] :as opts}]
+   (if-let [err (or (m/explain s/bookmark-bulk-fetch-spec input) (m/explain [:maybe s/bookmark-fetch-opts-spec] opts))]
+     (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
+   (log/info "Fetch all bookmarks in tab" tab-id "for user" user-id)
+   (jdbc/execute! ds (log/spy (-> (helpers/select :bookmark/*)
+                                  (helpers/from :bookmark)
+                                  (helpers/where (-> query simplify-query (query->sql user-id tab-id)))
+                                  (helpers/order-by (if sort
+                                                      [(:field sort) (:direction sort)]
+                                                      [:bookmark/created :asc]))
+                                  (sql/format))))))
 
 (comment
   (require '[mount.core :as mount])

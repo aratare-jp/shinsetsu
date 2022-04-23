@@ -37,12 +37,7 @@
     (try
       (log/info "Assign tags" (string/join tag-ids) "to bookmark" bookmark-id "for user" user-id)
       (jdbc/execute! ds (-> (helpers/insert-into :bookmark-tag)
-                            (helpers/values (mapv
-                                              (fn [id]
-                                                #:bookmark-tag{:tag-id      id
-                                                               :bookmark-id bookmark-id
-                                                               :user-id     user-id})
-                                              tag-ids))
+                            (helpers/values (mapv (fn [id] #:bookmark-tag{:tag-id id :bookmark-id bookmark-id :user-id user-id}) tag-ids))
                             (helpers/returning :*)
                             (sql/format)))
       (catch PSQLException e

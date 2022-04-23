@@ -1,14 +1,14 @@
 (ns shinsetsu.mutations.user
   (:require
+    [buddy.hashers :as hashers]
+    [buddy.sign.jwt :as jwt]
+    [com.wsscode.pathom.connect :as pc :refer [defmutation]]
+    [malli.core :as m]
+    [malli.error :as me]
     [shinsetsu.config :as config]
     [shinsetsu.db.user :as db]
-    [com.wsscode.pathom.connect :as pc :refer [defmutation]]
-    [taoensso.timbre :as log]
-    [buddy.sign.jwt :as jwt]
-    [buddy.hashers :as hashers]
-    [malli.core :as m]
     [shinsetsu.schema :as s]
-    [malli.error :as me]))
+    [taoensso.timbre :as log]))
 
 (defn create-token
   [user]

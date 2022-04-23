@@ -44,19 +44,6 @@
                             (helpers/order-by [:tab/created :asc])
                             (sql/format :dialect :ansi))))))
 
-(defn fetch-tabs-with-query
-  "Do deep fetch of tabs/bookmarks/tags."
-  [{:tab/keys [user-id query] :as input}]
-  (if-let [err (m/explain s/tab-multi-fetch-spec input)]
-    (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)}))
-    (do
-      (log/info "Fetch tabs for user" user-id)
-      (jdbc/execute! ds (-> (helpers/select :*)
-                            (helpers/from :tab)
-                            (helpers/where [:= :tab/user-id user-id])
-                            (helpers/order-by [:tab/created :asc])
-                            (sql/format :dialect :ansi))))))
-
 (defn patch-tab
   [{:tab/keys [id user-id] :as input}]
   (if-let [err (m/explain s/tab-patch-spec input)]
