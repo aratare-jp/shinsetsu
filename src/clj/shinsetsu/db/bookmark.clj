@@ -76,10 +76,10 @@
             (reduce
               (fn [acc it]
                 (let [it (-> it vals first)]
-                  (if (:name it)
-                    (if (string? (:name it))
-                      (update-in acc [:name kw] conj (:name it))
-                      (update-in acc [:name kw] #(apply conj % (string/split (get-in it [:name :query]) #" "))))
+                  (if (:title it)
+                    (if (string? (:title it))
+                      (update-in acc [:title kw] conj (:title it))
+                      (update-in acc [:title kw] #(apply conj % (string/split (get-in it [:title :query]) #" "))))
                     (if (string? (:tag it))
                       (update-in acc [:tag kw] conj (:tag it))
                       (update-in acc [:tag kw] #(apply conj % (string/split (get-in it [:tag :query]) #" ")))))))
@@ -128,7 +128,7 @@
               (case k
                 :simple
                 (conj acc [:ilike :bookmark/title (str "%" v "%")])
-                :name
+                :title
                 (reduce
                   (fn [acc [k v]]
                     (case k
@@ -155,13 +155,13 @@
    (if-let [err (or (m/explain s/bookmark-bulk-fetch-spec input) (m/explain [:maybe s/bookmark-fetch-opts-spec] opts))]
      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
    (log/info "Fetch all bookmarks in tab" tab-id "for user" user-id)
-   (jdbc/execute! ds (log/spy (-> (helpers/select :bookmark/*)
-                                  (helpers/from :bookmark)
-                                  (helpers/where (-> query simplify-query (query->sql user-id tab-id)))
-                                  (helpers/order-by [(:field sort) (:direction sort)])
-                                  (helpers/limit size)
-                                  (helpers/offset (* page size))
-                                  (sql/format))))))
+   (jdbc/execute! ds (-> (helpers/select :bookmark/*)
+                         (helpers/from :bookmark)
+                         (helpers/where (-> query simplify-query (query->sql user-id tab-id)))
+                         (helpers/order-by [(:field sort) (:direction sort)])
+                         (helpers/limit size)
+                         (helpers/offset (* page size))
+                         (sql/format)))))
 
 (comment
   (let [{:keys [a] :or {a "boo"} :as m} {:b 1}]

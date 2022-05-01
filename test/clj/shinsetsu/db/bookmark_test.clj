@@ -505,7 +505,7 @@
         actual1   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
                                        {:query {:bool {:must [{:match {:tag {:query "ent" :operator "and"}}}]}}})
         ;; tag:"wish list"
-        expected2 [bookmark3 bookmark4]
+        expected2 [bookmark3]
         actual2   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
                                        {:query {:bool {:must [{:match_phrase {:tag "wish list"}}]}}})
         ;; tag:ent tag:gam
@@ -582,10 +582,6 @@
     (expect [bookmark1 bookmark2] expected1)
     (expect [bookmark3 bookmark4] expected2)))
 
-(comment
-  (require '[kaocha.repl :as k])
-  (k/run #'shinsetsu.db.bookmark-test/normal-fetch-bookmarks-with-pagination))
-
 (defexpect fetch-empty-bookmarks [] (bdb/fetch-bookmarks {:bookmark/tab-id @tab1-id :bookmark/user-id @user-id}))
 
 (defexpect fail-fetch-bookmarks-without-user-and-tab
@@ -643,7 +639,7 @@
         (expect {:error-type :invalid-input :error-data {:bookmark/tab-id ["should be a uuid"]}} data)))))
 
 (comment
+  (bdb/simplify-query {:bool {:must [{:match_phrase {:title {:query "hello world"}}}]}})
   (require '[kaocha.repl :as k])
-
   (k/run 'shinsetsu.db.bookmark-test)
   (k/run #'shinsetsu.db.bookmark-test/normal-simplify-query))

@@ -2,13 +2,13 @@
   (:require
     [buddy.hashers :as hashers]
     [clojure.test :refer :all]
-    [com.wsscode.pathom.core :as pc]
     [expectations.clojure.test :refer [defexpect expect]]
     [shinsetsu.db.bookmark :as bookmark-db]
     [shinsetsu.db.tab :as tab-db]
     [shinsetsu.db.user :as user-db]
     [shinsetsu.parser :refer [protected-parser]]
-    [shinsetsu.test-utility :refer [db-cleanup db-setup]]))
+    [shinsetsu.test-utility :refer [db-cleanup db-setup]])
+  (:import [java.time Duration Instant]))
 
 (def user-id (atom nil))
 (def tab-id (atom nil))
@@ -50,43 +50,21 @@
     (expect expected actual)))
 
 (defexpect fail-fetch-invalid-bookmark
-  (let [random-id   "foo"
-        inner-error {:error         true
-                     :error-type    :invalid-input
-                     :error-message "Invalid input"
-                     :error-data    {:bookmark/id ["should be a uuid"]}}
-        expected    {[:bookmark/id random-id] {:bookmark/id      random-id
-                                               :bookmark/title   ::pc/reader-error
-                                               :bookmark/url     ::pc/reader-error
-                                               :bookmark/image   ::pc/reader-error
-                                               :bookmark/created ::pc/reader-error
-                                               :bookmark/updated ::pc/reader-error}
-                     ::pc/errors              {[[:bookmark/id random-id] :bookmark/title]   inner-error
-                                               [[:bookmark/id random-id] :bookmark/url]     inner-error
-                                               [[:bookmark/id random-id] :bookmark/image]   inner-error
-                                               [[:bookmark/id random-id] :bookmark/created] inner-error
-                                               [[:bookmark/id random-id] :bookmark/updated] inner-error}}
-        actual      (protected-parser {:request {:user/id @user-id}} [{[:bookmark/id random-id] bookmark-join}])]
+  (let [random-id "foo"
+        expected  {[:bookmark/id random-id] {:error         true
+                                             :error-type    :invalid-input
+                                             :error-message "Invalid input"
+                                             :error-data    {:bookmark/id ["should be a uuid"]}}}
+        actual    (protected-parser {:request {:user/id @user-id}} [{[:bookmark/id random-id] bookmark-join}])]
     (expect expected actual)))
 
 (defexpect fail-fetch-null-bookmark
-  (let [random-id   nil
-        inner-error {:error         true
-                     :error-type    :invalid-input
-                     :error-message "Invalid input"
-                     :error-data    {:bookmark/id ["should be a uuid"]}}
-        expected    {[:bookmark/id random-id] {:bookmark/id      random-id
-                                               :bookmark/title   ::pc/reader-error
-                                               :bookmark/url     ::pc/reader-error
-                                               :bookmark/image   ::pc/reader-error
-                                               :bookmark/created ::pc/reader-error
-                                               :bookmark/updated ::pc/reader-error}
-                     ::pc/errors              {[[:bookmark/id random-id] :bookmark/title]   inner-error
-                                               [[:bookmark/id random-id] :bookmark/url]     inner-error
-                                               [[:bookmark/id random-id] :bookmark/image]   inner-error
-                                               [[:bookmark/id random-id] :bookmark/created] inner-error
-                                               [[:bookmark/id random-id] :bookmark/updated] inner-error}}
-        actual      (protected-parser {:request {:user/id @user-id}} [{[:bookmark/id random-id] bookmark-join}])]
+  (let [random-id nil
+        expected  {[:bookmark/id random-id] {:error         true
+                                             :error-type    :invalid-input
+                                             :error-message "Invalid input"
+                                             :error-data    {:bookmark/id ["should be a uuid"]}}}
+        actual    (protected-parser {:request {:user/id @user-id}} [{[:bookmark/id random-id] bookmark-join}])]
     (expect expected actual)))
 
 (defexpect ^:resolver ^:bookmark ^:integration normal-fetch-bookmarks-with-password
@@ -129,57 +107,71 @@
                                                         (trim-bookmark bookmark2)]}}]
     (expect expected actual)))
 
+(defexpect ^:resolver ^:bookmark ^:integration normal-fetch-protected-bookmarks-previous-unlocked
+  (let [tab-password "bar"
+        tab-id       (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
+                         (update :tab/password hashers/derive)
+                         tab-db/create-tab
+                         :tab/id)
+        bookmark1    (bookmark-db/create-bookmark #:bookmark{:title "foo" :url "bar" :tab-id tab-id :user-id @user-id})
+        bookmark2    (bookmark-db/create-bookmark #:bookmark{:title "fim" :url "baz" :tab-id tab-id :user-id @user-id})
+        query        [{[:tab/id tab-id] [:tab/id :tab/bookmarks]}]
+        actual       (protected-parser {:request {:user/id @user-id}} query)
+        expected     {[:tab/id tab-id] {:tab/id        tab-id
+                                        :tab/bookmarks [(trim-bookmark bookmark1)
+                                                        (trim-bookmark bookmark2)]}}]
+    (expect expected actual)))
+
 (defexpect ^:resolver ^:bookmark ^:integration fail-to-fetch-bookmarks-with-wrong-password
   (let [tab-password   "bar"
         wrong-password "foo"
-        tab            (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
+        tab-id         (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
                            (update :tab/password hashers/derive)
-                           tab-db/create-tab)
-        tab-id         (:tab/id tab)
+                           tab-db/create-tab
+                           :tab/id)
+        _              (tab-db/patch-tab #:tab{:id      tab-id
+                                               :user-id @user-id
+                                               :unlock  (.minus (Instant/now) (Duration/ofDays 10))})
         query          [`({[:tab/id ~tab-id] [:tab/id :tab/bookmarks]} {:tab/password ~wrong-password})]
         actual         (protected-parser {:request {:user/id @user-id}} query)
-        inner-error    {:error         true
-                        :error-type    :wrong-password
-                        :error-message "Invalid input"}
-        expected       {[:tab/id tab-id] {:tab/id        tab-id
-                                          :tab/bookmarks ::pc/reader-error}
-                        ::pc/errors      {[[:tab/id tab-id] :tab/bookmarks] inner-error}}]
+        expected       {[:tab/id tab-id] {:error         true
+                                          :error-type    :wrong-password
+                                          :error-message "Invalid input"}}]
     (expect expected actual)))
 
 (defexpect ^:resolver ^:bookmark ^:integration fail-to-fetch-protected-bookmarks-with-no-password
   (let [tab-password "bar"
-        tab          (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
+        tab-id       (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
                          (update :tab/password hashers/derive)
-                         tab-db/create-tab)
-        tab-id       (:tab/id tab)
+                         tab-db/create-tab
+                         :tab/id)
+        _            (tab-db/patch-tab #:tab{:id      tab-id
+                                             :user-id @user-id
+                                             :unlock  (.minus (Instant/now) (Duration/ofDays 10))})
         query        [{[:tab/id tab-id] [:tab/id :tab/bookmarks]}]
         actual       (protected-parser {:request {:user/id @user-id}} query)
-        inner-error  {:error         true
-                      :error-type    :wrong-password
-                      :error-message "Invalid input"}
-        expected     {[:tab/id tab-id] {:tab/id        tab-id
-                                        :tab/bookmarks ::pc/reader-error}
-                      ::pc/errors      {[[:tab/id tab-id] :tab/bookmarks] inner-error}}]
+        expected     {[:tab/id tab-id] {:error         true
+                                        :error-type    :wrong-password
+                                        :error-message "Invalid input"}}]
     (expect expected actual)))
 
 (defexpect ^:resolver ^:bookmark ^:integration fail-to-fetch-protected-bookmarks-with-empty-password
   (let [tab-password "bar"
-        tab          (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
+        tab-id       (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
                          (update :tab/password hashers/derive)
-                         tab-db/create-tab)
-        tab-id       (:tab/id tab)
+                         tab-db/create-tab
+                         :tab/id)
+        _            (tab-db/patch-tab #:tab{:id      tab-id
+                                             :user-id @user-id
+                                             :unlock  (.minus (Instant/now) (Duration/ofDays 10))})
         query        [`({[:tab/id ~tab-id] [:tab/id :tab/bookmarks]} {:tab/password ""})]
         actual       (protected-parser {:request {:user/id @user-id}} query)
-        inner-error  {:error         true
-                      :error-type    :wrong-password
-                      :error-message "Invalid input"}
-        expected     {[:tab/id tab-id] {:tab/id        tab-id
-                                        :tab/bookmarks ::pc/reader-error}
-                      ::pc/errors      {[[:tab/id tab-id] :tab/bookmarks] inner-error}}]
+        expected     {[:tab/id tab-id] {:error         true
+                                        :error-type    :wrong-password
+                                        :error-message "Invalid input"}}]
     (expect expected actual)))
 
 (comment
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.parser :refer [protected-parser]])
-  (k/run 'shinsetsu.resolvers.bookmark-test)
-  (k/run #'shinsetsu.resolvers.bookmark-test/normal-fetch-bookmarks))
+  (k/run 'shinsetsu.resolvers.bookmark-test))

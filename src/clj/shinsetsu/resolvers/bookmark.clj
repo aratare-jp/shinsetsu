@@ -9,7 +9,8 @@
     [shinsetsu.schema :as s]
     [taoensso.timbre :as log])
   (:import [java.time Instant Duration]
-           [java.time.temporal TemporalUnit]))
+           [java.time.temporal TemporalUnit]
+           [java.sql Timestamp]))
 
 (def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/created :bookmark/updated])
 (defn trim-bookmark [b] (dissoc b :bookmark/user-id :bookmark/tab-id))
@@ -42,17 +43,17 @@
                            bookmarks))]
     (if-let [err (or (m/explain s/tab-fetch-spec tab-input) (m/explain s/bookmark-bulk-fetch-spec bookmark-input))]
       (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
-    (if-let [{pwd :tab/password ^Instant unlock :tab/unlock} (-> tab-input tab-db/fetch-tab)]
+    (if-let [{pwd :tab/password ^Timestamp unlock :tab/unlock} (-> tab-input tab-db/fetch-tab)]
       (cond
         (nil? pwd)
         (callback)
         ;; The user has unlocked this tab some time in the last 15 minutes
-        (.isBefore (Instant/now) (.plus unlock (Duration/ofMinutes 15)))
+        (or
+          (.isBefore (Instant/now) (.plus (.toInstant unlock) (Duration/ofMinutes 15)))
+          (hashers/check password pwd))
         (do
           (tab-db/patch-tab #:tab{:id id :user-id user-id :unlock (Instant/now)})
           (callback))
-        (hashers/check password pwd)
-        (callback)
         :else
         (do
           (log/warn "User" user-id "attempted to fetch tab" id "with wrong password")

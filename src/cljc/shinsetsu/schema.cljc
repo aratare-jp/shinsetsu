@@ -55,7 +55,8 @@
    [:tab/id :uuid]
    [:tab/name {:optional true} non-empty-string]
    [:tab/password {:optional true} [:maybe non-empty-string]]
-   [:tab/user-id :uuid]])
+   [:tab/user-id :uuid]
+   [:tab/unlock {:optional true} :any]])
 
 (def tab-delete-spec
   [:map
