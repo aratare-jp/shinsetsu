@@ -2,19 +2,13 @@
   (:require
     [clojure.test :refer :all]
     [expectations.clojure.test :refer [defexpect expect]]
-    [shinsetsu.test-utility :refer [db-setup db-cleanup]]
-    [shinsetsu.db.user :as user-db]
-    [shinsetsu.db.tab :as tab-db]
     [shinsetsu.db.bookmark :as bdb]
-    [shinsetsu.db.tag :as tdb]
     [shinsetsu.db.bookmark-tag :as btdb]
-    [shinsetsu.schema :as s]
-    [malli.core :as m]
-    [malli.error :as em]
-    [malli.error :as me]
-    [taoensso.timbre :as log]
-    [shinsetsu.db.bookmark-tag :as bookmark-tag-db])
-  (:import [java.util UUID]))
+    [shinsetsu.db.bookmark-tag]
+    [shinsetsu.db.tab :as tab-db]
+    [shinsetsu.db.tag :as tdb]
+    [shinsetsu.db.user :as user-db]
+    [shinsetsu.test-utility :refer [db-cleanup db-setup]]))
 
 (def user (atom nil))
 (def user-id (atom nil))
@@ -43,7 +37,8 @@
                   {:must {:tag {:and ["online store" "wish list"]}} :must-not {}}
                   {:must {:tag {:and ["ent" "wish list"]}} :must-not {}}
                   {:must {:tag {:or ["news" "gam"]}} :must-not {}}
-                  {:must {:tag {:or ["read later" "wish list"]}} :must-not {}}]
+                  {:must {:tag {:or ["read later" "wish list"]}} :must-not {}}
+                  {:must {:tag {:or ["ent" "wish list"]}} :must-not {}}]
         actual   [{:bool {:must [{:match {:tag {:query "ent" :operator "and"}}}]}}
                   {:bool {:must [{:match_phrase {:tag "wish list"}}]}}
                   {:bool {:must [{:match {:tag {:query "ent gam", :operator "and"}}}]}}
@@ -53,7 +48,9 @@
                                                 {:match {:tag {:query "ent" :operator "and"}}}]}}]}}
                   {:bool {:must [{:match {:tag {:query "gam news", :operator "or"}}}]}}
                   {:bool {:must [{:bool {:should [{:match_phrase {:tag "wish list"}}
-                                                  {:match_phrase {:tag "read later"}}]}}]}}]]
+                                                  {:match_phrase {:tag "read later"}}]}}]}}
+                  {:bool {:must [{:bool {:should [{:match_phrase {:tag "wish list"}}
+                                                  {:match {:tag {:query "ent" :operator "or"}}}]}}]}}]]
     (doall
       (for [i (vec (range (count expected)))]
         (expect (nth expected i) (bdb/simplify-query (nth actual i)))))))
@@ -434,20 +431,45 @@
     (expect [bookmark1 bookmark2] fetched-bookmarks)))
 
 (defexpect normal-fetch-bookmarks-simple-title-query
-  (let [bookmark1 (bdb/create-bookmark #:bookmark{:title "hello" :url "world" :tab-id @tab1-id :user-id @user-id})
+  (let [bookmark1 (bdb/create-bookmark #:bookmark{:title "hello world" :url "world" :tab-id @tab1-id :user-id @user-id})
         bookmark2 (bdb/create-bookmark #:bookmark{:title "cool" :url "hot" :tab-id @tab1-id :user-id @user-id})
-        expected1 [bookmark1]
+        bookmark3 (bdb/create-bookmark #:bookmark{:title "hello world cool animal" :url "hot" :tab-id @tab1-id :user-id @user-id})
+        ;; hel
+        ;; title:hel
+        ;; title:"hel"
+        expected1 [bookmark1 bookmark2 bookmark3]
         actual1   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
-                                       {:query {:bool {:must [{:simple_query_string {:query "hel"}}]}}})
-        expected2 [bookmark1 bookmark2]
-        actual2   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
                                        {:query {:bool {:must [{:simple_query_string {:query "l"}}]}}})
-        expected3 []
+        ;; hello world
+        ;; "hello world"
+        expected2 [bookmark1 bookmark3]
+        actual2   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
+                                       {:query {:bool {:must [{:simple_query_string {:query "hello world"}}]}}})
+        ;; title:"hello world"
+        expected3 [bookmark1 bookmark3]
         actual3   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
-                                       {:query {:bool {:must [{:simple_query_string {:query "z"}}]}}})]
+                                       {:query {:bool {:must [{:match_phrase {:title {:query "hello world"}}}]}}})
+        ;; title:hello title:world
+        expected4 [bookmark1 bookmark3]
+        actual4   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
+                                       {:query {:bool {:must [{:match {:title {:query "hello world" :operator "and"}}}]}}})
+        ;; title:"hello world" title:"cool animal"
+        expected5 [bookmark3]
+        actual5   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
+                                       {:query {:bool {:must [{:match_phrase {:title {:query "hello world"}}}
+                                                              {:match_phrase {:title {:query "cool animal"}}}]}}})
+        ;; title:"hello world" title:"cool"
+        ;; title:"hello world" title:cool
+        expected6 [bookmark3]
+        actual6   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
+                                       {:query {:bool {:must [{:match_phrase {:title {:query "hello world"}}}
+                                                              {:match {:title {:query "animal" :operator "and"}}}]}}})]
     (expect expected1 actual1)
     (expect expected2 actual2)
-    (expect expected3 actual3)))
+    (expect expected3 actual3)
+    (expect expected4 actual4)
+    (expect expected5 actual5)
+    (expect expected6 actual6)))
 
 (defexpect normal-fetch-bookmarks-simple-tag-query
   (let [bookmark1 (bdb/create-bookmark #:bookmark{:title "twitch" :url "foo" :tab-id @tab1-id :user-id @user-id})
@@ -510,17 +532,20 @@
         expected7 [bookmark3 bookmark4]
         actual7   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
                                        {:query {:bool {:must [{:bool {:should [{:match_phrase {:tag "wish list"}}
-                                                                               {:match_phrase {:tag "read later"}}]}}]}}})]
+                                                                               {:match_phrase {:tag "read later"}}]}}]}}})
+        ;; tag:("wish list" OR "read")
+        expected8 [bookmark3 bookmark4]
+        actual8   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
+                                       {:query {:bool {:must [{:bool {:should [{:match_phrase {:tag "wish list"}}
+                                                                               {:match {:tag {:query "read" :operator "or"}}}]}}]}}})]
     (expect expected1 actual1)
     (expect expected2 actual2)
     (expect expected3 actual3)
     (expect expected4 actual4)
     (expect expected5 actual5)
     (expect expected6 actual6)
-    (expect expected7 actual7)))
-
-(comment
-  (k/run #'shinsetsu.db.bookmark-test/normal-fetch-bookmarks-simple-tag-query))
+    (expect expected7 actual7)
+    (expect expected8 actual8)))
 
 (defexpect normal-fetch-bookmarks-sort-by-created-desc
   (let [bookmark1-title   "hello"
@@ -538,6 +563,28 @@
         fetched-bookmarks (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
                                                {:sort {:field :bookmark/created :direction :desc}})]
     (expect [bookmark2 bookmark1] fetched-bookmarks)))
+
+(defexpect normal-fetch-bookmarks-with-pagination
+  (let [bookmark1-title "hello"
+        bookmark2-title "hello"
+        bookmark3-title "hello"
+        bookmark4-title "hello"
+        bookmark1-url   "world"
+        bookmark2-url   "world"
+        bookmark3-url   "world"
+        bookmark4-url   "world"
+        bookmark1       (bdb/create-bookmark #:bookmark{:title bookmark1-title :url bookmark1-url :tab-id @tab1-id :user-id @user-id})
+        bookmark2       (bdb/create-bookmark #:bookmark{:title bookmark2-title :url bookmark2-url :tab-id @tab1-id :user-id @user-id})
+        bookmark3       (bdb/create-bookmark #:bookmark{:title bookmark3-title :url bookmark3-url :tab-id @tab1-id :user-id @user-id})
+        bookmark4       (bdb/create-bookmark #:bookmark{:title bookmark4-title :url bookmark4-url :tab-id @tab1-id :user-id @user-id})
+        expected1       (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id} {:page 0 :size 2})
+        expected2       (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id} {:page 1 :size 2})]
+    (expect [bookmark1 bookmark2] expected1)
+    (expect [bookmark3 bookmark4] expected2)))
+
+(comment
+  (require '[kaocha.repl :as k])
+  (k/run #'shinsetsu.db.bookmark-test/normal-fetch-bookmarks-with-pagination))
 
 (defexpect fetch-empty-bookmarks [] (bdb/fetch-bookmarks {:bookmark/tab-id @tab1-id :bookmark/user-id @user-id}))
 
@@ -597,5 +644,6 @@
 
 (comment
   (require '[kaocha.repl :as k])
+
   (k/run 'shinsetsu.db.bookmark-test)
-  (k/run #'shinsetsu.db.bookmark-test/fail-fetch-tags-by-invalid-bookmark))
+  (k/run #'shinsetsu.db.bookmark-test/normal-simplify-query))

@@ -103,10 +103,6 @@
       {:must     (inner-simplify (get-in q [:bool :must]))
        :must-not (inner-simplify (get-in q [:bool :must-not]))})))
 
-(comment
-  (simplify-query {:bool {:must [{:match {:tag {:query "ent" :operator "and"}}}]}})
-  (simplify-query {:bool {:must [{:match_phrase {:tag "wish list"}}]}}))
-
 (defn- query->sql
   "Given a query after parsed by `simplify-query`, return an SQL"
   [query user-id tab-id]
@@ -152,68 +148,24 @@
 
 (defn fetch-bookmarks
   ([bookmark] (fetch-bookmarks bookmark nil))
-  ([{:bookmark/keys [tab-id user-id] :as input} {:keys [query sort] :as opts}]
+  ([{:bookmark/keys [tab-id user-id] :as input}
+    {:keys [query sort page size]
+     :or   {sort {:field :bookmark/created :direction :asc} page 0 size 12}
+     :as   opts}]
    (if-let [err (or (m/explain s/bookmark-bulk-fetch-spec input) (m/explain [:maybe s/bookmark-fetch-opts-spec] opts))]
      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
    (log/info "Fetch all bookmarks in tab" tab-id "for user" user-id)
    (jdbc/execute! ds (log/spy (-> (helpers/select :bookmark/*)
                                   (helpers/from :bookmark)
                                   (helpers/where (-> query simplify-query (query->sql user-id tab-id)))
-                                  (helpers/order-by (if sort
-                                                      [(:field sort) (:direction sort)]
-                                                      [:bookmark/created :asc]))
+                                  (helpers/order-by [(:field sort) (:direction sort)])
+                                  (helpers/limit size)
+                                  (helpers/offset (* page size))
                                   (sql/format))))))
 
 (comment
+  (let [{:keys [a] :or {a "boo"} :as m} {:b 1}]
+    a)
   (require '[mount.core :as mount])
-  (require '[shinsetsu.db :refer [ds]])
   (mount/start)
-  ds
-  (let [keywordize (fn [it]
-                     (if (map? it)
-                       (reduce (fn [acc [k v]] (assoc acc (keyword k) v)) {} it)
-                       it))
-        query      {:bool {:must     [{:simple_query_string {:query "yeet"}}
-                                      {:bool {:must [{:match {:name {:query "thin buff", :operator "and"}}}
-                                                     {:match_phrase {:name "fat foo"}}]}}
-                                      {:bool {:must [{:match {:tag {:query "yep", :operator "and"}}}
-                                                     {:match_phrase {:tag "111 222"}}
-                                                     {:match_phrase {:tag "333 444"}}]}}
-                                      {:bool {:should [{:match_phrase {:name "foo bar"}}
-                                                       {:match_phrase {:name "hello world"}}
-                                                       {:match_phrase {:name "aaa bbb"}}
-                                                       {:match_phrase {:name "ccc ddd"}}]}}
-                                      {:bool {:should [{:match {:tag {:query "dang world", :operator "or"}}}
-                                                       {:match_phrase {:tag "hello world"}}]}}]
-                           :must-not [{:simple_query_string {:query "yeet1"}}
-                                      {:bool {:must [{:match {:name {:query "thin", :operator "and"}}}
-                                                     {:match_phrase {:name "fat foo"}}]}}
-                                      {:bool {:must [{:match {:tag {:query "yep", :operator "and"}}}
-                                                     {:match_phrase {:tag "111 222"}}
-                                                     {:match_phrase {:tag "333 444"}}]}}
-                                      {:bool {:should [{:match_phrase {:name "foo bar"}}
-                                                       {:match_phrase {:name "hello world"}}
-                                                       {:match_phrase {:name "aaa bbb"}}
-                                                       {:match_phrase {:name "ccc ddd"}}]}}
-                                      {:bool {:should [{:match {:tag {:query "world", :operator "or"}}}
-                                                       {:match_phrase {:tag "hello world"}}]}}]}}
-        query      {:bool {:must [{:bool {:should [{:match {:name {:query "ne", :operator "or"}}}
-                                                   {:match_phrase {:name "you"}}]}}
-                                  {:bool {:should [{:match {:tag {:query "ent", :operator "or"}}}
-                                                   {:match_phrase {:tag "gam"}}]}}]}}
-        query      {:bool {:must [{:simple_query_string {:query "net"}}]}}
-        query      {:bool {:must [{:match {:tag {:query "ent gam", :operator "and"}}}]}}
-        sql-fn     #(-> (helpers/select :*)
-                        (helpers/from :bookmark)
-                        (helpers/where %)
-                        (helpers/order-by [:bookmark/created :asc])
-                        (sql/format {:pretty true}))]
-
-    (->> (fetch-bookmarks-with-query
-           {:bookmark/user-id (java.util.UUID/fromString "983650c1-5137-4595-8e83-f2aa3a6fc545")}
-           query)
-         (mapv #(dissoc % :bookmark/image))))
   (into [:a] [1 2 3]))
-
-(comment
-  (user/restart))

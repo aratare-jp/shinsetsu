@@ -107,7 +107,9 @@
    [:query {:optional true} [:maybe :map]]
    [:sort {:optional true} [:maybe [:map
                                     [:field :keyword]
-                                    [:direction :keyword]]]]])
+                                    [:direction :keyword]]]]
+   [:page {:optional true} [:maybe :int]]
+   [:size {:optional true} [:maybe :int]]])
 
 (def bookmark-patch-spec
   [:map
