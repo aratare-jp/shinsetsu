@@ -31,7 +31,7 @@
   [t]
   (-> t
       (assoc :tab/is-protected? (boolean (:tab/password t)))
-      (dissoc :tab/password :tab/user-id)))
+      (select-keys [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated])))
 
 ;; CREATE
 

@@ -52,7 +52,7 @@
                             nil)]
     (e/page-template {:template "centeredBody"}
       (e/empty-prompt {:title (h1 "Login")
-                       :body  (e/form {:component "form" :isInvalid (boolean errors) :error errors}
+                       :body  (e/form {:component "form" :isInvalid (not (nil? errors)) :error errors}
                                 (e/form-row {:label "Username"}
                                   (e/field-text
                                     {:name     "username"

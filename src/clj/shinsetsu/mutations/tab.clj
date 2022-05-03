@@ -1,12 +1,12 @@
 (ns shinsetsu.mutations.tab
   (:require
-    [shinsetsu.db.tab :as db]
+    [buddy.hashers :as hashers]
     [com.wsscode.pathom.connect :as pc :refer [defmutation]]
-    [taoensso.timbre :as log]
     [malli.core :as m]
-    [shinsetsu.schema :as s]
     [malli.error :as me]
-    [buddy.hashers :as hashers]))
+    [shinsetsu.db.tab :as db]
+    [shinsetsu.schema :as s]
+    [taoensso.timbre :as log]))
 
 (def tab-output [:tab/id :tab/name :tab/is-protected? :tab/created :tab/updated])
 
@@ -14,7 +14,7 @@
   [t]
   (if t
     (-> t
-        (assoc :tab/is-protected? (boolean (:tab/password t)))
+        (assoc :tab/is-protected? (-> t :tab/password nil? not))
         (select-keys tab-output))))
 
 (defn hash-password [t] (if (:tab/password t) (update t :tab/password hashers/derive) t))

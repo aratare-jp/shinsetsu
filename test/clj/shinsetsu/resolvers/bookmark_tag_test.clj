@@ -40,17 +40,17 @@
       (dissoc :tag/user-id)))
 
 (defexpect ^:resolver ^:tag ^:integration normal-fetch-tags-by-bookmark
-  (let [bookmark     (create-bookmark "foo" "bar" @tab-id @user-id)
-        bookmark-id  (:bookmark/id bookmark)
-        tag          (create-tag "foo" @user-id)
-        tag-id       (:tag/id tag)
-        bookmark-tag (btdb/create-bookmark-tag #:bookmark-tag{:bookmark-id bookmark-id :tag-id tag-id :user-id @user-id})
-        query        [{[:bookmark/id bookmark-id] [:bookmark/tags]}]
-        actual       (protected-parser {:request {:user/id @user-id}} query)
-        expected     {[:bookmark/id bookmark-id]
-                      {:bookmark/tags (->> #:bookmark{:id bookmark-id :user-id @user-id}
-                                           btdb/fetch-tags-by-bookmark
-                                           (mapv (fn [bt] {:tag/id (:bookmark-tag/tag-id bt)})))}}]
+  (let [bookmark    (create-bookmark "foo" "bar" @tab-id @user-id)
+        bookmark-id (:bookmark/id bookmark)
+        tag         (create-tag "foo" @user-id)
+        tag-id      (:tag/id tag)
+        _           (btdb/create-bookmark-tag #:bookmark-tag{:bookmark-id bookmark-id :tag-id tag-id :user-id @user-id})
+        query       [{[:bookmark/id bookmark-id] [:bookmark/tags]}]
+        actual      (protected-parser {:request {:user/id @user-id}} query)
+        expected    {[:bookmark/id bookmark-id]
+                     {:bookmark/tags (->> #:bookmark{:id bookmark-id :user-id @user-id}
+                                          btdb/fetch-tags-by-bookmark
+                                          (mapv (fn [bt] {:tag/id (:bookmark-tag/tag-id bt)})))}}]
     (expect expected actual)))
 
 (defexpect ^:resolver ^:tag ^:integration normal-fetch-empty-bookmark-tags
@@ -62,12 +62,10 @@
 
 (defexpect ^:resolver ^:tag ^:integration fail-fetch-invalid-bookmark-tags
   (let [bookmark-id "foo"
-        inner-error {:error         true
-                     :error-type    :invalid-input
-                     :error-message "Invalid input"
-                     :error-data    {:bookmark/id ["should be a uuid"]}}
-        expected    {[:bookmark/id bookmark-id] {:bookmark/tags ::pc/reader-error}
-                     ::pc/errors                {[[:bookmark/id bookmark-id] :bookmark/tags] inner-error}}
+        expected    {[:bookmark/id bookmark-id] {:error         true
+                                                 :error-type    :invalid-input
+                                                 :error-message "Invalid input"
+                                                 :error-data    {:bookmark/id ["should be a uuid"]}}}
         query       [{[:bookmark/id bookmark-id] [:bookmark/tags]}]
         actual      (protected-parser {:request {:user/id @user-id}} query)]
     (expect expected actual)))
@@ -76,4 +74,4 @@
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.parser :refer [protected-parser]])
   (k/run 'shinsetsu.resolvers.bookmark-tag-test)
-  (k/run #'shinsetsu.resolvers.bookmark-tag-test/fail-fetch-invalid-tags-by-bookmark))
+  (k/run #'shinsetsu.resolvers.bookmark-tag-test/fail-fetch-invalid-bookmark-tags))

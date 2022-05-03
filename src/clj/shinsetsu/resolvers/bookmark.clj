@@ -8,9 +8,8 @@
     [shinsetsu.db.tab :as tab-db]
     [shinsetsu.schema :as s]
     [taoensso.timbre :as log])
-  (:import [java.time Instant Duration]
-           [java.time.temporal TemporalUnit]
-           [java.sql Timestamp]))
+  (:import [java.sql Timestamp]
+           [java.time Duration Instant]))
 
 (def bookmark-output [:bookmark/id :bookmark/title :bookmark/url :bookmark/image :bookmark/created :bookmark/updated])
 (defn trim-bookmark [b] (dissoc b :bookmark/user-id :bookmark/tab-id))

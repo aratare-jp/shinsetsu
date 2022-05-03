@@ -141,13 +141,10 @@
 
 (defexpect ^:resolver ^:bookmark ^:integration fail-to-fetch-protected-bookmarks-with-no-password
   (let [tab-password "bar"
-        tab-id       (-> {:tab/name "foo" :tab/password tab-password :tab/user-id @user-id}
-                         (update :tab/password hashers/derive)
+        tab-id       (-> {:tab/name "foo" :tab/password (hashers/derive tab-password) :tab/user-id @user-id}
                          tab-db/create-tab
                          :tab/id)
-        _            (tab-db/patch-tab #:tab{:id      tab-id
-                                             :user-id @user-id
-                                             :unlock  (.minus (Instant/now) (Duration/ofDays 10))})
+        _            (tab-db/patch-tab #:tab{:id tab-id :user-id @user-id :unlock (.minus (Instant/now) (Duration/ofDays 10))})
         query        [{[:tab/id tab-id] [:tab/id :tab/bookmarks]}]
         actual       (protected-parser {:request {:user/id @user-id}} query)
         expected     {[:tab/id tab-id] {:error         true

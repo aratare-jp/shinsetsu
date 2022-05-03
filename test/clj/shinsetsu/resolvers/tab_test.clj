@@ -1,15 +1,12 @@
 (ns shinsetsu.resolvers.tab-test
   (:require
+    [buddy.hashers :as hashers]
     [clojure.test :refer :all]
     [expectations.clojure.test :refer [defexpect expect]]
-    [shinsetsu.test-utility :refer [db-setup db-cleanup]]
-    [shinsetsu.db.user :as user-db]
     [shinsetsu.db.tab :as tab-db]
+    [shinsetsu.db.user :as user-db]
     [shinsetsu.parser :refer [protected-parser]]
-    [taoensso.timbre :as log]
-    [com.wsscode.pathom.core :as pc]
-    [buddy.hashers :as hashers])
-  (:import [java.util UUID]))
+    [shinsetsu.test-utility :refer [db-cleanup db-setup]]))
 
 (def user-id (atom nil))
 
@@ -28,16 +25,10 @@
 
 (defn create-tab
   [{:tab/keys [password] :as t}]
-  (if password
-    (-> t
-        (update :tab/password hashers/derive)
-        (tab-db/create-tab)
-        (assoc :tab/is-protected? true)
-        (dissoc :tab/user-id :tab/password :tab/created :tab/updated))
-    (-> t
-        (tab-db/create-tab)
-        (assoc :tab/is-protected? false)
-        (dissoc :tab/user-id :tab/password :tab/created :tab/updated))))
+  (-> (if password (update t :tab/password hashers/derive) t)
+      (tab-db/create-tab)
+      (assoc :tab/is-protected? (not (nil? password)))
+      (select-keys [:tab/id :tab/name :tab/is-protected?])))
 
 (defexpect normal-fetch-tabs
   (let [tab1     (create-tab {:tab/name "foo" :tab/password "bar" :tab/user-id @user-id})

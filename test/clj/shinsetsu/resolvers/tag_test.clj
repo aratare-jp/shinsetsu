@@ -46,39 +46,21 @@
     (expect expected actual)))
 
 (defexpect ^:db ^:integration ^:tag fail-fetch-invalid-tag
-  (let [random-id   "foo"
-        inner-error {:error         true
-                     :error-type    :invalid-input
-                     :error-message "Invalid input"
-                     :error-data    {:tag/id ["should be a uuid"]}}
-        expected    {[:tag/id random-id] {:tag/id      random-id
-                                          :tag/name    ::pc/reader-error
-                                          :tag/colour  ::pc/reader-error
-                                          :tag/created ::pc/reader-error
-                                          :tag/updated ::pc/reader-error}
-                     ::pc/errors         {[[:tag/id random-id] :tag/name]    inner-error
-                                          [[:tag/id random-id] :tag/colour]  inner-error
-                                          [[:tag/id random-id] :tag/created] inner-error
-                                          [[:tag/id random-id] :tag/updated] inner-error}}
-        actual      (protected-parser {:request {:user/id @user-id}} [{[:tag/id random-id] tag-join}])]
+  (let [random-id "foo"
+        expected  {[:tag/id random-id] {:error         true
+                                        :error-type    :invalid-input
+                                        :error-message "Invalid input"
+                                        :error-data    {:tag/id ["should be a uuid"]}}}
+        actual    (protected-parser {:request {:user/id @user-id}} [{[:tag/id random-id] tag-join}])]
     (expect expected actual)))
 
 (defexpect ^:db ^:integration ^:tag fail-fetch-null-tag
-  (let [random-id   nil
-        inner-error {:error         true
-                     :error-type    :invalid-input
-                     :error-message "Invalid input"
-                     :error-data    {:tag/id ["should be a uuid"]}}
-        expected    {[:tag/id random-id] {:tag/id      random-id
-                                          :tag/name    ::pc/reader-error
-                                          :tag/colour  ::pc/reader-error
-                                          :tag/created ::pc/reader-error
-                                          :tag/updated ::pc/reader-error}
-                     ::pc/errors         {[[:tag/id random-id] :tag/name]    inner-error
-                                          [[:tag/id random-id] :tag/colour]  inner-error
-                                          [[:tag/id random-id] :tag/created] inner-error
-                                          [[:tag/id random-id] :tag/updated] inner-error}}
-        actual      (protected-parser {:request {:user/id @user-id}} [{[:tag/id random-id] tag-join}])]
+  (let [random-id nil
+        expected  {[:tag/id random-id] {:error         true
+                                        :error-type    :invalid-input
+                                        :error-message "Invalid input"
+                                        :error-data    {:tag/id ["should be a uuid"]}}}
+        actual    (protected-parser {:request {:user/id @user-id}} [{[:tag/id random-id] tag-join}])]
     (expect expected actual)))
 
 (defexpect ^:resolver ^:integration ^:tag normal-fetch-tags
@@ -130,4 +112,5 @@
   (require '[kaocha.repl :as k])
   (require '[shinsetsu.parser :refer [protected-parser]])
   (k/run-all)
+  (k/run 'shinsetsu.resolvers.tag-test)
   (k/run #'shinsetsu.resolvers.tag-test/normal-fetch-tags))
