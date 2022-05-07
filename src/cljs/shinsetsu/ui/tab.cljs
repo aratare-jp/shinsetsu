@@ -208,23 +208,26 @@
                                  (log/info "Load user bookmarks")
                                  (m/set-value! this :ui/loading? true)
                                  (df/load-field! this :tab/bookmarks {:without              #{:bookmark/tab-id}
-                                                                      :params               (if search-query {:tab/query search-query} {})
+                                                                      :params               (if search-query {:query search-query} {})
                                                                       :post-mutation        `tab-mut/post-load-unlocked-bookmarks
-                                                                      :post-mutation-params {:tab/id id}})))))
+                                                                      :post-mutation-params {:tab/id id}
+                                                                      :fallback             `tab-mut/post-load-bookmarks-error})))))
    :componentWillUnmount (fn [this]
                            ;; TODO: Lock tab when moving away. Not sure about how annoying this can be for users.
                            (m/set-value! this :ui/password nil)
                            (m/set-value! this :ui/unlocked? false))
    :componentDidUpdate   (fn [this prev-props _]
-                           (let [curr-props (comp/props this)
-                                 tab-id     (:tab/id curr-props)
-                                 curr-query (:ui/search-query curr-props)
+                           (let [{:tab/keys [id is-protected?] :ui/keys [unlocked? search-query]} (comp/props this)
                                  prev-query (:ui/search-query prev-props)]
-                             (if (= curr-query prev-query)
-                               (df/load-field! this :tab/bookmarks {:without              #{:bookmark/tab-id}
-                                                                    :params               {:tab/query curr-query}
-                                                                    :post-mutation        `tab-mut/post-load-unlocked-bookmarks
-                                                                    :post-mutation-params {:tab/id tab-id}}))))}
+                             (if (and (or (not is-protected?) (and is-protected? unlocked?)) (not= search-query prev-query))
+                               (do
+                                 (log/debug "Query changed")
+                                 (m/set-value! this :ui/loading? true)
+                                 (df/load-field! this :tab/bookmarks {:without              #{:bookmark/tab-id}
+                                                                      :params               {:query search-query}
+                                                                      :post-mutation        `tab-mut/post-load-unlocked-bookmarks
+                                                                      :post-mutation-params {:tab/id id}
+                                                                      :fallback             `tab-mut/post-load-bookmarks-error})))))}
   [(if edit-bm-id
      (if (tempid/tempid? edit-bm-id)
        (bui/ui-new-bookmark-modal this props)
@@ -344,13 +347,14 @@
       {:isOpen search-error-type
        :input  (e/search-bar
                  {:box      {:schema schema :incremental true :isLoading loading?}
-                  :onChange (fn [q]
-                              (let [{:keys [query error]} (js->clj q :keywordize-keys true)]
-                                (if error
-                                  (comp/transact! this [(set-root {:ui/search-error-type error})])
-                                  (let [query (e/query->EsQuery query)]
-                                    (comp/transact! this [(set-root {:ui/search-query query :ui/search-error-type nil})])
-                                    (load-fn query)))))})}
+                  :onChange (gf/debounce
+                              (fn [q]
+                                (let [{:keys [query error]} (js->clj q :keywordize-keys true)]
+                                  (if error
+                                    (comp/transact! this [(set-root {:ui/search-error-type error})])
+                                    (comp/transact! this [(set-root {:ui/search-query      (e/query->EsQuery query)
+                                                                     :ui/search-error-type nil})]))))
+                              500)})}
       "Your query seems to be incorrect")))
 
 (defn- ui-tab-main-body
@@ -370,10 +374,10 @@
     (e/page-template {:pageHeader {:pageTitle      (if (empty? tabs)
                                                      "Welcome!"
                                                      (e/description-list {}
-                                                                         (e/description-list-title {}
-                                                                                                   (e/title {:size "l"} (h1 (-> tabs (nth current-tab-idx) :tab/name))))
-                                                                         (e/description-list-description {}
-                                                                                                         (e/title {:size "xs"} (h2 "1,000 items")))))
+                                                       (e/description-list-title {}
+                                                         (e/title {:size "l"} (h1 (-> tabs (nth current-tab-idx) :tab/name))))
+                                                       (e/description-list-description {}
+                                                         (e/title {:size "xs"} (h2 "1,000 items")))))
                                    :rightSideItems right-side-items}}
       (e/spacer {})
       (e/tabs {:size "xl"}
@@ -382,7 +386,7 @@
       (if (empty? tabs)
         (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
                          :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-        (ui-tab (merge (nth tabs current-tab-idx) {:ui/tabs (:ui/tabs props :ui/search-query search-query)}))))))
+        (ui-tab (merge (nth tabs current-tab-idx) {:ui/tabs (:ui/tabs props) :ui/search-query search-query}))))))
 
 (defsc TabMain
   [this {:ui/keys [edit-tab-id delete-tab-id sort-option] :as props}]

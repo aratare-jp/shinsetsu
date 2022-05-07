@@ -94,6 +94,17 @@
                                                      (trim-bookmark bookmark2)]}}]
     (expect expected actual)))
 
+(defexpect ^:resolver ^:bookmark ^:integration normal-fetch-unprotected-bookmarks-with-query
+  (let [tab       (tab-db/create-tab {:tab/name "foo" :tab/user-id @user-id})
+        tab-id    (:tab/id tab)
+        bookmark1 (bookmark-db/create-bookmark #:bookmark{:title "foo" :url "bar" :tab-id tab-id :user-id @user-id})
+        _         (bookmark-db/create-bookmark #:bookmark{:title "fim" :url "baz" :tab-id tab-id :user-id @user-id})
+        query     [`({[:tab/id ~tab-id] [:tab/id :tab/bookmarks]} {:query {:bool {:must [{:simple_query_string {:query "foo"}}]}}})]
+        actual    (protected-parser {:request {:user/id @user-id}} query)
+        expected  {[:tab/id tab-id] {:tab/id        tab-id
+                                     :tab/bookmarks [(trim-bookmark bookmark1)]}}]
+    (expect expected actual)))
+
 (defexpect ^:resolver ^:bookmark ^:integration normal-fetch-unprotected-bookmarks-without-password
   (let [tab-password "bar"
         tab          (tab-db/create-tab {:tab/name "foo" :tab/user-id @user-id})

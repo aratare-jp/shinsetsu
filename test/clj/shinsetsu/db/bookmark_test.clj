@@ -437,9 +437,9 @@
         ;; hel
         ;; title:hel
         ;; title:"hel"
-        expected1 [bookmark1 bookmark2 bookmark3]
+        expected1 [bookmark1 bookmark3]
         actual1   (bdb/fetch-bookmarks {:bookmark/user-id @user-id :bookmark/tab-id @tab1-id}
-                                       {:query {:bool {:must [{:simple_query_string {:query "l"}}]}}})
+                                       {:query {:bool {:must [{:simple_query_string {:query "hel"}}]}}})
         ;; hello world
         ;; "hello world"
         expected2 [bookmark1 bookmark3]
@@ -470,6 +470,10 @@
     (expect expected4 actual4)
     (expect expected5 actual5)
     (expect expected6 actual6)))
+
+(comment
+  (require '[kaocha.repl :as k])
+  (k/run #'shinsetsu.db.bookmark-test/normal-fetch-bookmarks-simple-title-query))
 
 (defexpect normal-fetch-bookmarks-simple-tag-query
   (let [bookmark1 (bdb/create-bookmark #:bookmark{:title "twitch" :url "foo" :tab-id @tab1-id :user-id @user-id})
