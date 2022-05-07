@@ -174,7 +174,7 @@
                                    (evt/prevent-default! e)
                                    (log/info "Load user bookmarks")
                                    (m/set-value! this :ui/loading? true)
-                                   (df/load-field! this :tab/bookmarks {:params               {:tab/password password}
+                                   (df/load-field! this :tab/bookmarks {:params               {:password password}
                                                                         :post-mutation        `tab-mut/post-load-locked-bookmarks
                                                                         :post-mutation-params {:tab/id id}
                                                                         :fallback             `tab-mut/post-load-bookmarks-error}))}
@@ -187,7 +187,7 @@
    :query                [:tab/id
                           :tab/name
                           :tab/is-protected?
-                          {:tab/bookmarks (comp/get-query bui/Bookmark)}
+                          {:tab/bookmarks (comp/get-query bui/BookmarkModal)}
                           {[:ui/tabs '_] [:tab/id :tab/name]}
                           [:ui/search-query '_]
                           :ui/unlocked?

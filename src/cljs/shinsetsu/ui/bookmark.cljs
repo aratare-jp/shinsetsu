@@ -137,10 +137,7 @@
                :onChange        (fn [opts]
                                   (let [tags (as-> opts $
                                                    (js->clj $ :keywordize-keys true)
-                                                   (mapv
-                                                     (fn [{:keys [label color value]}]
-                                                       #:tag{:name label :colour color :id value})
-                                                     $))]
+                                                   (mapv (fn [{:keys [value]}] [:tag/id value]) $))]
                                     (m/set-value! this :ui/tag-options nil)
                                     (m/set-value! this :bookmark/tags tags)))}))))
       (e/modal-footer {}
