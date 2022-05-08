@@ -1,14 +1,22 @@
 (ns shinsetsu.app
   (:require
-    [shinsetsu.middleware.auth :refer [wrap-auth]]
-    [shinsetsu.parser :refer [public-parser-handler protected-parser-handler]]
+    [com.fulcrologic.fulcro.networking.file-upload :as fu]
     [com.fulcrologic.fulcro.server.api-middleware :as server]
-    [ring.middleware.content-type :refer [wrap-content-type]]
-    [ring.middleware.resource :refer [wrap-resource]]
-    [reitit.ring :as ring]
     [mount.core :as m]
+    [reitit.ring :as ring]
+    [ring.middleware.content-type :refer [wrap-content-type]]
     [ring.middleware.multipart-params :refer [wrap-multipart-params]]
-    [com.fulcrologic.fulcro.networking.file-upload :as fu]))
+    [ring.middleware.resource :refer [wrap-resource]]
+    [shinsetsu.middleware.auth :refer [wrap-auth]]
+    [shinsetsu.parser :refer [protected-parser-handler public-parser-handler]]))
+
+(defn wrap-cors
+  [handler]
+  (fn [req]
+    (let [res (handler req)]
+      (-> res
+          (assoc-in [:headers "Access-Control-Allow-Origin"] "*")
+          (assoc-in [:headers "Access-Control-Allow-Headers"] "*")))))
 
 (m/defstate app
   :start
@@ -25,7 +33,8 @@
                   [wrap-multipart-params]
                   [server/wrap-transit-response]
                   [server/wrap-transit-params]
-                  [fu/wrap-mutation-file-uploads {}]]}))
+                  [fu/wrap-mutation-file-uploads {}]
+                  [wrap-cors]]}))
 
 (comment
   (user/start)

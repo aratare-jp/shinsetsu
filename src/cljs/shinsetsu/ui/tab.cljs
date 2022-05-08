@@ -37,38 +37,16 @@
                      :tab/name    ""
                      :ui/password ""})
    :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config TabModal data-tree))}
-  (let [new?        (tempid/tempid? id)
-        on-blur     (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
-        tab-valid?  (mc/validate s/tab-form-spec #:tab{:name name :password password})
-        on-close    (fn [_]
-                      (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
-                      (on-close))
-        on-save     (fn [e]
-                      (evt/prevent-default! e)
-                      (if new?
-                        (comp/transact! this [(tab-mut/create-tab #:tab{:id id :name name :password password})])
-                        (if change-password?
-                          (comp/transact! this [(tab-mut/patch-tab #:tab{:id               id
-                                                                         :name             name
-                                                                         :password         password
-                                                                         :change-password? true})])
-                          (comp/transact! this [(tab-mut/patch-tab #:tab{:id id :name name})]))))
-        on-clear    #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
-        errors      (case error-type
-                      :invalid-input ["Unable to create new tab." "Please try again."]
-                      :internal-server-error ["Unknown error encountered"]
-                      nil)
-        ui-password (e/form-row
-                      {:label    "Password"
-                       :helpText (if (not new?) "Can be left empty if you don't want to lock this tab")}
-                      (e/field-text
-                        {:name        "password"
-                         :value       password
-                         :placeholder "Add password here"
-                         :type        "password"
-                         :onBlur      #(on-blur :ui/password)
-                         :disabled    loading?
-                         :onChange    (fn [e] (m/set-string! this :ui/password :event e))}))]
+  (let [new?       (tempid/tempid? id)
+        on-blur    (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
+        tab-valid? (mc/validate s/tab-form-spec #:tab{:name name :password password})
+        on-close   (fn [_]
+                     (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+                     (on-close))
+        errors     (case error-type
+                     :invalid-input ["Unable to create new tab." "Please try again."]
+                     :internal-server-error ["Unknown error encountered"]
+                     nil)]
     (e/modal {:onClose on-close}
       (e/modal-header {}
         (e/modal-header-title {}
@@ -80,27 +58,45 @@
               {:name        "name"
                :value       name
                :placeholder "Add name here"
-               :onChange    #(m/set-string! this :tab/name :event %)
+               :disabled    loading?
                :onBlur      #(on-blur :tab/name)
-               :disabled    loading?}))
+               :onChange    #(m/set-string! this :tab/name :event %)}))
           (e/form-row {:label (if new? "Add password?" "Change password?")}
             (e/switch
               {:name     "change-password"
                :checked  change-password?
                :onChange #(m/toggle! this :ui/change-password?)}))
           (if change-password?
-            ui-password)))
+            (e/form-row
+              {:label    "Password"
+               :helpText (if (not new?) "Can be left empty if you don't want to lock this tab")}
+              (e/field-text
+                {:name        "password"
+                 :value       password
+                 :placeholder "Add password here"
+                 :type        "password"
+                 :disabled    loading?
+                 :onBlur      #(on-blur :ui/password)
+                 :onChange    (fn [e] (m/set-string! this :ui/password :event e))})))))
       (e/modal-footer {}
         (e/button {:onClick on-close} "Cancel")
         (e/button
           {:type      "submit"
            :fill      true
-           :onClick   on-save
            :isLoading loading?
            :disabled  (not tab-valid?)
-           :form      "tab-modal-form"}
+           :form      "tab-modal-form"
+           :onClick   (fn [e]
+                        (evt/prevent-default! e)
+                        (if new?
+                          (comp/transact! this [(tab-mut/create-tab #:tab{:id id :name name :password password})])
+                          (if change-password?
+                            (comp/transact! this [(tab-mut/patch-tab #:tab{:id id :name name :password password :change-password? true})])
+                            (comp/transact! this [(tab-mut/patch-tab #:tab{:id id :name name})]))))}
           "Save")
-        (e/button {:onClick on-clear} "Clear")))))
+        (e/button
+          {:onClick #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])}
+          "Clear")))))
 
 (def ui-tab-modal (comp/factory TabModal {:keyfn :tab/id}))
 
@@ -116,10 +112,9 @@
 
 (defn- ui-tab-body
   [this {:tab/keys [id bookmarks] :ui/keys [loading?]}]
-  (let [add-bm-fn  (fn []
-                     (let [new-bookmark (comp/get-initial-state bui/BookmarkModal {:bookmark/tab-id id})]
-                       (merge/merge-component! app bui/BookmarkModal new-bookmark :append [:tab/id id :tab/bookmarks])
-                       (m/set-value! this :ui/edit-bm-id (:bookmark/id new-bookmark))))
+  (let [add-bm-fn  #(let [new-bookmark (comp/get-initial-state bui/BookmarkModal {:bookmark/tab-id id})]
+                      (merge/merge-component! app bui/BookmarkModal new-bookmark :append [:tab/id id :tab/bookmarks])
+                      (m/set-value! this :ui/edit-bm-id (:bookmark/id new-bookmark)))
         add-bm-btn (e/button {:fill true :iconType "plus" :onClick add-bm-fn} "Add Bookmark")]
     (cond
       loading?
@@ -221,7 +216,6 @@
                                  prev-query (:ui/search-query prev-props)]
                              (if (and (or (not is-protected?) (and is-protected? unlocked?)) (not= search-query prev-query))
                                (do
-                                 (log/debug "Query changed")
                                  (m/set-value! this :ui/loading? true)
                                  (df/load-field! this :tab/bookmarks {:without              #{:bookmark/tab-id}
                                                                       :params               {:query search-query}
@@ -329,20 +323,7 @@
 
 (defn- ui-search-bar
   [this {:ui/keys [search-error-type loading?]}]
-  (let [schema  {:strict true? :fields {:tag {:type "string"} :name {:type "string"}}}
-        load-fn (gf/debounce
-                  (fn [query]
-                    (comp/transact! this [(set-root {:ui/loading? true})])
-                    (if (:match_all query)
-                      (df/load! app :user/tabs Tab {:target        (targeting/replace-at [:ui/tabs])
-                                                    :without       #{:tab/bookmarks}
-                                                    :post-mutation `tab-mut/post-load-query-bookmarks
-                                                    :fallback      `tab-mut/post-query-bookmarks-error})
-                      (df/load! app :user/tabs Tab {:target        (targeting/replace-at [:ui/tabs])
-                                                    :params        {:tab/query query}
-                                                    :post-mutation `tab-mut/post-load-query-bookmarks
-                                                    :fallback      `tab-mut/post-query-bookmarks-error})))
-                  500)]
+  (let [schema {:strict true? :fields {:tag {:type "string"} :name {:type "string"}}}]
     (e/input-popover
       {:isOpen search-error-type
        :input  (e/search-bar
@@ -359,18 +340,7 @@
 
 (defn- ui-tab-main-body
   [this {:ui/keys [tabs current-tab-idx search-query] :as props}]
-  (let [tabs             (filter #(not (tempid/tempid? (:tab/id %))) tabs)
-        right-side-items [(e/button
-                            {:fill     true
-                             :size     "m"
-                             :onClick  (fn []
-                                         (let [new-tab (comp/get-initial-state TabModal)]
-                                           (merge/merge-component!
-                                             app TabModal new-tab
-                                             :append [:ui/tabs])
-                                           (m/set-value! this :ui/edit-tab-id (:tab/id new-tab))))
-                             :iconType "plus"}
-                            "New Tab")]]
+  (let [tabs (filter #(not (tempid/tempid? (:tab/id %))) tabs)]
     (e/page-template {:pageHeader {:pageTitle      (if (empty? tabs)
                                                      "Welcome!"
                                                      (e/description-list {}
@@ -378,7 +348,16 @@
                                                          (e/title {:size "l"} (h1 (-> tabs (nth current-tab-idx) :tab/name))))
                                                        (e/description-list-description {}
                                                          (e/title {:size "xs"} (h2 "1,000 items")))))
-                                   :rightSideItems right-side-items}}
+                                   :rightSideItems [(e/button
+                                                      {:fill     true
+                                                       :size     "m"
+                                                       :iconType "plus"
+                                                       :onClick  #(let [new-tab (comp/get-initial-state TabModal)]
+                                                                    (merge/merge-component!
+                                                                      app TabModal new-tab
+                                                                      :append [:ui/tabs])
+                                                                    (m/set-value! this :ui/edit-tab-id (:tab/id new-tab)))}
+                                                      "New Tab")]}}
       (e/spacer {})
       (e/tabs {:size "xl"}
         (ui-tab-headers this props))
@@ -386,22 +365,22 @@
       (if (empty? tabs)
         (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
                          :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-        (ui-tab (merge (nth tabs current-tab-idx) {:ui/tabs (:ui/tabs props) :ui/search-query search-query}))))))
+        (ui-tab (merge (nth tabs current-tab-idx) {:ui/tabs tabs :ui/search-query search-query}))))))
 
 (defsc TabMain
   [this {:ui/keys [edit-tab-id delete-tab-id sort-option] :as props}]
   {:ident         (fn [] [:component/id ::tab])
    :route-segment ["tab"]
    :query         [{[:ui/tabs '_] (comp/get-query Tab)}
+                   [:ui/search-query '_]
+                   [:ui/sort-option '_]
+                   [:ui/search-error-type '_]
                    :ui/current-tab-idx
                    :ui/edit-tab-id
                    :ui/delete-tab-id
                    :ui/tab-ctx-menu-id
                    :ui/move-bm-id
                    :ui/destination-tab-id
-                   [:ui/search-query '_]
-                   [:ui/sort-option '_]
-                   [:ui/search-error-type '_]
                    :ui/loading?]
    :initial-state {:ui/current-tab-idx 0
                    :ui/loading?        false}

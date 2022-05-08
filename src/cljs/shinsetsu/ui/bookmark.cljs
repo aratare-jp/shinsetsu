@@ -44,46 +44,41 @@
                      fs/form-config-join])
    :form-fields   #{:bookmark/title :bookmark/url :bookmark/image :bookmark/tags}
    :initial-state (fn [{:bookmark/keys [tab-id]}]
-                    #:bookmark{:id     (tempid/tempid)
-                               :title  ""
-                               :url    ""
-                               :tab-id tab-id})
+                    #:bookmark{:id (tempid/tempid) :title "" :url "" :tab-id tab-id})
    :pre-merge     (fn [{:keys [data-tree]}] (fs/add-form-config BookmarkModal data-tree))}
-  (let [on-blur          (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
-        on-file-selected (fn [fs]
-                           (let [files (mapv #(fu/new-upload (.-name %) % (.-type %)) fs)]
-                             (m/set-value! this :ui/image files)))
-        bm-valid?        (mc/validate s/bookmark-form-spec #:bookmark{:title title :url url})
-        on-close         (fn [_]
-                           (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
-                           (if on-close (on-close)))
-        on-save          (fn [e]
-                           (evt/prevent-default! e)
-                           (if (tempid/tempid? id)
-                             (let [tags (->> (fs/dirty-fields props false) vals first :bookmark/tags (mapv second))
-                                   args #:bookmark{:id id :title title :url url :tab-id tab-id :add-tags tags}]
-                               (if image
-                                 (comp/transact! this [{(create-bookmark (fu/attach-uploads args image)) (comp/get-query this)}])
-                                 (comp/transact! this [{(create-bookmark args) (comp/get-query this)}])))
-                             (let [{:keys [before after]} (->> (fs/dirty-fields props true) vals first :bookmark/tags)
-                                   tag-diff    (diff (mapv second before) (mapv second after))
-                                   add-tags    (->> tag-diff (mapv :+) (filterv some?))
-                                   remove-tags (->> tag-diff (mapv :-) (filterv some?))
-                                   args        (-> props
-                                                   (fs/dirty-fields false)
-                                                   vals
-                                                   first
-                                                   (merge #:bookmark{:id id :tab-id tab-id})
-                                                   (dissoc :bookmark/tags)
-                                                   (assoc :bookmark/add-tags add-tags :bookmark/remove-tags remove-tags))]
-                               (if image
-                                 (comp/transact! this [{(patch-bookmark (fu/attach-uploads args image)) (comp/get-query this)}])
-                                 (comp/transact! this [{(patch-bookmark args) (comp/get-query this)}])))))
-        on-clear         #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
-        errors           (case error-type
-                           :invalid-input ["Unable to create new tab." "Please try again."]
-                           :internal-server-error ["Unknown error encountered"]
-                           nil)]
+  (let [on-blur   (fn [f] (comp/transact! this [(fs/mark-complete! {:field f})]))
+        bm-valid? (mc/validate s/bookmark-form-spec #:bookmark{:title title :url url})
+        on-close  (fn [_]
+                    (comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])
+                    (on-close))
+        on-save   (fn [e]
+                    (evt/prevent-default! e)
+                    (if (tempid/tempid? id)
+                      (let [tags (->> (fs/dirty-fields props false) vals first :bookmark/tags (mapv second))
+                            args #:bookmark{:id id :title title :url url :tab-id tab-id :add-tags tags}]
+                        (if image
+                          (comp/transact! this [{(create-bookmark (fu/attach-uploads args image)) (comp/get-query this)}])
+                          (comp/transact! this [{(create-bookmark args) (comp/get-query this)}])))
+                      (let [idt         (comp/get-ident this)
+                            {:keys [before after]} (-> (fs/dirty-fields props true) (get idt) :bookmark/tags)
+                            tag-diff    (diff (mapv second before) (mapv second after))
+                            add-tags    (->> tag-diff (mapv :+) (filterv some?))
+                            remove-tags (->> tag-diff (mapv :-) (filterv some?))
+                            args        (-> props
+                                            (fs/dirty-fields false)
+                                            (get idt)
+                                            (dissoc :bookmark/tags)
+                                            (assoc :bookmark/add-tags add-tags
+                                                   :bookmark/remove-tags remove-tags
+                                                   :bookmark/id id
+                                                   :bookmark/tab-id tab-id))]
+                        (if image
+                          (comp/transact! this [{(patch-bookmark (fu/attach-uploads args image)) (comp/get-query this)}])
+                          (comp/transact! this [{(patch-bookmark args) (comp/get-query this)}])))))
+        errors    (case error-type
+                    :invalid-input ["Unable to create new tab." "Please try again."]
+                    :internal-server-error ["Unknown error encountered"]
+                    nil)]
     (e/modal {:onClose on-close}
       (e/modal-header {}
         (e/modal-header-title {}
@@ -105,7 +100,10 @@
                :disabled loading?
                :onChange (fn [e] (m/set-string! this :bookmark/url :event e))}))
           (e/form-row {:label "Image"}
-            (e/file-picker {:onChange on-file-selected :accept "image/*"}))
+            (e/file-picker
+              {:onChange (fn [fs]
+                           (let [files (mapv #(fu/new-upload (.-name %) % (.-type %)) fs)]
+                             (m/set-value! this :ui/image files))) :accept "image/*"}))
           (e/form-row {:label "Tags"}
             (e/combo-box
               {:aria-label      "Select tag for bookmark"
@@ -155,7 +153,9 @@
                :form      "bookmark-modal-form"}
               "Save"))
           (e/flex-item {}
-            (e/button {:onClick on-clear} "Clear")))))))
+            (e/button
+              {:onClick #(comp/transact! this [(fs/reset-form! {:form-ident (comp/get-ident this)})])}
+              "Clear")))))))
 
 (def ui-bookmark-modal (comp/factory BookmarkModal {:keyfn :bookmark/id}))
 
@@ -177,22 +177,7 @@
            :ui/show-ctx-menu?
            :ui/tags-loading?
            {:ui/tag-options (comp/get-query tui/TagModal)}]}
-  (let [close-ctx-menu-fn  #(m/set-value! this :ui/bookmark-ctx-menu-id nil)
-        on-favourite       (fn []
-                             (comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
-                             (close-ctx-menu-fn))
-        on-delete          (fn []
-                             (on-delete)
-                             (close-ctx-menu-fn))
-        on-edit            (fn []
-                             (on-edit)
-                             (close-ctx-menu-fn))
-        on-move            (fn []
-                             (on-move #:bookmark{:id id :tab-id tab-id :title title})
-                             (close-ctx-menu-fn))
-        on-open-in-new-tab (fn []
-                             (js/window.open url)
-                             (close-ctx-menu-fn))]
+  (let [close-ctx-menu-fn #(m/set-value! this :ui/bookmark-ctx-menu-id nil)]
     [(if (= id bcmi)
        (let [el (get-element (str "bookmark-" id))]
          (e/wrapping-popover
@@ -208,32 +193,42 @@
                  {:aria-label "favourite"
                   :size       "s"
                   :iconType   (if favourite "starFilled" "starEmpty")
-                  :onClick    on-favourite}))
+                  :onClick    (fn []
+                                (comp/transact! this [(patch-bookmark #:bookmark{:id id :tab-id tab-id :favourite (not favourite)})])
+                                (close-ctx-menu-fn))}))
              (e/flex-item {}
                (e/button-icon
                  {:aria-label "open in new tab"
                   :size       "s"
                   :iconType   "popout"
-                  :onClick    on-open-in-new-tab}))
+                  :onClick    (fn []
+                                (js/window.open url)
+                                (close-ctx-menu-fn))}))
              (e/flex-item {}
                (e/button-icon
                  {:aria-label "edit"
                   :size       "s"
                   :iconType   "pencil"
-                  :onClick    on-edit}))
+                  :onClick    (fn []
+                                (on-edit)
+                                (close-ctx-menu-fn))}))
              (e/flex-item {}
                (e/button-icon
                  {:aria-label "move"
                   :size       "s"
                   :iconType   "merge"
-                  :onClick    on-move}))
+                  :onClick    (fn []
+                                (on-move #:bookmark{:id id :tab-id tab-id :title title})
+                                (close-ctx-menu-fn))}))
              (e/flex-item {}
                (e/button-icon
                  {:aria-label "delete"
                   :size       "s"
                   :iconType   "trash"
-                  :onClick    on-delete
-                  :color      "danger"}))))))
+                  :color      "danger"
+                  :onClick    (fn []
+                                (on-delete)
+                                (close-ctx-menu-fn))}))))))
      (e/card
        {:title          title
         :titleElement   "h2"
@@ -241,17 +236,17 @@
         :paddingSize    "s"
         :display        "transparent"
         :betaBadgeProps (if favourite {:label (e/icon {:type "starFilled" :size "l" :color "#F3D371" :title "favourite"})})
+        :image          (div
+                          (div {:id (str "bookmark-" id)})
+                          (e/image
+                            {:height "200vh"
+                             :src    image}))
         :onClick        #(set! (.. js/window -location -href) url)
         :onContextMenu  (fn [e]
                           (evt/prevent-default! e)
                           (if bcmi
                             (m/set-value! this :ui/bookmark-ctx-menu-id nil)
-                            (m/set-value! this :ui/bookmark-ctx-menu-id id)))
-        :image          (div
-                          (div {:id (str "bookmark-" id)})
-                          (e/image
-                            {:height "200vh"
-                             :src    image}))})]))
+                            (m/set-value! this :ui/bookmark-ctx-menu-id id)))})]))
 
 (def ui-bookmark (comp/factory Bookmark {:keyfn :bookmark/id}))
 

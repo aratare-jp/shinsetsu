@@ -1,11 +1,11 @@
 (ns shinsetsu.mutations.user
   (:require
-    [medley.core :refer [dissoc-in]]
-    [shinsetsu.application :refer [app]]
-    [shinsetsu.store :refer [store get-key set-key]]
+    [com.fulcrologic.fulcro.components :as comp]
     [com.fulcrologic.fulcro.mutations :refer [defmutation]]
     [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]
-    [com.fulcrologic.fulcro.components :as comp]
+    [medley.core :refer [dissoc-in]]
+    [shinsetsu.application :refer [app]]
+    [shinsetsu.store :refer [get-key set-key store]]
     [taoensso.timbre :as log]))
 
 (defn- move-to-tab
