@@ -368,24 +368,25 @@
         (ui-tab (merge (nth tabs current-tab-idx) {:ui/tabs tabs :ui/search-query search-query}))))))
 
 (defsc TabMain
-  [this {:ui/keys [edit-tab-id delete-tab-id sort-option] :as props}]
+  [this {:ui/keys [edit-tab-id delete-tab-id sort-option search-opt-open?] :as props}]
   {:ident         (fn [] [:component/id ::tab])
    :route-segment ["tab"]
    :query         [{[:ui/tabs '_] (comp/get-query Tab)}
                    [:ui/search-query '_]
-                   [:ui/sort-option '_]
                    [:ui/search-error-type '_]
+                   :ui/sort-option
                    :ui/current-tab-idx
                    :ui/edit-tab-id
                    :ui/delete-tab-id
                    :ui/tab-ctx-menu-id
                    :ui/move-bm-id
                    :ui/destination-tab-id
-                   :ui/loading?]
+                   :ui/loading?
+                   :ui/search-opt-open?]
    :initial-state {:ui/current-tab-idx 0
-                   :ui/loading?        false}
+                   :ui/loading?        false
+                   :ui/sort-option     [:bookmark/created :asc]}
    :will-enter    (fn [app _]
-                    (comp/transact! app [(set-root {:ui/sort-option [:bookmark/created :asc]})])
                     (log/info "Loading user tabs")
                     (dr/route-deferred
                       [:component/id ::tab]
@@ -395,22 +396,20 @@
                                                        :without              #{:tab/bookmarks}
                                                        :post-mutation        `dr/target-ready
                                                        :post-mutation-params {:target [:component/id ::tab]}}))))}
-  (let [sort-options [{:value "title-asc" :inputDisplay (p "Title (A-Z)")}
-                      {:value "title-desc" :inputDisplay (p "Title (Z-A)")}
-                      {:value "created-asc" :inputDisplay (p "Created date (New to Old)")}
-                      {:value "created-desc" :inputDisplay (p "Created date (Old to New)")}]]
+  (let [sort-options [{:value "title_asc" :text "Title (A-Z)"}
+                      {:value "title_desc" :text "Title (Z-A)"}
+                      {:value "created_asc" :text "Created date (New to Old)"}
+                      {:value "created_desc" :text "Created date (Old to New)"}]]
     [(e/flex-group {:justifyContent "spaceAround" :alignItems "center"}
        (e/flex-item {})
-       (e/flex-item {}
-         (ui-search-bar this props))
-       (e/flex-item {:grow false}
-         (e/super-select {:options         sort-options
-                          :prepend         "Sort by"
-                          :valueOfSelected (str (-> sort-option first name) "-" (-> sort-option second name))
-                          :onChange        (fn [value]
-                                             (let [[k v] (string/split value #"-")]
-                                               (comp/transact! this [(set-root {:ui/sort-option [(keyword "bookmark" k)
-                                                                                                 (keyword v)]})])))}))
+       (e/flex-item {:grow 2}
+         (e/field-search {:fullWidth true
+                          :append    (div (e/select {:options  sort-options
+                                                     :value    (str (-> sort-option first name) "_" (-> sort-option second name))
+                                                     :onChange (fn [value]
+                                                                 (let [[k v] (string/split (evt/target-value value) #"_")]
+                                                                   (m/set-value! this :ui/sort-option [(keyword "bookmark" k)
+                                                                                                       (keyword v)])))}))}))
        (e/flex-item {}))
      (when edit-tab-id
        (if (tempid/tempid? edit-tab-id)

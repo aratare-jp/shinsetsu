@@ -1,7 +1,16 @@
 (ns shinsetsu.ui.elastic
   (:require
     [com.fulcrologic.fulcro.algorithms.react-interop :as ri]
-    ["@elastic/eui" :refer [EuiDescriptionList
+    ["@elastic/eui" :refer [EuiFieldSearch
+                            EuiHorizontalRule
+                            EuiCollapsibleNav
+                            EuiCollapsibleNavGroup
+                            EuiHeader
+                            EuiHeaderSection
+                            EuiHeaderSectionItem
+                            EuiHeaderSectionItemButton
+                            EuiPageSideBar
+                            EuiDescriptionList
                             EuiDescriptionListTitle
                             EuiDescriptionListDescription
                             EuiTitle
@@ -86,6 +95,7 @@
 
 ;; Form controls
 (def field-text (ri/react-factory EuiFieldText))
+(def field-search (ri/react-factory EuiFieldSearch))
 (def field-password (ri/react-factory EuiFieldPassword))
 (def switch (ri/react-factory EuiSwitch))
 (def button (ri/react-factory EuiButton))
@@ -118,6 +128,7 @@
 (def page-body (ri/react-factory EuiPageBody))
 (def page-content (ri/react-factory EuiPageContent))
 (def page-content-body (ri/react-factory EuiPageContentBody))
+(def page-sidebar (ri/react-factory EuiPageSideBar))
 
 ;; Modal
 (def modal (ri/react-factory EuiModal))
@@ -135,3 +146,13 @@
 (def description-list (ri/react-factory EuiDescriptionList))
 (def description-list-title (ri/react-factory EuiDescriptionListTitle))
 (def description-list-description (ri/react-factory EuiDescriptionListDescription))
+
+;; Header
+(def header (ri/react-factory EuiHeader))
+(def header-section (ri/react-factory EuiHeaderSection))
+(def header-section-item (ri/react-factory EuiHeaderSectionItem))
+(def header-section-item-button (ri/react-factory EuiHeaderSectionItemButton))
+
+(def collapsible-nav (ri/react-factory EuiCollapsibleNav))
+(def collapsible-nav-group (ri/react-factory EuiCollapsibleNavGroup))
+(def horizontal-rule (ri/react-factory EuiHorizontalRule))
