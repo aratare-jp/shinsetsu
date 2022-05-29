@@ -1,6 +1,7 @@
 (ns shinsetsu.ui.elastic
   (:require
     [com.fulcrologic.fulcro.algorithms.react-interop :as ri]
+    ["@emotion/cache$default" :as createCache]
     ["@elastic/eui" :refer [EuiFieldSearch
                             EuiHorizontalRule
                             EuiCollapsibleNav
@@ -66,6 +67,12 @@
                             EuiText
                             EuiSuperSelect]]))
 
+(defn q [selector] (.querySelector js/document selector))
+(defn create-cache
+  []
+  (let [cache (createCache (clj->js {:key "shinsetsu" :container (q "meta[name=\"emotion-styles\"]")}))]
+    (set! (. cache -compat) true)
+    cache))
 
 (def input-popover (ri/react-factory EuiInputPopover))
 (def provider (ri/react-factory EuiProvider))

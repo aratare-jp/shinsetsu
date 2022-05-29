@@ -52,6 +52,8 @@
                                       :iconType "gear"
                                       :onClick  #(dr/change-route! this ["settings"])}]}))))))
 
+(defonce cache (e/create-cache))
+
 (defsc RootBody
   [this {:root/keys [router] :ui/keys [dark-mode?] :as props}]
   {:ident         (fn [] [:component/id ::root])
@@ -63,7 +65,7 @@
                     {:root/router      (comp/get-initial-state RootRouter)
                      :ui/dark-mode?    true
                      :ui/sidebar-open? false})}
-  (e/provider {:colorMode (if dark-mode? "dark" "light")}
+  (e/provider {:cache cache :colorMode (if dark-mode? "dark" "light")}
     (if (get-key @store :userToken)
       (e/header {:sections [{:items [(ui-sidebar this props)] :borders "right"}]}))
     (ui-root-router router)))
