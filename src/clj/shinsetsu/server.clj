@@ -6,7 +6,8 @@
     [taoensso.timbre :as log]
     [shinsetsu.config :refer [env]]
     [shinsetsu.app :refer [app]]
-    [shinsetsu.nrepl :as nrepl]))
+    [shinsetsu.nrepl :as nrepl])
+  (:gen-class))
 
 ;; log uncaught exceptions in threads
 (Thread/setDefaultUncaughtExceptionHandler
