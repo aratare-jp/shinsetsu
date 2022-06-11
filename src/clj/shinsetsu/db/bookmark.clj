@@ -1,14 +1,14 @@
 (ns shinsetsu.db.bookmark
   (:require
-    [next.jdbc :as jdbc]
-    [honey.sql.helpers :as helpers]
+    [clojure.string :as string]
     [honey.sql :as sql]
-    [taoensso.timbre :as log]
-    [shinsetsu.db :refer [ds]]
-    [shinsetsu.schema :as s]
+    [honey.sql.helpers :as helpers]
     [malli.core :as m]
     [malli.error :as me]
-    [clojure.string :as string])
+    [next.jdbc :as jdbc]
+    [shinsetsu.db :refer [ds]]
+    [shinsetsu.schema :as s]
+    [taoensso.timbre :as log])
   (:import [java.time Instant]
            [org.postgresql.util PSQLException]))
 
@@ -150,22 +150,23 @@
   ([bookmark] (fetch-bookmarks bookmark nil))
   ([{:bookmark/keys [tab-id user-id] :as input}
     {:keys [query sort page size]
-     :or   {sort {:field :bookmark/created :direction :asc} page 0 size 12}
+     :or   {sort [{:field :bookmark/created :direction :asc}] page 0 size 12}
      :as   opts}]
    (if-let [err (or (m/explain s/bookmark-bulk-fetch-spec input) (m/explain [:maybe s/bookmark-fetch-opts-spec] opts))]
      (throw (ex-info "Invalid input" {:error-type :invalid-input :error-data (me/humanize err)})))
    (log/info "Fetch all bookmarks in tab" tab-id "for user" user-id)
-   (jdbc/execute! ds (-> (helpers/select :bookmark/*)
-                         (helpers/from :bookmark)
-                         (helpers/where (-> query simplify-query (query->sql user-id tab-id)))
-                         (helpers/order-by [(:field sort) (:direction sort)])
-                         (helpers/limit size)
-                         (helpers/offset (* page size))
-                         (sql/format)))))
+   (jdbc/execute! ds (as-> (helpers/select :bookmark/*) $
+                           (helpers/from $ :bookmark)
+                           (helpers/where $ (-> query simplify-query (query->sql user-id tab-id)))
+                           (apply helpers/order-by $ (mapv (fn [{:keys [field direction]}] [field direction]) sort))
+                           (helpers/limit $ size)
+                           (helpers/offset $ (* page size))
+                           (sql/format $)))))
 
 (comment
   (let [{:keys [a] :or {a "boo"} :as m} {:b 1}]
     a)
   (require '[mount.core :as mount])
+  (user/restart)
   (mount/start)
   (into [:a] [1 2 3]))

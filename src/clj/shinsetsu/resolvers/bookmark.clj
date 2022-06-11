@@ -60,6 +60,7 @@
       (throw (ex-info "Tab does not exist" {:error-type :invalid-tab})))))
 
 (comment
+  (nth nil 1)
   (let [a 1]
     (list [test a]))
   (user/restart))

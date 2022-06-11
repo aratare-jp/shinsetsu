@@ -106,9 +106,10 @@
 (def bookmark-fetch-opts-spec
   [:map
    [:query {:optional true} [:maybe :map]]
-   [:sort {:optional true} [:maybe [:map
-                                    [:field :keyword]
-                                    [:direction :keyword]]]]
+   [:sort {:optional true} [:maybe [:vector
+                                    [:map
+                                     [:field [:enum :bookmark/title :bookmark/created :bookmark/favourite]]
+                                     [:direction [:enum :asc :desc]]]]]]
    [:page {:optional true} [:maybe :int]]
    [:size {:optional true} [:maybe :int]]])
 
@@ -211,6 +212,7 @@
    [:bookmark-tag/user-id :uuid]])
 
 (comment
+  (user/restart)
   (println #:foo{:a 1 :foo/b 2})
   (println #:foo{:a 1 :foo/b 2})
   (println #{:foo/a :foo/b})
