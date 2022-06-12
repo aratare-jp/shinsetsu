@@ -1,3 +1,0 @@
-{:lib     com.github.aratare-jp/shinsetsu
- :version "0.1.{{git/commit-count}}"
- :main    shinsetsu.server}
