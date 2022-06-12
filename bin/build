@@ -1,2 +1,2 @@
-#!/usr/bin/env bash
-clojure -X:deps prep
+#!/usr/bin/bash
+clojure -T:build uberjar
