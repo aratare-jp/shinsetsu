@@ -8,15 +8,15 @@
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-name (str "target/shinsetsu-" version "-standalone.jar"))
 
-(defn pom
+(defn clean
   [_]
-  (b/write-pom {:target   "."
-                :lib      lib
-                :version  version
-                :basis    basis
-                :src-dirs ["src/clj" "src/cljc"]}))
+  (bb/clean {:target "target"}))
 
-(defn uber
+(defn jar
+  [_]
+  (bb/jar {:lib lib :version version}))
+
+(defn uberjar
   [_]
   (bb/uber {:uber-file jar-name
             :version   version
