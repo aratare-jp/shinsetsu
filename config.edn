@@ -1,0 +1,6 @@
+;; Mock map since everything has been setup in ENV instead.
+{:secret  "thisisnotreal"
+ :db-spec {:dbtype   "postgresql"
+           :dbname   "shinsetsu"
+           :user     "thisisnotreal"
+           :password "thisisnotreal"}}

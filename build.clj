@@ -3,18 +3,14 @@
             [org.corfield.build :as bb]))
 
 (def lib 'com.github.aratare-jp/shinsetsu)
-(def version (format "0.1.%s" (b/git-count-revs nil)))
+(def version "0.1.0")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
-(def jar-name (str "target/shinsetsu-" version "-standalone.jar"))
+(def jar-name (str "target/shinsetsu-standalone.jar"))
 
 (defn clean
   [_]
   (bb/clean {:target "target"}))
-
-(defn jar
-  [_]
-  (bb/jar {:lib lib :version version}))
 
 (defn uberjar
   [_]
