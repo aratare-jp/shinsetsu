@@ -1,2 +1,3 @@
 #!/usr/bin/env bash
+clojure -version
 clojure -T:build uber
