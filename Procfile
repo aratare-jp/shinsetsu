@@ -1,1 +1,1 @@
-web: clojure -T:build uber
+web: java -Dconf=dev-config.edn -jar target/shinsetsu-standalone.jar
