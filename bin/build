@@ -1,3 +1,2 @@
 #!/usr/bin/bash
-ls -lhi
 clojure -T:build uberjar
