@@ -40,5 +40,5 @@
             :main-opts  ["-m" "vlaaad.reveal" "repl" ":always-on-top" "true"]}
   :migrate {:extra-deps {com.github.paulbutcher/clj-migratus {:git/tag "v1.0.3" :git/sha "46a3ac1"}}
             :main-opts  ["-m" "clj-migratus"]}
-  :build   {:deps       {com.github.liquidz/build.edn {:git/tag "0.3.90" :git/sha "e3a3e31"}}
-            :ns-default build-edn.main}}}
+  :build   {:deps       {io.github.seancorfield/build-clj {:git/tag "v0.8.2" :git/sha "0ffdb4c" :deps/root "slim"}}
+            :ns-default build}}}
