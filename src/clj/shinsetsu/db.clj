@@ -7,7 +7,9 @@
 
 (defstate ^{:on-reload :noop} ds
   :start
-  (jdbc/with-options (jdbc/get-datasource (:db-spec config/env)) jdbc/snake-kebab-opts))
+  (jdbc/with-options
+    (jdbc/get-datasource (or (:database-url config/env) (:db-spec config/env)))
+    jdbc/snake-kebab-opts))
 
 (comment
   (require '[mount.core :as mount])
