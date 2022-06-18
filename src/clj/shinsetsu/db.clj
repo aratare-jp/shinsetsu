@@ -8,7 +8,7 @@
 (defstate ^{:on-reload :noop} ds
   :start
   (jdbc/with-options
-    (jdbc/get-datasource (merge (:db-spec config/env) {:jdbcUrl (:database-url config/env)}))
+    (jdbc/get-datasource (or (:jdbc-database-url config/env) (:db-spec config/env)))
     jdbc/snake-kebab-opts))
 
 (comment
