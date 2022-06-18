@@ -27,7 +27,7 @@
    :route-segment     ["login"]
    :form-fields       #{:ui/username :ui/password :ui/url}
    :pre-merge         (fn [{:keys [data-tree]}] (fs/add-form-config Login data-tree))
-   :componentDidMount #(swap! store set-key :remoteUrl "http://localhost:3000")}
+   :componentDidMount #(swap! store set-key :remoteUrl (or (get-key @store [:remoteUrl]) "http://localhost:3000"))}
   (let [on-change         (fn [f e]
                             (m/set-string! this f :event e)
                             (comp/transact! this [(fs/mark-complete! {:field f})]))

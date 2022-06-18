@@ -350,14 +350,13 @@
 
 (defn- ui-tab-main-body
   [this {:ui/keys [tabs current-tab-idx search-query] :as props}]
-  (let [tabs (filter #(not (tempid/tempid? (:tab/id %))) tabs)
-        tab  (nth tabs current-tab-idx)]
+  (let [tabs (filter #(not (tempid/tempid? (:tab/id %))) tabs)]
     (e/page-template {:pageHeader {:pageTitle      (if (empty? tabs)
                                                      "Welcome!"
                                                      (e/description-list {}
                                                        (e/description-list-title {}
                                                          (e/title {:size "l"}
-                                                           (h1 (:tab/name tab))))
+                                                           (h1 (:tab/name (nth tabs current-tab-idx)))))
                                                        (e/description-list-description {}
                                                          (e/title {:size "xs"}
                                                            (h2 "1,000 items")))))
@@ -377,7 +376,7 @@
       (if (empty? tabs)
         (e/empty-prompt {:title (h2 "It seems like you don't have any tab at the moment.")
                          :body  (p "Start enjoying Shinsetsu by add or import your bookmarks")})
-        (ui-tab (merge tab {:ui/tabs tabs :ui/search-query search-query}))))))
+        (ui-tab (merge (nth tabs current-tab-idx) {:ui/tabs tabs :ui/search-query search-query}))))))
 
 (defsc TabMain
   [this {:ui/keys [edit-tab-id delete-tab-id] :as props}]
