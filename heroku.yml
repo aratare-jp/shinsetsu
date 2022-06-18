@@ -1,0 +1,11 @@
+setup:
+  addons:
+    - plan: heroku-postgresql
+      as: DATABASE_URL
+build:
+  docker:
+    web: Dockerfile
+release:
+  command:
+    - clojure -T:build migrate
+  image: web
