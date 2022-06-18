@@ -25,7 +25,7 @@
 
 (m/defstate ^{:on-reload :noop} http-server
   :start
-  (reset! server (http/start-server app (assoc env :port (or (-> env :options :port) 3000))))
+  (reset! server (http/start-server app (assoc env :port (or (:port env) 3000))))
   :stop
   (when @server
     (.close @server)

@@ -1,1 +1,1 @@
-web: java -Dconf=config.edn -jar ./target/shinsetsu-standalone.jar
+web: java -Dconf=config.edn -jar ./target/shinsetsu-standalone.jar --port $PORT
