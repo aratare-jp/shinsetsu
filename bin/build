@@ -5,3 +5,6 @@ clojure -T:build clean
 
 echo "Packaging uberjar"
 clojure -T:build uberjar
+
+echo "Migrating database"
+clojure -M:migrate migrate

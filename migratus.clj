@@ -1,7 +1,7 @@
 {:store         :database
  :migration-dir "migrations"
  :db            (or
-                  (get (System/getenv) "DATABASE_URL")
+                  (get (System/getenv) "JDBC_DATABASE_URL")
                   {:classname   "org.postgresql.driver"
                    :subprotocol "postgresql"
                    :subname     (or (get (System/getenv) "DB_SPEC__SUBNAME") "//localhost:5432/shinsetsu")
